@@ -480,9 +480,9 @@ def user_info_page() -> rx.Component:
     return rx.table.row(
       rx.table.cell(order.time),
       rx.table.cell(order.item),
-      rx.table.cell(f"{order.quantity}"),
-      rx.table.cell(f"{order.price}€"),
-      rx.table.cell(f"{order.total}€")
+      rx.table.cell(f"{order.quantity}", align="right"),
+      rx.table.cell(f"€{two_decimal_points(order.price)}", align="right"),
+      rx.table.cell(f"€{two_decimal_points(order.total)}", align="right")
     )
   
   return rx.container(rx.center(rx.vstack(
@@ -492,6 +492,7 @@ def user_info_page() -> rx.Component:
     rx.button(
       rx.text(f"Back to orders and items", size=default_button_text_size),
       on_click=rx.redirect("/user"),
+      color_scheme="red",
       size=default_button_size
     ),
     rx.text(
@@ -507,9 +508,9 @@ def user_info_page() -> rx.Component:
           rx.table.row(
             rx.table.column_header_cell("Time"),
             rx.table.column_header_cell("Item"),
-            rx.table.column_header_cell("Quantity"),
-            rx.table.column_header_cell("Unit Price"),
-            rx.table.column_header_cell("Total")
+            rx.table.column_header_cell("Quantity", align="right"),
+            rx.table.column_header_cell("Unit Price", align="right"),
+            rx.table.column_header_cell("Total", align="right")
           )
         ),
         rx.table.body(
