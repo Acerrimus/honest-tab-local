@@ -471,7 +471,7 @@ def admin() -> rx.Component:
   def user_button(user: User):
     return rx.button(
       rx.text(
-        f"{user.full_name} ({user.nick_name})",
+        f"{user.first_name} {user.last_name} ({user.nick_name})",
         size=default_button_text_size
       ),
       on_click=State.redirect_to_admin_user_page(user)
@@ -611,7 +611,7 @@ def admin_user_page() -> rx.Component:
       rx.text("Go back", size=default_button_text_size),
       on_click=rx.redirect("/admin")
     ),
-    rx.text(f"Full name: {State.current_user.full_name}"),
+    rx.text(f"Full name: {State.current_user.first_name} {State.current_user.last_name}"),
     rx.text(f"Nick name: {State.current_user.nick_name}"),
     rx.text(f"Email: {State.current_user.email}"),
     rx.text(f"Phone: {State.current_user.phone_number}"),
