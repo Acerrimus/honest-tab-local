@@ -54,13 +54,38 @@ def index() -> rx.Component:
   )
 
 
+def logout_button() -> rx.Component:
+  return rx.button(
+      rx.icon("door-open"),
+      rx.text("Log out", size=default_button_text_size),
+      color_scheme="red",
+      on_click=rx.redirect("/"),
+      size=default_button_size
+    ),
+
+
+def error_page() -> rx.Component:
+  return rx.vstack(
+    rx.text(
+      "An error occurred, please press the button below.",
+      size=default_text_size
+    ),
+    rx.button(
+      rx.icon("door-open"),
+      "Return",
+      on_click=rx.redirect("/"),
+      size=default_button_size
+    )
+  )
+
+
 def user_page() -> rx.Component:
   def item_button(item: Item) -> rx.Component:
     title: str = f"{item.name} (€{two_decimal_points(item.price)})"
     return rx.dialog.root(
         rx.dialog.trigger(rx.button(
           rx.text(title, size=default_button_text_size),
-          color_scheme='gray',
+          color_scheme="blue",
           size=default_button_size
         )),
         rx.dialog.content(
@@ -95,76 +120,82 @@ def user_page() -> rx.Component:
           ),
         )
       )
-  return rx.container(rx.center(rx.vstack(
-    rx.heading(
-      f"Hello {State.current_user.nick_name}", size=default_heading_size
-    ),
-    rx.button(
-      rx.icon("list"),
-      rx.text("View orders", size=default_button_text_size),
-      on_click=rx.redirect("/info"),
-      size=default_button_size
-    ),
+  return rx.container(rx.center(
     rx.cond(
-      State.breakfast_signup_available,
-      rx.button(
-        rx.icon("egg-fried"),
-        rx.text(
-          "Sign up for breakfast / packed lunch",
-          size=default_button_text_size
+      State.no_user,
+      error_page(),
+      rx.vstack(
+        rx.heading(
+          f"Hello {State.current_user.nick_name}", size=default_heading_size
         ),
-        on_click=rx.redirect("/breakfast"),
-        size=default_button_size
-      ),
-      rx.text(
-        f"Breakfast sign-up closed "
-        f"(last sign-up at {State.admin_data['breakfast_signup_deadline']})",
-        size=default_text_size
+        rx.hstack(
+          rx.button(
+            rx.icon("list"),
+            rx.text("View orders", size=default_button_text_size),
+            on_click=rx.redirect("/info"),
+            color_scheme="green",
+            size=default_button_size
+          ),
+          logout_button(),
+          rx.text(
+            "(please log out when you're done)",
+            size=default_text_size
+          ),
+          align="center"
+        ),
+        rx.hstack(
+          rx.button(
+            rx.icon("egg-fried"),
+            rx.text(
+              "Sign up for breakfast / packed lunch",
+              size=default_button_text_size
+            ),
+            on_click=rx.redirect("/breakfast"),
+            size=default_button_size,
+            disabled=~State.breakfast_signup_available,
+          ),
+          rx.text(
+            f"(last sign-up at {State.admin_data['breakfast_signup_deadline']})",
+            size=default_text_size
+          ),
+          align="center"
+        ),
+        rx.hstack(
+          rx.button(
+            rx.icon("utensils"),
+            rx.text("Sign up for dinner", size=default_button_text_size),
+            on_click=rx.redirect("/dinner"),
+            size=default_button_size,
+            disabled=~State.dinner_signup_available
+          ),
+          rx.text(
+            f"(last sign-up at {State.admin_data['dinner_signup_deadline']}, "
+            f"for late sign-ups, please ask the kitchen staff)",
+            size=default_text_size
+          ),
+          align="center"
+        ),
+        rx.text("Register an item", size=default_text_size), 
+        rx.button(
+          rx.icon("circle-plus"),
+          rx.text("Custom item", size=default_button_text_size),
+          color_scheme="sky",
+          on_click=rx.redirect("/custom_item"),
+          size=default_button_size
+        ),
+        rx.scroll_area(
+          rx.flex(
+            rx.foreach(State.items.values(), item_button),
+            padding="8px",
+            spacing="4",
+            style={"width": "max"},
+            wrap="wrap"
+          ),
+          type="always",
+          scrollbars="vertical",
+          style={"height": "60vh"}
+        ) 
       )
-    ), 
-    rx.cond(
-      State.dinner_signup_available,
-      rx.button(
-        rx.icon("utensils"),
-        rx.text("Sign up for dinner", size=default_button_text_size),
-        on_click=rx.redirect("/dinner"),
-        size=default_button_size
-      ),
-      rx.text(
-        f"Dinner sign-up closed "
-        f"(last sign-up at {State.admin_data['dinner_signup_deadline']}, "
-        f"for late sign-ups, please ask the kitchen staff)",
-        size=default_text_size
-      )
-    ),
-    rx.text("Register an item", size=default_text_size), 
-    rx.button(
-      rx.icon("circle-plus"),
-      rx.text("Custom item", size=default_button_text_size),
-      on_click=rx.redirect("/custom_item"),
-      size=default_button_size
-    ),
-    rx.scroll_area(
-      rx.flex(
-        rx.foreach(State.items.values(), item_button),
-        padding="8px",
-        spacing="4",
-        style={"width": "max"},
-        wrap="wrap"
-      ),
-      type="always",
-      scrollbars="vertical",
-      style={"height": "48vh"}
-    ),
-    rx.text("Remember when you are done to", size=default_text_size),
-    rx.button(
-      rx.icon("door-open"),
-      rx.text("Log out", size=default_button_text_size),
-      color_scheme="red",
-      on_click=rx.redirect("/"),
-      size=default_button_size
-    ),
-    rx.text("please :)", size=default_text_size)
   )))
 
 
@@ -250,7 +281,7 @@ def user_signup_page() -> rx.Component:
               required=True,
               width="100%"
             ),
-						rx.text("Last name", weight="medium"),
+            rx.text("Last name", weight="medium"),
             rx.input(
               placeholder="E.g. 'Robertson' (required)",
               name="last_name",
@@ -301,18 +332,21 @@ def dinner_signup_page() -> rx.Component:
             f"Price per person is {State.admin_data['dinner_price']}€. "
             f"If you are signing up yourself, just write your own full name. "
             f"You can also sign up someone else on your tab, "
-            f"in that case write the full name of the guest you are signing up."
+            f"in that case write the full name of the guest "
+            f"whom you are signing up."
           ),
           rx.text("First name of dinner guest", weight="bold"),
           rx.input(
             placeholder="First name of dinner guest",
             name="first_name",
+            default_value=State.current_user.first_name,
             required=True
           ),
           rx.text("Last name of dinner guest", weight="bold"),
           rx.input(
             placeholder="Last name of dinner guest",
             name="last_name",
+            default_value=State.current_user.last_name,
             required=True
           ),
           rx.text("Dietary preferences", weight="bold"),
@@ -393,14 +427,14 @@ def breakfast_signup_page() -> rx.Component:
           rx.text("First name of breakfast guest"),
           rx.input(
             placeholder="First name of breakfast guest",
-            #default_value=State.current_user.full_name,
+            default_value=State.current_user.first_name,
             name="first_name",
             required=True
           ),
           rx.text("Last name of breakfast guest"),
           rx.input(
             placeholder="Last name of breakfast guest",
-            #default_value=State.current_user.full_name,
+            default_value=State.current_user.last_name,
             name="last_name",
             required=True
           ),
@@ -460,33 +494,33 @@ def user_info_page() -> rx.Component:
       on_click=rx.redirect("/user"),
       size=default_button_size
     ),
-		rx.text(
+    rx.text(
       "Note: new registrations may take a moment to show. "
       "If you made a registration by mistake, please talk to the reception "
       "and they will help correcting it.",
       size=default_text_size
-		),
-		rx.text("Your registrations:", size=default_text_size, weight="bold"),
-		rx.scroll_area(
-    	rx.table.root(
-    	  rx.table.header(
-    	    rx.table.row(
-    	      rx.table.column_header_cell("Time"),
-    	      rx.table.column_header_cell("Item"),
-    	      rx.table.column_header_cell("Quantity"),
-    	      rx.table.column_header_cell("Unit Price"),
-    	      rx.table.column_header_cell("Total")
-    	    )
-    	  ),
-    	  rx.table.body(
-    	    rx.foreach(
-    	      State.current_user_orders, show_row
-    	    )
-    	  )
-    	),
+    ),
+    rx.text("Your registrations:", size=default_text_size, weight="bold"),
+    rx.scroll_area(
+      rx.table.root(
+        rx.table.header(
+          rx.table.row(
+            rx.table.column_header_cell("Time"),
+            rx.table.column_header_cell("Item"),
+            rx.table.column_header_cell("Quantity"),
+            rx.table.column_header_cell("Unit Price"),
+            rx.table.column_header_cell("Total")
+          )
+        ),
+        rx.table.body(
+          rx.foreach(
+            State.current_user_orders, show_row
+          )
+        )
+      ),
       scrollbars="vertical",
       style={"height": "70vh"}
-		)
+    )
   )))
 
 def admin() -> rx.Component:
@@ -517,7 +551,7 @@ def admin() -> rx.Component:
       rx.button(
         rx.text("Breakfast", size=default_button_text_size),
         on_click=rx.redirect("/admin/breakfast"),
-				size=default_button_size	
+        size=default_button_size	
       ),
       rx.button(
         rx.text("Tax", size=default_button_text_size),
@@ -571,15 +605,15 @@ def admin_dinner() -> rx.Component:
   return rx.container(rx.center(
     rx.vstack(
       rx.heading("Dinner", size=default_heading_size), 
-			rx.hstack(
-      	admin_refresh_top_bar(),
-      	rx.button(
-      	  rx.text("Late sign-up", size=default_button_text_size),
-      	  on_click=rx.redirect("/admin/late"),
-      	  size=default_button_size
-      	),
+      rx.hstack(
+        admin_refresh_top_bar(),
+        rx.button(
+          rx.text("Late sign-up", size=default_button_text_size),
+          on_click=rx.redirect("/admin/late"),
+          size=default_button_size
+        ),
         spacing="2"
-			),
+      ),
       rx.text(f"Total eating dinner: {State.dinner_count}"),
       rx.text(f"Vegan: {State.dinner_count_vegan}"),
       rx.text(f"Vegatarian: {State.dinner_count_vegetarian}"),
@@ -621,7 +655,7 @@ def admin_breakfast() -> rx.Component:
             rx.table.row(
               rx.table.column_header_cell("Time"),
               rx.table.column_header_cell("Name"),
-              rx.table.column_header_cell("Diet"),
+              rx.table.column_header_cell("Menu item"),
               rx.table.column_header_cell("Allergies")
             )
           ),

@@ -7,7 +7,7 @@ from obhonesty.state import State
 
 app = rx.App()
 app.add_page(index, route="/", on_load=State.reload_sheet_data)
-app.add_page(user_page, route="/user", on_load=State.redirect_no_user)
+app.add_page(user_page, route="/user", on_load=State.reload_sheet_data)
 app.add_page(user_signup_page, route="/signup")
 app.add_page(dinner_signup_page, route="/dinner")
 app.add_page(breakfast_signup_page, route="/breakfast")

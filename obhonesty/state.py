@@ -104,15 +104,23 @@ class State(rx.State):
   
   @rx.event
   def order_dinner(self, form_data: dict):
+    first_name = form_data['first_name'].upper().strip()
+    last_name = form_data['last_name'].upper().strip()
+    receiver = f"{first_name} {last_name}" 
+    if receiver in [order.receiver for order in self.dinner_signups]:
+      return rx.toast.error(
+        "This person is already signed up, "
+        "please provide different name if you want to sign up another person."
+      )
     row = [
       str(short_uid()), 
       self.current_user.nick_name,
       str(datetime.now()),
       "Dinner sign-up",
-      1.0,
+      1,
       self.admin_data['dinner_price'],
       self.admin_data['dinner_price'],
-      f"{form_data['first_name']} {form_data['last_name']}",
+      receiver,
       form_data['diet'],
       form_data['allergies'],
       "",
@@ -123,16 +131,16 @@ class State(rx.State):
     return rx.redirect("/user")
   
   @rx.event
-  def order_dinner_late(self, form_data: dict):
+  def order_dinner_late(self, form_data: dict): 
     row = [
       str(short_uid()), 
       form_data['nick_name'],
       str(datetime.now()),
       "Dinner sign-up",
-      1.0,
+      1,
       self.admin_data['dinner_price'],
       self.admin_data['dinner_price'],
-      form_data['full_name'],
+      form_data['full_name'].upper().trim(),
       form_data['diet'],
       form_data['allergies'],
       "",
@@ -144,6 +152,17 @@ class State(rx.State):
 
   @rx.event
   def order_breakfast(self, form_data: dict):
+    first_name = form_data['first_name'].upper().strip()
+    last_name = form_data['last_name'].upper().strip()
+    receiver = f"{first_name} {last_name}" 
+    if not form_data['menu_item'].lower().startswith("packed lunch") and receiver in [
+      order.receiver for order in self.breakfast_signups
+      if not order.diet.lower().startswith("packed lunch")
+    ]:
+      return rx.toast.error(
+        "This person is already signed up, "
+        "please provide different name if you want to sign up another person."
+      )
     menu_item = form_data['menu_item']
     key = f"{menu_item}_price"
     price = self.admin_data[key] if not self.current_user.volunteer else 0.0
@@ -152,10 +171,10 @@ class State(rx.State):
       self.current_user.nick_name,
       str(datetime.now()),
       "Breakfast sign-up",
-      1.0,
+      1,
       price,
       price,
-      f"{form_data['first_name']} {form_data['last_name']}",
+      receiver,
       menu_item,
       form_data['allergies'],
       "",
@@ -182,6 +201,10 @@ class State(rx.State):
         filtered.append(order_copy)
     filtered.sort(key=lambda x: x.time, reverse=True)
     return filtered
+  
+  @rx.var(cache=False)
+  def no_user(self) -> bool:
+    return self.current_user is None
 
   @rx.var(cache=False)
   def invalid_new_user_name(self) -> bool:
@@ -211,7 +234,7 @@ class State(rx.State):
     return now_minutes < deadline_minutes
   
   @rx.var(cache=False)
-  def breakfast_signup_available(self) -> int:
+  def breakfast_signup_available(self) -> bool:
     try:
       deadline = datetime.strptime(self.admin_data['breakfast_signup_deadline'], "%H:%M")
     except:
