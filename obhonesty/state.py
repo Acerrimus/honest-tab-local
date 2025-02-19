@@ -1,10 +1,10 @@
 
 from datetime import datetime
 from typing import Any, Dict, List, Optional
-import uuid
 
 import reflex as rx
 
+from obhonesty.aux import short_uid
 from obhonesty.user import User
 from obhonesty.item import Item
 from obhonesty.order import Order
@@ -69,7 +69,7 @@ class State(rx.State):
     except:
       return rx.toast.error("Failed to register. Quantity must be a number")
     order_sheet.append_row([
-      str(uuid.uuid4()), 
+      str(short_uid()), 
       self.current_user.nick_name,
       str(datetime.now()),
       item.name,
@@ -89,7 +89,7 @@ class State(rx.State):
   def order_custom_item(self, form_data: dict):
     item_name = form_data['custom_item_name']
     order_sheet.append_row([
-      str(uuid.uuid4()), 
+      str(short_uid()), 
       self.current_user.nick_name,
       str(datetime.now()),
       item_name,
@@ -105,7 +105,7 @@ class State(rx.State):
   @rx.event
   def order_dinner(self, form_data: dict):
     row = [
-      str(uuid.uuid4()), 
+      str(short_uid()), 
       self.current_user.nick_name,
       str(datetime.now()),
       "Dinner sign-up",
@@ -125,7 +125,7 @@ class State(rx.State):
   @rx.event
   def order_dinner_late(self, form_data: dict):
     row = [
-      str(uuid.uuid4()), 
+      str(short_uid()), 
       form_data['nick_name'],
       str(datetime.now()),
       "Dinner sign-up",
@@ -148,7 +148,7 @@ class State(rx.State):
     key = f"{menu_item}_price"
     price = self.admin_data[key] if not self.current_user.volunteer else 0.0
     row = [
-      str(uuid.uuid4()), 
+      str(short_uid()), 
       self.current_user.nick_name,
       str(datetime.now()),
       "Breakfast sign-up",

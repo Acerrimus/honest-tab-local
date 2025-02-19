@@ -1,3 +1,5 @@
+import random
+import string
 from typing import Any, Optional
 from reflex.vars import NumberVar, var_operation, var_operation_return
 
@@ -19,3 +21,8 @@ def safe_float_convert(s: str) -> Optional[float]:
 
 def value_or(x: Optional[Any], default: Any) -> Any:
   return x if not x is None else default
+
+_alphabet = string.ascii_lowercase + string.digits
+
+def short_uid(k=8):
+  return ''.join(random.choices(_alphabet, k=8))
