@@ -175,7 +175,11 @@ class State(rx.State):
     filtered: List[Order] = []
     for order in self.orders:
       if order.user_nick_name == self.current_user.nick_name:
-        filtered.append(order)
+        order_copy = order.copy()
+        order_copy.time = datetime.fromisoformat(order.time).strftime(
+          "%Y-%m-%d, %H:%M:%S"
+        )
+        filtered.append(order_copy)
     filtered.sort(key=lambda x: x.time, reverse=True)
     return filtered
 

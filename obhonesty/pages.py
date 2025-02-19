@@ -16,7 +16,7 @@ def index() -> rx.Component:
     rx.button(
       rx.text(user.nick_name, size=default_button_text_size),
       on_click=State.redirect_to_user_page(user),
-      size="4"
+      size=default_button_size
     )
   return rx.container(
     rx.center(
@@ -31,8 +31,10 @@ def index() -> rx.Component:
             rx.icon("user-plus"),
             rx.text("Sign up for self-service", size=default_button_text_size),
             color_scheme="green",
-            on_click=rx.redirect("/signup")
-          )
+            on_click=rx.redirect("/signup"),
+            size=default_button_size
+          ),
+          align="center"
         ),
         rx.text(f"Find yourself and place an order", size=default_text_size),
         rx.scroll_area(
@@ -45,7 +47,7 @@ def index() -> rx.Component:
           ),
           type="always",
           scrollbars="vertical",
-          style={"height": "80vh"}
+          style={"height": "75vh"}
         )
       )
     )
@@ -59,7 +61,7 @@ def user_page() -> rx.Component:
         rx.dialog.trigger(rx.button(
           rx.text(title, size=default_button_text_size),
           color_scheme='gray',
-          size="4"
+          size=default_button_size
         )),
         rx.dialog.content(
           rx.dialog.title(title),
@@ -81,7 +83,7 @@ def user_page() -> rx.Component:
               ),
               rx.flex(
                 rx.dialog.close(
-                  rx.button("Register", type="submit")
+                  rx.button("Register", type="submit", size=default_button_size)
                 ), 
                 rx.dialog.close(rx.button(f"Cancel")),
                 spacing="3",
@@ -100,7 +102,8 @@ def user_page() -> rx.Component:
     rx.button(
       rx.icon("list"),
       rx.text("View orders", size=default_button_text_size),
-      on_click=rx.redirect("/info")
+      on_click=rx.redirect("/info"),
+      size=default_button_size
     ),
     rx.cond(
       State.breakfast_signup_available,
@@ -110,7 +113,8 @@ def user_page() -> rx.Component:
           "Sign up for breakfast / packed lunch",
           size=default_button_text_size
         ),
-        on_click=rx.redirect("/breakfast")
+        on_click=rx.redirect("/breakfast"),
+        size=default_button_size
       ),
       rx.text(
         f"Breakfast sign-up closed "
@@ -123,7 +127,8 @@ def user_page() -> rx.Component:
       rx.button(
         rx.icon("utensils"),
         rx.text("Sign up for dinner", size=default_button_text_size),
-        on_click=rx.redirect("/dinner")
+        on_click=rx.redirect("/dinner"),
+        size=default_button_size
       ),
       rx.text(
         f"Dinner sign-up closed "
@@ -136,7 +141,8 @@ def user_page() -> rx.Component:
     rx.button(
       rx.icon("circle-plus"),
       rx.text("Custom item", size=default_button_text_size),
-      on_click=rx.redirect("/custom_item")
+      on_click=rx.redirect("/custom_item"),
+      size=default_button_size
     ),
     rx.scroll_area(
       rx.flex(
@@ -148,14 +154,15 @@ def user_page() -> rx.Component:
       ),
       type="always",
       scrollbars="vertical",
-      style={"height": "55vh"}
+      style={"height": "48vh"}
     ),
     rx.text("Remember when you are done to", size=default_text_size),
     rx.button(
       rx.icon("door-open"),
       rx.text("Log out", size=default_button_text_size),
       color_scheme="red",
-      on_click=rx.redirect("/")
+      on_click=rx.redirect("/"),
+      size=default_button_size
     ),
     rx.text("please :)", size=default_text_size)
   )))
@@ -194,14 +201,16 @@ def custom_item_page() -> rx.Component:
         rx.text("Comment"),
         rx.input(placeholder="optional", name="custom_item_description"),
         rx.button(
-          rx.text("Register", size=default_button_text_size), type="submit"
+          rx.text("Register", size=default_button_text_size), type="submit",
+          size=default_button_size
         )
       ),
       on_submit=State.order_custom_item
     ),
     rx.button(
       rx.text("Cancel", size=default_button_text_size),
-      on_click=rx.redirect("/user")
+      on_click=rx.redirect("/user"),
+      size=default_button_size
     )
   )))
 
@@ -264,7 +273,8 @@ def user_signup_page() -> rx.Component:
               width="100%"
             ),
             rx.button(
-              rx.text("Submit", size=default_button_text_size), type="submit"
+              rx.text("Submit", size=default_button_text_size), type="submit",
+              size=default_button_size
             )
           ),
           on_submit=State.submit_signup,
@@ -272,7 +282,8 @@ def user_signup_page() -> rx.Component:
         ),
         rx.button(
           rx.text("Go back", size=default_button_text_size),
-          on_click=rx.redirect("/")
+          on_click=rx.redirect("/"),
+          size=default_button_size
         ),
       ),
     ),
@@ -316,7 +327,8 @@ def dinner_signup_page() -> rx.Component:
           ),
           rx.button(
             rx.text("Register", size=default_button_text_size),
-            type="submit"
+            type="submit",
+            size=default_button_size
           )
         ),
         on_submit=State.order_dinner,
@@ -324,7 +336,8 @@ def dinner_signup_page() -> rx.Component:
       ),
       rx.button(
         rx.text("Cancel", size=default_button_text_size),
-        on_click=rx.redirect("/user")
+        on_click=rx.redirect("/user"),
+        size=default_button_size
       )
     )
   ))
@@ -351,7 +364,8 @@ def late_dinner_signup_page() -> rx.Component:
           ),
           rx.button(
             rx.text("Register", size=default_button_text_size),
-            type="submit"
+            type="submit",
+            size=default_button_size
           )
         ),
         on_submit=State.order_dinner_late,
@@ -359,7 +373,8 @@ def late_dinner_signup_page() -> rx.Component:
       ),
       rx.button(
         rx.text("Cancel", size=default_button_text_size),
-        on_click=rx.redirect("/admin/dinner")
+        on_click=rx.redirect("/admin/dinner"),
+        size=default_button_size
       )
     )
   ))
@@ -410,7 +425,8 @@ def breakfast_signup_page() -> rx.Component:
           ),
           rx.button(
             rx.text("Register", size=default_button_text_size),
-            type="submit"
+            type="submit",
+            size=default_button_size
           )
         ),
         on_submit=State.order_breakfast,
@@ -418,7 +434,8 @@ def breakfast_signup_page() -> rx.Component:
       ),
       rx.button(
         rx.text("Cancel", size=default_button_text_size),
-        on_click=rx.redirect("/user")
+        on_click=rx.redirect("/user"),
+        size=default_button_size
       )
     )
   ))
@@ -440,7 +457,8 @@ def user_info_page() -> rx.Component:
     ),
     rx.button(
       rx.text(f"Back to orders and items", size=default_button_text_size),
-      on_click=rx.redirect("/user")
+      on_click=rx.redirect("/user"),
+      size=default_button_size
     ),
 		rx.text(
       "Note: new registrations may take a moment to show. "
@@ -478,7 +496,8 @@ def admin() -> rx.Component:
         f"{user.first_name} {user.last_name} ({user.nick_name})",
         size=default_button_text_size
       ),
-      on_click=State.redirect_to_admin_user_page(user)
+      on_click=State.redirect_to_admin_user_page(user),
+      size=default_button_size
     )
   return rx.container(rx.center(
     rx.vstack(
@@ -487,19 +506,23 @@ def admin() -> rx.Component:
         rx.icon("refresh-cw"),
         rx.text("Reload", size=default_button_text_size),
         on_click=State.reload_sheet_data,
-        color_scheme="green"
+        color_scheme="green",
+        size=default_button_size
       ),
       rx.button(
         rx.text("Dinner", size=default_button_text_size),
-        on_click=rx.redirect("/admin/dinner")
+        on_click=rx.redirect("/admin/dinner"),
+        size=default_button_size
       ),
       rx.button(
         rx.text("Breakfast", size=default_button_text_size),
-        on_click=rx.redirect("/admin/breakfast")
+        on_click=rx.redirect("/admin/breakfast"),
+				size=default_button_size	
       ),
       rx.button(
         rx.text("Tax", size=default_button_text_size),
-        on_click=rx.redirect("/admin/tax")
+        on_click=rx.redirect("/admin/tax"),
+        size=default_button_size
       ),
       rx.text("Users:"),
       rx.foreach(State.users, user_button)
@@ -511,7 +534,8 @@ def admin_tax() -> rx.Component:
     rx.heading("Tax categories", size=default_heading_size),
     rx.button(
       rx.text("Go back", size=default_button_text_size),
-      on_click=rx.redirect("/admin")
+      on_click=rx.redirect("/admin"),
+      size=default_button_size
     ),
     rx.foreach(
       State.tax_categories.items(),
@@ -523,12 +547,14 @@ def admin_refresh_top_bar() -> rx.Component:
   return rx.flex(
     rx.button(
       rx.icon("door-open"), rx.text("Go back", size=default_button_text_size),
-      on_click=rx.redirect("/admin"), color_scheme="red"
+      on_click=rx.redirect("/admin"), color_scheme="red",
+      size=default_button_size
     ),
     rx.button(
       rx.icon("refresh-cw"), rx.text("Reload", size=default_button_text_size),
       on_click=State.reload_sheet_data,
-      color_scheme="green"
+      color_scheme="green",
+      size=default_button_size
     ),
     spacing="2"
   )
@@ -545,11 +571,15 @@ def admin_dinner() -> rx.Component:
   return rx.container(rx.center(
     rx.vstack(
       rx.heading("Dinner", size=default_heading_size), 
-      admin_refresh_top_bar(),
-      rx.button(
-        rx.text("Late sign-up", size=default_button_text_size),
-        on_click=rx.redirect("/admin/late")
-      ),
+			rx.hstack(
+      	admin_refresh_top_bar(),
+      	rx.button(
+      	  rx.text("Late sign-up", size=default_button_text_size),
+      	  on_click=rx.redirect("/admin/late"),
+      	  size=default_button_size
+      	),
+        spacing="2"
+			),
       rx.text(f"Total eating dinner: {State.dinner_count}"),
       rx.text(f"Vegan: {State.dinner_count_vegan}"),
       rx.text(f"Vegatarian: {State.dinner_count_vegetarian}"),
@@ -613,7 +643,8 @@ def admin_user_page() -> rx.Component:
     rx.heading("User information", size=default_heading_size),
     rx.button(
       rx.text("Go back", size=default_button_text_size),
-      on_click=rx.redirect("/admin")
+      on_click=rx.redirect("/admin"),
+      size=default_button_size
     ),
     rx.text(f"Full name: {State.current_user.first_name} {State.current_user.last_name}"),
     rx.text(f"Nick name: {State.current_user.nick_name}"),
