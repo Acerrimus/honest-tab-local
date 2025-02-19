@@ -315,10 +315,12 @@ def dinner_signup_page() -> rx.Component:
             name="allergies"
           ),
           rx.button(
-            rx.text("Register", size=default_button_text_size), type="submit"
+            rx.text("Register", size=default_button_text_size),
+            type="submit"
           )
         ),
-        on_submit=State.order_dinner
+        on_submit=State.order_dinner,
+        reset_on_submit=True
       ),
       rx.button(
         rx.text("Cancel", size=default_button_text_size),
@@ -352,7 +354,8 @@ def late_dinner_signup_page() -> rx.Component:
             type="submit"
           )
         ),
-        on_submit=State.order_dinner_late
+        on_submit=State.order_dinner_late,
+        reset_on_submit=True
       ),
       rx.button(
         rx.text("Cancel", size=default_button_text_size),
@@ -410,7 +413,8 @@ def breakfast_signup_page() -> rx.Component:
             type="submit"
           )
         ),
-        on_submit=State.order_breakfast
+        on_submit=State.order_breakfast,
+        reset_on_submit=True
       ),
       rx.button(
         rx.text("Cancel", size=default_button_text_size),

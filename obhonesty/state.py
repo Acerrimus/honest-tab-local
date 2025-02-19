@@ -120,8 +120,6 @@ class State(rx.State):
       ""
     ]
     order_sheet.append_row(row, table_range="A1")
-
-    rx.toast.info("Dinner sign-up successful")
     return rx.redirect("/user")
   
   @rx.event
@@ -165,7 +163,6 @@ class State(rx.State):
       ""
     ]
     order_sheet.append_row(row, table_range="A1")
-    rx.toast.info("Breakfast/pack-lunch sign-up successful")
     return rx.redirect("/user")
   
   @rx.event
