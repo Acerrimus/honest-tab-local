@@ -195,9 +195,12 @@ class State(rx.State):
     for order in self.orders:
       if order.user_nick_name == self.current_user.nick_name:
         order_copy = order.copy()
-        order_copy.time = datetime.fromisoformat(order.time).strftime(
-          "%Y-%m-%d, %H:%M:%S"
-        )
+        try:
+          order_copy.time = datetime.fromisoformat(order.time).strftime(
+            "%Y-%m-%d, %H:%M:%S"
+          )
+        except:
+          pass
         filtered.append(order_copy)
     filtered.sort(key=lambda x: x.time, reverse=True)
     return filtered
