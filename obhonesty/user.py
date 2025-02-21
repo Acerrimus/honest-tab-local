@@ -1,13 +1,15 @@
 from typing import Dict
 import reflex as rx
 
+from obhonesty.aux import lower_non_alpha_num
+from obhonesty.constants import true_values
+
 class User(rx.Base):
   nick_name: str
   first_name: str
   last_name: str
   email: str
   phone_number: str
-  address: str
   volunteer: bool
   away: bool
   diet: str
@@ -21,10 +23,9 @@ class User(rx.Base):
       last_name=x['last_name'],
       email=x['email'],
       phone_number=x['phone_number'],
-      address=x['address'],
-      volunteer=x['volunteer'] == 'yes',
-      away=x['away'] == 'yes',
+      volunteer=lower_non_alpha_num(x['volunteer']) in true_values,
       diet=x['diet'],
-      allergies=x['allergies']
+      allergies=x['allergies'],
+      away=lower_non_alpha_num(x['away']) in true_values
     )
 

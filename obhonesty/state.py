@@ -4,7 +4,8 @@ from typing import Any, Dict, List, Optional
 
 import reflex as rx
 
-from obhonesty.aux import short_uid
+from obhonesty.aux import short_uid, str_cmp
+from obhonesty.constants import Diet, true_values
 from obhonesty.user import User
 from obhonesty.item import Item
 from obhonesty.order import Order
@@ -25,7 +26,7 @@ class State(rx.State):
     print("Reloading sheet data")
     user_data = user_sheet.get_all_records(expected_headers=[
       'nick_name', 'first_name', 'last_name', 'phone_number', 'email',
-      'address', 'volunteer', 'away', 'diet', 'allergies', 'owes'
+      'diet', 'allergies', 'volunteer', 'away', 'owes'
     ]) 
     item_data = item_sheet.get_all_records(expected_headers=[
       'name', 'price', 'description', 'tax_category'
@@ -289,9 +290,9 @@ class State(rx.State):
           user_nick_name=user.nick_name, time="",
           item="Dinner sign-up (volunteer)",
           quantity=1.0, price=0.0, total=0.0,
-          receiver=f"{user.first_name} {user.last_name}", diet=user.diet,
-          allergies=user.allergies, served="", tax_category="",
-          comment="yes"
+          receiver=f"{user.first_name.upper()} {user.last_name.upper()}",
+          diet=user.diet, allergies=user.allergies, served="", tax_category="",
+          comment=true_values[0]
         ))
     signups.sort(key=lambda x: x.receiver)    
     signups.sort(key=lambda x: x.diet)    
@@ -306,7 +307,7 @@ class State(rx.State):
   def dinner_count_vegan(self) -> int:
     count = 0
     for order in self.dinner_signups:
-      if order.diet == "Vegan":
+      if str_cmp(order.diet, str(Diet.VEGAN)):
         count += 1
     return count
   
@@ -314,7 +315,7 @@ class State(rx.State):
   def dinner_count_vegetarian(self) -> int:
     count = 0
     for order in self.dinner_signups:
-      if order.diet == "Vegetarian":
+      if str_cmp(order.diet, str(Diet.VEGETARIAN)):
         count += 1
     return count
   
@@ -322,7 +323,7 @@ class State(rx.State):
   def dinner_count_meat(self) -> int:
     count = 0
     for order in self.dinner_signups:
-      if order.diet == "Meat":
+      if str_cmp(order.diet, str(Diet.MEAT)):
         count += 1
     return count
   

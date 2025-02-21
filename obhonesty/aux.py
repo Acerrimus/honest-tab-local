@@ -1,6 +1,9 @@
+
+import re
 import random
 import string
 from typing import Any, Optional
+
 from reflex.vars import NumberVar, var_operation, var_operation_return
 
 @var_operation
@@ -26,3 +29,10 @@ _alphabet = string.ascii_lowercase + string.digits
 
 def short_uid(k=8):
   return ''.join(random.choices(_alphabet, k=8))
+
+def lower_non_alpha_num(s: str) -> str:
+  return re.sub(r'\W+', '', s).lower()
+
+def str_cmp(s: str, t: str) -> bool:
+  return lower_non_alpha_num(s) == lower_non_alpha_num(t)
+

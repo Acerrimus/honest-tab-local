@@ -225,9 +225,10 @@ def custom_item_page() -> rx.Component:
         ),
         rx.text("Category"),
         rx.select(
-          tax_categories,
-          default_value=tax_categories[0],
-          name="tax_category"
+          [str(x) for x in TaxCategory],
+          default_value=TaxCategory.NON_ALCOHOLIC,
+          name="tax_category",
+          required=True
         ),
         rx.text("Comment"),
         rx.input(placeholder="optional", name="custom_item_description"),
@@ -303,6 +304,21 @@ def user_signup_page() -> rx.Component:
               type="email",
               width="100%"
             ),
+						rx.text("Dietary preferences", weight="medium"),
+            rx.select(
+              [str(x) for x in Diet],
+							default_value=Diet.VEGAN,
+              name="diet",
+              required=True
+						),
+						rx.text("Allergies", weight="medium"),
+            rx.input(
+							placeholder="E.g. Gluten-free",
+              default_value="No allergies",
+              name="allergies",
+              required=True
+						),
+						rx.spacer(),
             rx.button(
               rx.text("Submit", size=default_button_text_size), type="submit",
               size=default_button_size
@@ -351,13 +367,15 @@ def dinner_signup_page() -> rx.Component:
           ),
           rx.text("Dietary preferences", weight="bold"),
           rx.select(
-            ["Vegan", "Vegetarian", "Meat"],
-            default_value="Vegan",
+            [str(x) for x in Diet],
+            default_value=State.current_user.diet,
             name="diet"
           ),
           rx.text("Allergies", weight="bold"),
           rx.input(
-            name="allergies"
+            default_value=State.current_user.allergies,
+            name="allergies",
+            required=True
           ),
           rx.button(
             rx.text("Register", size=default_button_text_size),
@@ -388,8 +406,8 @@ def late_dinner_signup_page() -> rx.Component:
           rx.select(State.get_all_nick_names, required=True, name="nick_name"),
           rx.text("Dietary preferences", weight="bold"),
           rx.select(
-            ["Vegan", "Vegetarian", "Meat"],
-            default_value="Vegan",
+            [str(x) for x in Diet],
+            default_value=str(Diet.VEGAN),
             name="diet"
           ),
           rx.text("Allergies", weight="bold"),
@@ -443,15 +461,15 @@ def breakfast_signup_page() -> rx.Component:
             rx.select.trigger(),
             rx.select.content(
               rx.foreach(
-                breakfast_items,
+                [str(x) for x in BreakfastMenuItem],
                 lambda item: rx.select.item(
                   f"{item} ({State.admin_data[item + "_price"]}€)",
                   value=item
                 )
               )
             ),
-            default_value=breakfast_items[0],
-            name="menu_item"
+            name="menu_item",
+            required=True
           ),
           rx.text("Allergies"),
           rx.input(
@@ -683,8 +701,5 @@ def admin_user_page() -> rx.Component:
     ),
     rx.text(f"Full name: {State.current_user.first_name} {State.current_user.last_name}"),
     rx.text(f"Nick name: {State.current_user.nick_name}"),
-    rx.text(f"Email: {State.current_user.email}"),
-    rx.text(f"Phone: {State.current_user.phone_number}"),
-    rx.text(f"Address: {State.current_user.address}"),
     rx.text(f"Owes: {State.get_user_debt}€")
   )))
