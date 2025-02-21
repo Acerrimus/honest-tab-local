@@ -175,7 +175,7 @@ def user_page() -> rx.Component:
           ),
           align="center"
         ),
-        rx.text("Register an item", size=default_text_size), 
+        rx.text("Register an item", weight="bold", size=default_text_size), 
         rx.button(
           rx.icon("circle-plus"),
           rx.text("Custom item", size=default_button_text_size),
