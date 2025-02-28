@@ -4,5 +4,5 @@ assets/external/
 *.py[cod]
 *.db
 __pycache__/
-service_account.json
 .venv
+.credentials
