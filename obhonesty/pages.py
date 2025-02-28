@@ -314,9 +314,7 @@ def user_signup_page() -> rx.Component:
 						rx.text("Allergies", weight="medium"),
             rx.input(
 							placeholder="E.g. Gluten-free",
-              default_value="No allergies",
-              name="allergies",
-              required=True
+              name="allergies"
 						),
 						rx.spacer(),
             rx.button(
@@ -374,8 +372,7 @@ def dinner_signup_page() -> rx.Component:
           rx.text("Allergies", weight="bold"),
           rx.input(
             default_value=State.current_user.allergies,
-            name="allergies",
-            required=True
+            name="allergies"
           ),
           rx.button(
             rx.text("Register", size=default_button_text_size),

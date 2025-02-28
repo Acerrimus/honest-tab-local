@@ -141,7 +141,7 @@ class State(rx.State):
       1,
       self.admin_data['dinner_price'],
       self.admin_data['dinner_price'],
-      form_data['full_name'].upper().trim(),
+      form_data['full_name'].upper().strip(),
       form_data['diet'],
       form_data['allergies'],
       "",
