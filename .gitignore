@@ -5,3 +5,4 @@ assets/external/
 *.db
 __pycache__/
 service_account.json
+.venv
