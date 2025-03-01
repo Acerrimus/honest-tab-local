@@ -4,4 +4,10 @@ fuser -k -TERM 8765/tcp
 git checkout -f main
 git pull
 tmux new-session -d -s obhonesty './make/run_prod'
-echo "you did it!"
+sleep 5
+tmux has-session -t obhonesty 2>/dev/null
+if [ $? == 0 ]; then
+	echo "you did it!"
+else
+	echo "there was a problem contact the developer"
+fi
