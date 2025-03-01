@@ -21,22 +21,25 @@ def index() -> rx.Component:
   return rx.container(
     rx.center(
       rx.vstack(
-        rx.heading(
-          "Welcome to the Olive Branch honest self-service",
+        rx.hstack(rx.text("Welcome to the", size='3'), justify="center", width="100%"),
+        rx.hstack(rx.heading(
+          "Olive Branch honest self-service",
           size=default_heading_size
-        ),
+        ), justify="center", width="100%"),
         rx.hstack(
-          rx.text("New here?", size=default_text_size),
+          rx.text("New here?", size="3"),
           rx.button(
             rx.icon("user-plus"),
             rx.text("Sign up for self-service", size=default_button_text_size),
             color_scheme="green",
             on_click=rx.redirect("/signup"),
-            size=default_button_size
+            size="3"
           ),
-          align="center"
+          rx.text(f"otherwise find yourself and place an order", size="3"),
+          align="center",
+          justify="center",
+          width="100%",
         ),
-        rx.text(f"Find yourself and place an order", size=default_text_size),
         rx.scroll_area(
           rx.flex(
             rx.foreach(State.users, user_button),
@@ -49,7 +52,8 @@ def index() -> rx.Component:
           scrollbars="vertical",
           style={"height": "75vh"}
         )
-      )
+      ),
+      align="center"
     )
   )
 
@@ -176,13 +180,6 @@ def user_page() -> rx.Component:
           align="center"
         ),
         rx.text("Register an item", weight="bold", size=default_text_size), 
-        rx.button(
-          rx.icon("circle-plus"),
-          rx.text("Custom item", size=default_button_text_size),
-          color_scheme="sky",
-          on_click=rx.redirect("/custom_item"),
-          size=default_button_size
-        ),
         rx.scroll_area(
           rx.flex(
             rx.foreach(State.items.values(), item_button),
@@ -194,7 +191,18 @@ def user_page() -> rx.Component:
           type="always",
           scrollbars="vertical",
           style={"height": "60vh"}
-        ) 
+        ),
+        rx.hstack(
+          rx.text("Didn't find the item? No problem, just", size=default_text_size),
+          rx.button(
+            rx.icon("circle-plus"),
+            rx.text("Register manually", size=default_button_text_size),
+            color_scheme="sky",
+            on_click=rx.redirect("/custom_item"),
+            size=default_button_size
+          ),
+          align="center"
+        )
       )
   )))
 
@@ -304,19 +312,19 @@ def user_signup_page() -> rx.Component:
               type="email",
               width="100%"
             ),
-						rx.text("Dietary preferences", weight="medium"),
+            rx.text("Dietary preferences", weight="medium"),
             rx.select(
               [str(x) for x in Diet],
-							default_value=Diet.VEGAN,
+              default_value=Diet.VEGAN,
               name="diet",
               required=True
-						),
-						rx.text("Allergies", weight="medium"),
+            ),
+            rx.text("Allergies", weight="medium"),
             rx.input(
-							placeholder="E.g. Gluten-free",
+              placeholder="E.g. Gluten-free",
               name="allergies"
-						),
-						rx.spacer(),
+            ),
+            rx.spacer(),
             rx.button(
               rx.text("Submit", size=default_button_text_size), type="submit",
               size=default_button_size

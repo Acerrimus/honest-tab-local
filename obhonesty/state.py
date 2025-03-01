@@ -23,7 +23,10 @@ class State(rx.State):
 
   @rx.event
   def reload_sheet_data(self):
-    print("Reloading sheet data")
+    print(
+      f"{self.router.session.client_ip}: Refreshing data... ",
+      end="", flush=True
+    )
     user_data = user_sheet.get_all_records(expected_headers=[
       'nick_name', 'first_name', 'last_name', 'phone_number', 'email',
       'diet', 'allergies', 'volunteer', 'away', 'owes'
@@ -46,6 +49,8 @@ class State(rx.State):
       Order.from_dict(x) for x in order_data
     ]
     self.users.sort(key=lambda x: x.nick_name)
+    print("complete.")
+    return rx.toast.info("Refresh data complete", duration=1000)
 
   @rx.event
   def redirect_to_user_page(self, user: User):

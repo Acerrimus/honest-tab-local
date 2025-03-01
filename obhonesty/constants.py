@@ -3,7 +3,7 @@ from enum import StrEnum
 true_values = ["yes", "true", "1", "y"]
 
 default_button_text_size = "4"
-default_heading_size = "8"
+default_heading_size = "7"
 default_text_size = "4"
 default_button_size = "4"
 
