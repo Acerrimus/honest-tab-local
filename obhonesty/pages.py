@@ -21,11 +21,17 @@ def index() -> rx.Component:
   return rx.container(
     rx.center(
       rx.vstack(
-        rx.hstack(rx.text("Welcome to the", size='3'), justify="center", width="100%"),
-        rx.hstack(rx.heading(
-          "Olive Branch honest self-service",
-          size=default_heading_size
-        ), justify="center", width="100%"),
+        rx.hstack(
+          rx.text("Welcome to the", size='3'),
+          justify="center", width="100%",
+        ),
+        rx.hstack(
+          rx.heading(
+            "Olive Branch honest self-service",
+            size=default_heading_size
+          ),
+          justify="center", width="100%"
+        ),
         rx.hstack(
           rx.text("New here?", size="3"),
           rx.button(
@@ -35,7 +41,6 @@ def index() -> rx.Component:
             on_click=rx.redirect("/signup"),
             size="3"
           ),
-          rx.text(f"otherwise find yourself and place an order", size="3"),
           align="center",
           justify="center",
           width="100%",
@@ -50,7 +55,7 @@ def index() -> rx.Component:
           ),
           type="always",
           scrollbars="vertical",
-          style={"height": "75vh"}
+          style={"height": "80vh"}
         )
       ),
       align="center"
