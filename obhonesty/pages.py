@@ -339,9 +339,10 @@ def user_signup_page() -> rx.Component:
           reset_on_submit=True
         ),
         rx.button(
-          rx.text("Go back", size=default_button_text_size),
+          rx.text("Cancel", size=default_button_text_size),
           on_click=rx.redirect("/"),
-          size=default_button_size
+          size=default_button_size,
+          color_scheme='red'
         ),
       ),
     ),
@@ -399,7 +400,8 @@ def dinner_signup_page() -> rx.Component:
       rx.button(
         rx.text("Cancel", size=default_button_text_size),
         on_click=rx.redirect("/user"),
-        size=default_button_size
+        size=default_button_size,
+        color_scheme='red'
       )
     )
   ))

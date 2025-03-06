@@ -1,5 +1,6 @@
 
 from datetime import datetime
+import asyncio
 from typing import Any, Dict, List, Optional
 
 import reflex as rx
@@ -20,37 +21,47 @@ class State(rx.State):
   new_nick_name: str
   custom_item_price: str
   orders: List[Order]
+  cancel_redirect: bool
 
   @rx.event
-  def reload_sheet_data(self):
-    print(
-      f"{self.router.session.client_ip}: Refreshing data... ",
-      end="", flush=True
-    )
-    user_data = user_sheet.get_all_records(expected_headers=[
-      'nick_name', 'first_name', 'last_name', 'phone_number', 'email',
-      'diet', 'allergies', 'volunteer', 'away', 'owes'
-    ]) 
-    item_data = item_sheet.get_all_records(expected_headers=[
-      'name', 'price', 'description', 'tax_category'
-    ])
-    order_data = order_sheet.get_all_records(expected_headers=[
-      'order_id', 'user', 'time', 'item', 'quantity', 'price', 'total',
-      'diet', 'allergies', 'served', 'tax_category', 'comment'
-    ])
-    self.admin_data = admin_sheet.get_all_records()[0]
-    self.users = [
-      User.from_dict(x) for x in user_data if x['nick_name'] != ''
-    ]
-    self.items = {
-      x['name'] : Item.from_dict(x) for x in item_data if x['name'] != ''
-    }
-    self.orders = [
-      Order.from_dict(x) for x in order_data
-    ]
-    self.users.sort(key=lambda x: x.nick_name)
-    print("complete.")
-    return rx.toast.info("Refresh data complete", duration=1000)
+  def cancel_timeout(self):
+    self.cancel_redirect = True
+  
+  @rx.event(background=True)
+  async def on_user_login(self):
+    async with self:
+      self.cancel_redirect = False
+    await asyncio.sleep(120)
+    if not self.cancel_redirect:
+      yield rx.redirect("/")
+
+  @rx.event(background=True)
+  async def reload_sheet_data(self):
+    async with self:
+      self.cancel_redirect = True
+      user_data = user_sheet.get_all_records(expected_headers=[
+        'nick_name', 'first_name', 'last_name', 'phone_number', 'email',
+        'diet', 'allergies', 'volunteer', 'away', 'owes'
+      ]) 
+      item_data = item_sheet.get_all_records(expected_headers=[
+        'name', 'price', 'description', 'tax_category'
+      ])
+      order_data = order_sheet.get_all_records(expected_headers=[
+        'order_id', 'user', 'time', 'item', 'quantity', 'price', 'total',
+        'diet', 'allergies', 'served', 'tax_category', 'comment'
+      ])
+      self.admin_data = admin_sheet.get_all_records()[0]
+      self.users = [
+        User.from_dict(x) for x in user_data if x['nick_name'] != ''
+      ]
+      self.items = {
+        x['name'] : Item.from_dict(x) for x in item_data if x['name'] != ''
+      }
+      self.orders = [
+        Order.from_dict(x) for x in order_data
+      ]
+      self.users.sort(key=lambda x: x.nick_name)
+    yield rx.toast.info("Data reloaded", duration=1000)
 
   @rx.event
   def redirect_to_user_page(self, user: User):
