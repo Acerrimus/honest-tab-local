@@ -1,7 +1,7 @@
 ./make/build
 tmux kill-server
 fuser -k -TERM 8765/tcp
-git checkout -f main
+git checkout -f ob-lts
 git pull
 tmux new-session -d -s obhonesty './make/run_prod'
 sleep 5
