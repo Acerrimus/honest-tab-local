@@ -531,7 +531,9 @@ def user_info_page() -> rx.Component:
       "and they will help correcting it.",
       size=default_text_size
     ),
-    rx.text("Your registrations:", size=default_text_size, weight="bold"),
+		rx.text(f"Total amount due: €{two_decimal_points(State.get_user_debt)} ",
+      size=default_text_size, weight="bold"),
+    rx.text("Registrations:", size=default_text_size, weight="bold"),
     rx.scroll_area(
       rx.table.root(
         rx.table.header(
