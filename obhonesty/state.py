@@ -366,7 +366,7 @@ class State(rx.State):
                             user.last_name.upper()}",
                         diet=user.diet,
                         allergies=user.allergies,
-                        # served="",
+                        served="",
                         tax_category="",
                         comment=true_values[0]))
         signups.sort(key=lambda x: x.receiver)
