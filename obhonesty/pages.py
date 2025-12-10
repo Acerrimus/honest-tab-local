@@ -632,7 +632,14 @@ def admin_dinner() -> rx.Component:
       rx.table.cell(signup.receiver),
       rx.table.cell(signup.diet),
       rx.table.cell(signup.allergies),
-      rx.table.cell(signup.comment)
+      rx.table.cell(signup.comment),
+      rx.table.cell(
+        rx.checkbox(
+            checked=signup.served_bool,
+            on_change=lambda val: State.set_served(signup.order_id, val),
+            disabled=signup.order_id == ""
+        )
+      )
     )
 
   return rx.container(rx.center(
@@ -658,6 +665,7 @@ def admin_dinner() -> rx.Component:
             rx.table.column_header_cell("Diet"),
             rx.table.column_header_cell("Allergies"),
             rx.table.column_header_cell("Volunteer"),
+            rx.table.column_header_cell("Served"),
           )
         ),
         rx.table.body(
@@ -675,7 +683,13 @@ def admin_breakfast() -> rx.Component:
       rx.table.cell(signup.time),
       rx.table.cell(signup.receiver),
       rx.table.cell(signup.diet),
-      rx.table.cell(signup.allergies)
+      rx.table.cell(signup.allergies),
+      rx.table.cell(
+        rx.checkbox(
+            checked=signup.served_bool,
+            on_change=lambda val: State.set_served(signup.order_id, val)
+        )
+      )
     )
 
   return rx.container(rx.center(
@@ -689,7 +703,8 @@ def admin_breakfast() -> rx.Component:
               rx.table.column_header_cell("Time"),
               rx.table.column_header_cell("Name"),
               rx.table.column_header_cell("Menu item"),
-              rx.table.column_header_cell("Allergies")
+              rx.table.column_header_cell("Allergies"),
+              rx.table.column_header_cell("Served")
             )
           ),
           rx.table.body(

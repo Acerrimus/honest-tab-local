@@ -19,6 +19,10 @@ class Order(rx.Base):
   tax_category: str
   comment: str
 
+  @property
+  def served_bool(self) -> bool:
+    return self.served.lower() in true_values
+    
   @staticmethod
   def from_dict(x: Dict[str, str]):
     return Order(
