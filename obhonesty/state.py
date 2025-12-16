@@ -1,4 +1,3 @@
-
 from datetime import datetime
 import asyncio
 from typing import Any, Dict, List, Optional
@@ -12,37 +11,33 @@ from obhonesty.item import Item
 from obhonesty.order import Order
 from obhonesty.sheet import user_sheet, item_sheet, order_sheet, admin_sheet
 
-
 class State(rx.State):
     """The app state."""
-    admin_data: Dict[str, Any]
-    users: List[User]
-    items: Dict[str, Item]
-    current_user: Optional[User]
-    new_nick_name: str
-    custom_item_price: str
-    orders: List[Order]
-    cancel_redirect: bool
-
+    admin_data: Dict[str, Any] = {}
+    users: List[User] = []
+    items: Dict[str, Item] = {}
+    current_user: Optional[User] = None
+    new_nick_name: str = ""
+    custom_item_price: str = ""
+    orders: List[Order] = []
+    cancel_redirect: bool = False
+    
     @rx.event(background=True)
     async def set_served(self, order_id: str, value: bool):
         # Calculate string value for sheet
         new_str = "TRUE" if value else "FALSE"
 
-        # 1. Update Backend (Google Sheet)
+        # 1. Update Backend (Google Sheet) - Added Safety Check
         if order_sheet and order_id:
             try:
                 cell = order_sheet.find(order_id)
-
                 try:
                     header_cell = order_sheet.find("served", in_row=1)
                     col_number = header_cell.col
-                except BaseException:
-                    print("Error: Could not find column header named 'served'")
-                    return
-                if cell:
-                    # 'served' is the 10th column in the sheet structure
-                    order_sheet.update_cell(cell.row, col_number, new_str)
+                    if cell:
+                        order_sheet.update_cell(cell.row, col_number, new_str)
+                except Exception as e:
+                    print(f"Error finding column header: {e}")
             except Exception as e:
                 print(f"Failed to update sheet: {e}")
 
@@ -52,7 +47,7 @@ class State(rx.State):
                 if order.order_id == order_id:
                     order.served = new_str
                     break
-            # Trigger UI refresh by re-assigning the list
+            # Trigger UI refresh explicitly
             self.orders = self.orders
 
     @rx.event
@@ -71,46 +66,42 @@ class State(rx.State):
     async def reload_sheet_data(self):
         async with self:
             self.cancel_redirect = True
-            user_data = user_sheet.get_all_records(
+            
+            # RESTORED SAFETY CHECKS from original code
+            user_data = [] if user_sheet is None else user_sheet.get_all_records(
                 expected_headers=[
-                    'nick_name',
-                    'first_name',
-                    'last_name',
-                    'phone_number',
-                    'email',
-                    'diet',
-                    'allergies',
-                    'volunteer',
-                    'away',
-                    'owes'])
-            item_data = item_sheet.get_all_records(expected_headers=[
-                'name', 'price', 'description', 'tax_category'
-            ])
-            order_data = order_sheet.get_all_records(
+                    'nick_name', 'first_name', 'last_name', 'phone_number', 'email',
+                    'diet', 'allergies', 'volunteer', 'away', 'owes'
+                ])
+            
+            item_data = [] if item_sheet is None else item_sheet.get_all_records(
                 expected_headers=[
-                    'order_id',
-                    'user',
-                    'time',
-                    'item',
-                    'quantity',
-                    'price',
-                    'total',
-                    'diet',
-                    'allergies',
-                    'served',
-                    'tax_category',
-                    'comment'])
-            self.admin_data = admin_sheet.get_all_records()[0]
+                    'name', 'price', 'description', 'tax_category'
+                ])
+            
+            order_data = [] if order_sheet is None else order_sheet.get_all_records(
+                expected_headers=[
+                    'order_id', 'user', 'time', 'item', 'quantity', 'price', 'total',
+                    'diet', 'allergies', 'served', 'tax_category', 'comment'
+                ])
+                
+            self.admin_data = {} if admin_sheet is None else admin_sheet.get_all_records()[0]
+            
             self.users = [
                 User.from_dict(x) for x in user_data if x['nick_name'] != ''
             ]
-            self.items = {x['name']: Item.from_dict(
-                x) for x in item_data if x['name'] != ''}
+            self.items = {
+                x['name']: Item.from_dict(x) for x in item_data if x['name'] != ''
+            }
             self.orders = [
                 Order.from_dict(x) for x in order_data
             ]
             self.users.sort(key=lambda x: x.nick_name)
-        yield rx.toast.info("Data reloaded", duration=1000)
+            
+        # if has_backend:
+        #     yield rx.toast.info("Data reloaded", duration=1000)
+        # else:
+        #     yield rx.toast.warning("No backend connection", duration=2000)
 
     @rx.event
     def redirect_to_user_page(self, user: User):
@@ -133,40 +124,45 @@ class State(rx.State):
         try:
             quantity = float(form_data['quantity'])
         except BaseException:
-            return rx.toast.error(
-                "Failed to register. Quantity must be a number")
-        order_sheet.append_row([
-            str(short_uid()),
-            self.current_user.nick_name,
-            str(datetime.now()),
-            item.name,
-            quantity,
-            item.price,
-            quantity * item.price,
-            "", "", "", "",
-            item.tax_category,
-            ""
-        ], table_range="A1")
-        return rx.toast.info(
-            f"'{item.name}' registered succesfully. Thank you!",
-            position="bottom-center"
-        )
+            return rx.toast.error("Failed to register. Quantity must be a number")
+        
+        # Added safety check
+        if order_sheet:
+            order_sheet.append_row([
+                str(short_uid()),
+                self.current_user.nick_name,
+                str(datetime.now()),
+                item.name,
+                quantity,
+                item.price,
+                quantity * item.price,
+                "", "", "", "",
+                item.tax_category,
+                ""
+            ], table_range="A1")
+            return rx.toast.info(
+                f"'{item.name}' registered succesfully. Thank you!",
+                position="bottom-center"
+            )
+        else:
+            return rx.toast.error("No backend connected")
 
     @rx.event
     def order_custom_item(self, form_data: dict):
         item_name = form_data['custom_item_name']
-        order_sheet.append_row([
-            str(short_uid()),
-            self.current_user.nick_name,
-            str(datetime.now()),
-            item_name,
-            1.0,
-            float(form_data['custom_item_price']),
-            float(form_data['custom_item_price']),
-            "", "", "", "",
-            form_data['tax_category'],
-            form_data['custom_item_description']
-        ], table_range="A1")
+        if order_sheet:
+            order_sheet.append_row([
+                str(short_uid()),
+                self.current_user.nick_name,
+                str(datetime.now()),
+                item_name,
+                1.0,
+                float(form_data['custom_item_price']),
+                float(form_data['custom_item_price']),
+                "", "", "", "",
+                form_data['tax_category'],
+                form_data['custom_item_description']
+            ], table_range="A1")
         return rx.redirect("/user")
 
     @rx.event
@@ -174,18 +170,21 @@ class State(rx.State):
         first_name = form_data['first_name'].upper().strip()
         last_name = form_data['last_name'].upper().strip()
         receiver = f"{first_name} {last_name}"
+        
+        # Check against existing signups
         if receiver in [order.receiver for order in self.dinner_signups]:
             return rx.toast.error(
                 "This person is already signed up, "
                 "please provide different name if you want to sign up another person.")
+        
         row = [
             str(short_uid()),
             self.current_user.nick_name,
             str(datetime.now()),
             "Dinner sign-up",
             1,
-            self.admin_data['dinner_price'],
-            self.admin_data['dinner_price'],
+            self.admin_data.get('dinner_price', 0),
+            self.admin_data.get('dinner_price', 0),
             receiver,
             form_data['diet'],
             form_data['allergies'],
@@ -193,7 +192,8 @@ class State(rx.State):
             "Food and beverage non-alcoholic",
             ""
         ]
-        order_sheet.append_row(row, table_range="A1")
+        if order_sheet:
+            order_sheet.append_row(row, table_range="A1")
         return rx.redirect("/user")
 
     @rx.event
@@ -204,8 +204,8 @@ class State(rx.State):
             str(datetime.now()),
             "Dinner sign-up",
             1,
-            self.admin_data['dinner_price'],
-            self.admin_data['dinner_price'],
+            self.admin_data.get('dinner_price', 0),
+            self.admin_data.get('dinner_price', 0),
             form_data['full_name'].upper().strip(),
             form_data['diet'],
             form_data['allergies'],
@@ -213,7 +213,8 @@ class State(rx.State):
             "Food and beverage non-alcoholic",
             ""
         ]
-        order_sheet.append_row(row, table_range="A1")
+        if order_sheet:
+            order_sheet.append_row(row, table_range="A1")
         return rx.redirect("/admin/dinner")
 
     @rx.event
@@ -221,6 +222,7 @@ class State(rx.State):
         first_name = form_data['first_name'].upper().strip()
         last_name = form_data['last_name'].upper().strip()
         receiver = f"{first_name} {last_name}"
+        
         if not form_data['menu_item'].lower().startswith("packed lunch") and receiver in [
             order.receiver for order in self.breakfast_signups
             if not order.diet.lower().startswith("packed lunch")
@@ -228,9 +230,13 @@ class State(rx.State):
             return rx.toast.error(
                 "This person is already signed up, "
                 "please provide different name if you want to sign up another person.")
+        
         menu_item = form_data['menu_item']
         key = f"{menu_item}_price"
-        price = self.admin_data[key] if not self.current_user.volunteer else 0.0
+        # Handle case where admin_data key might be missing
+        base_price = self.admin_data.get(key, 0.0)
+        price = base_price if not self.current_user.volunteer else 0.0
+        
         row = [
             str(short_uid()),
             self.current_user.nick_name,
@@ -246,17 +252,23 @@ class State(rx.State):
             "Food and beverage non-alcoholic",
             ""
         ]
-        order_sheet.append_row(row, table_range="A1")
+        if order_sheet:
+            order_sheet.append_row(row, table_range="A1")
         return rx.redirect("/user")
 
     @rx.event
     def submit_signup(self, form_data: dict):
-        user_sheet.append_row(list(form_data.values()), table_range="A1")
+        if user_sheet:
+            user_sheet.append_row(list(form_data.values()), table_range="A1")
         return rx.redirect("/")
 
     @rx.var(cache=False)
     def current_user_orders(self) -> List[Order]:
         filtered: List[Order] = []
+        # Added safety check for self.current_user
+        if not self.current_user:
+            return []
+            
         for order in self.orders:
             if order.user_nick_name == self.current_user.nick_name:
                 order_copy = order.copy()
@@ -280,10 +292,8 @@ class State(rx.State):
     @rx.var(cache=False)
     def invalid_custom_item_price(self) -> bool:
         try:
-            # Convert to float and check decimals
             float_val = float(self.custom_item_price)
-            # Optionally check decimal places
-            if len(str(float_val).split('.')[-2]) <= 2:  # For 2 decimal places
+            if len(str(float_val).split('.')[-1]) <= 2:
                 return False
             return True
         except ValueError:
@@ -293,7 +303,7 @@ class State(rx.State):
     def dinner_signup_available(self) -> int:
         try:
             deadline = datetime.strptime(
-                self.admin_data['dinner_signup_deadline'], "%H:%M")
+                self.admin_data.get('dinner_signup_deadline', "22:59"), "%H:%M")
         except BaseException:
             deadline = datetime.strptime("22:59", "%H:%M")
         now = datetime.now()
@@ -305,7 +315,7 @@ class State(rx.State):
     def breakfast_signup_available(self) -> bool:
         try:
             deadline = datetime.strptime(
-                self.admin_data['breakfast_signup_deadline'], "%H:%M")
+                self.admin_data.get('breakfast_signup_deadline', "22:59"), "%H:%M")
         except BaseException:
             deadline = datetime.strptime("22:59", "%H:%M")
         now = datetime.now()
@@ -329,12 +339,15 @@ class State(rx.State):
             try:
                 order_date = datetime.fromisoformat(order.time).date()
             except BaseException:
-                pass
-            if order.item == "Breakfast sign-up" and \
-                    order_date == datetime.today().date():
+                continue
+            
+            if order.item == "Breakfast sign-up" and order_date == datetime.today().date():
                 order_alt = order.copy()
-                order_alt.time = datetime.fromisoformat(
-                    order.time).strftime("%H:%M:%S")
+                try:
+                    order_alt.time = datetime.fromisoformat(
+                        order.time).strftime("%H:%M:%S")
+                except:
+                    pass
                 signups.append(order_alt)
         signups.sort(key=lambda x: x.time, reverse=True)
         return signups
@@ -346,12 +359,15 @@ class State(rx.State):
             try:
                 order_date = datetime.fromisoformat(order.time).date()
             except BaseException:
-                pass
-            if order.item == "Dinner sign-up" and \
-                    order_date == datetime.today().date():
+                continue
+                
+            if order.item == "Dinner sign-up" and order_date == datetime.today().date():
                 signups.append(order)
+                
         for user in self.users:
             if user.volunteer:
+                # Cleaned up f-string formatting
+                full_name = f"{user.first_name.upper()} {user.last_name.upper()}"
                 signups.append(
                     Order(
                         order_id="",
@@ -361,9 +377,7 @@ class State(rx.State):
                         quantity=1.0,
                         price=0.0,
                         total=0.0,
-                        receiver=f"{
-                            user.first_name.upper()} {
-                            user.last_name.upper()}",
+                        receiver=full_name,
                         diet=user.diet,
                         allergies=user.allergies,
                         served="",
