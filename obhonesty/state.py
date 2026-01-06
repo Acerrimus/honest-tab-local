@@ -3,6 +3,7 @@ import asyncio
 from typing import Any, Dict, List, Optional
 
 import reflex as rx
+import stripe
 
 from obhonesty.aux import short_uid, str_cmp
 from obhonesty.constants import Diet, true_values
@@ -10,6 +11,10 @@ from obhonesty.user import User
 from obhonesty.item import Item
 from obhonesty.order import Order
 from obhonesty.sheet import user_sheet, item_sheet, order_sheet, admin_sheet
+
+from dotenv import load_dotenv
+load_dotenv()
+stripe_secret_key = os.getenv('STRIPE_SECRET_KEY')
 
 class State(rx.State):
     """The app state."""
@@ -22,12 +27,25 @@ class State(rx.State):
     orders: List[Order] = []
     cancel_redirect: bool = False
     
+    # --- NEW: Payment State Variables ---
+    payment_qr_code: str = ""
+    is_generating_payment: bool = False
+    # ------------------------------------
+
+    # --- NEW: Item Payment State ---
+    temp_quantity: float = 1.0 
+    def set_temp_quantity(self, value: str):
+        try:
+            self.temp_quantity = float(value)
+        except ValueError:
+            self.temp_quantity = 1.0
+
     @rx.event(background=True)
     async def set_served(self, order_id: str, value: bool):
         # Calculate string value for sheet
         new_str = "TRUE" if value else "FALSE"
 
-        # 1. Update Backend (Google Sheet) - Added Safety Check
+        # 1. Update Backend (Google Sheet)
         if order_sheet and order_id:
             try:
                 cell = order_sheet.find(order_id)
@@ -47,7 +65,6 @@ class State(rx.State):
                 if order.order_id == order_id:
                     order.served = new_str
                     break
-            # Trigger UI refresh explicitly
             self.orders = self.orders
 
     @rx.event
@@ -67,7 +84,6 @@ class State(rx.State):
         async with self:
             self.cancel_redirect = True
             
-            # RESTORED SAFETY CHECKS from original code
             user_data = [] if user_sheet is None else user_sheet.get_all_records(
                 expected_headers=[
                     'nick_name', 'first_name', 'last_name', 'phone_number', 'email',
@@ -126,7 +142,6 @@ class State(rx.State):
         except BaseException:
             return rx.toast.error("Failed to register. Quantity must be a number")
         
-        # Added safety check
         if order_sheet:
             order_sheet.append_row([
                 str(short_uid()),
@@ -171,7 +186,6 @@ class State(rx.State):
         last_name = form_data['last_name'].upper().strip()
         receiver = f"{first_name} {last_name}"
         
-        # Check against existing signups
         if receiver in [order.receiver for order in self.dinner_signups]:
             return rx.toast.error(
                 "This person is already signed up, "
@@ -233,7 +247,6 @@ class State(rx.State):
         
         menu_item = form_data['menu_item']
         key = f"{menu_item}_price"
-        # Handle case where admin_data key might be missing
         base_price = self.admin_data.get(key, 0.0)
         price = base_price if not self.current_user.volunteer else 0.0
         
@@ -261,11 +274,75 @@ class State(rx.State):
         if user_sheet:
             user_sheet.append_row(list(form_data.values()), table_range="A1")
         return rx.redirect("/")
+    
+    # --- Payment Logic Handlers ---
+    @rx.event(background=True)
+    async def generate_item_payment_qr(self, item_name: str, unit_price: float):
+        """Generates a Stripe QR for a specific item * quantity"""
+        async with self:
+            self.is_generating_payment = True
+            self.payment_qr_code = "" 
+            
+            # Calculate total for this specific transaction
+            quantity = self.temp_quantity if self.temp_quantity > 0 else 1.0
+            total_amount = unit_price * quantity
+            
+            # Stripe expects amounts in cents (integers)
+            amount_in_cents = int(total_amount * 100)
+
+        # 1. Create Stripe Checkout Session
+        try:
+            stripe.api_key = self.stripe_secret_key
+            
+            # This creates a payment page hosted by Stripe
+            session = stripe.checkout.Session.create(
+                payment_method_types=['card'],
+                line_items=[{
+                    'price_data': {
+                        'currency': 'eur',
+                        'product_data': {
+                            'name': f"{quantity}x {item_name} (Self-Service)",
+                        },
+                        'unit_amount': amount_in_cents, # Total amount for the line
+                    },
+                    'quantity': 1, # We calculated total already, so line quantity is 1
+                }],
+                mode='payment',
+                success_url='https://example.com/success', # Replace with your app URL
+                cancel_url='https://example.com/cancel',
+            )
+            
+            payment_url = session.url
+            
+            async with self:
+                # 2. Generate QR Code pointing to that Stripe URL
+                self.payment_qr_code = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={payment_url}"
+
+        except Exception as e:
+            print(f"Stripe Error: {e}")
+            async with self:
+                # Fallback for testing if no API key is set
+                qr_data = f"Stripe Config Missing. Pay €{total_amount:.2f} for {item_name}"
+                self.payment_qr_code = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={qr_data}"
+        
+        async with self:
+            self.is_generating_payment = False
+
+    @rx.event
+    def close_payment_dialog(self):
+        """Reset payment state and quantity"""
+        self.payment_qr_code = ""
+        self.is_generating_payment = False
+        self.temp_quantity = 1.0 # Reset quantity for next time
+        """Reset payment state when dialog closes"""
+        self.payment_qr_code = ""
+        self.is_generating_payment = False
+    
+    # -----------------------------------
 
     @rx.var(cache=False)
     def current_user_orders(self) -> List[Order]:
         filtered: List[Order] = []
-        # Added safety check for self.current_user
         if not self.current_user:
             return []
             
@@ -366,7 +443,6 @@ class State(rx.State):
                 
         for user in self.users:
             if user.volunteer:
-                # Cleaned up f-string formatting
                 full_name = f"{user.first_name.upper()} {user.last_name.upper()}"
                 signups.append(
                     Order(

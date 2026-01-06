@@ -38,6 +38,7 @@ more-itertools==10.8.0
 nh3==0.3.2
 oauthlib==3.3.1
 packaging==24.2
+pillow==12.0.0
 platformdirs==4.5.0
 psutil==6.1.1
 pyasn1==0.6.1
@@ -51,6 +52,7 @@ pyproject_hooks==1.2.0
 python-engineio==4.12.3
 python-multipart==0.0.20
 python-socketio==5.15.0
+qrcode==8.2
 readme_renderer==44.0
 redis==5.3.1
 reflex==0.7.0
@@ -69,6 +71,7 @@ SQLAlchemy==2.0.44
 sqlmodel==0.0.27
 starlette==0.50.0
 starlette-admin==0.15.1
+stripe==14.0.1
 tomlkit==0.13.3
 twine==6.2.0
 typer==0.20.0
