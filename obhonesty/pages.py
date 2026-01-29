@@ -176,13 +176,19 @@ def stripe_payment_dialog(name, amount) -> rx.Component:
               ~State.is_stripe_session_paid,
               rx.text("Having issues paying? Please close and contact reception.", size=default_text_size),
           ),
+          rx.cond(            
+              ~State.is_stripe_session_paid,
+              rx.button("Back", on_click=State.close_item_dialog)
+          ),
           rx.dialog.close(
-              rx.button("Close", on_click=State.close_payment_dialog)
+              rx.button("Close", on_click=State.close_item_dialog)
           )
       ),
       justify="end",
       margin_top="20px"
-      )
+      ),
+      on_interact_outside=rx.prevent_default,
+      on_escape_key_down=rx.prevent_default,
   )
 
 def item_button(item: Item) -> rx.Component:
@@ -193,8 +199,11 @@ def item_button(item: Item) -> rx.Component:
           color_scheme="blue",
           size=default_button_size,
           # Reset temp quantity to 1 every time we open a fresh dialog
-          on_click=lambda: State.set_temp_quantity("1") 
+          on_click=lambda: State.open_item_dialog(item.name)
       )),
+      rx.cond(
+          State.is_stripe_dialog_active,
+          stripe_payment_dialog(item.name, item.price * State.temp_quantity),
       rx.dialog.content(
           rx.dialog.title(title),
           rx.dialog.description(item.description),
@@ -218,35 +227,30 @@ def item_button(item: Item) -> rx.Component:
                   rx.text("Total: €", State.temp_quantity * item.price, weight="bold"),
                   rx.flex(
                       # We use the payment_dialog logic but trigger it differently
-                      rx.dialog.root(
-                          rx.dialog.trigger(
-                              rx.button(
-                                  rx.icon("credit-card"),
-                                  rx.text("Pay Now", size=default_button_text_size),
-                                  color_scheme="green",
-                                  size='2',
-                                  type="button",
-                                  # Pass specific item details to backend
-                                  on_click=lambda: State.generate_item_payment_qr(item.name, item.price)
-                              )
-                          ),
-                          stripe_payment_dialog(item.name, item.price * State.temp_quantity)
+                      rx.button(
+                          rx.icon("credit-card"),
+                          rx.text("Pay Now", size=default_button_text_size),
+                          color_scheme="green",
+                          size='2',
+                          type="button",
+                          # Pass specific item details to backend
+                          on_click=lambda: State.show_stripe_item_payment_dialog(item.name, item.price * State.temp_quantity)
                       ),
-                      # -----------------------------------------
                       rx.dialog.close(
-                          rx.button("Register (Tab)", type="submit", size=default_button_size)
-                      ), 
-                      rx.dialog.close(rx.button(f"Cancel")),
+                          rx.button("Register (Tab)", size=default_button_size, on_click=State.order_item)
+                      ),
+                      rx.dialog.close(
+                          rx.button(f"Cancel", on_click=State.close_item_dialog)
+                      ),
                       spacing="3",
                       justify="end",
                       margin_top="10px"
                   ),
-                  on_submit=State.order_item
               ), 
               spacing="3"
           ),
-      ),
-  )
+      )),
+      )
 
 def user_page() -> rx.Component:
   return rx.container(rx.center(
@@ -310,7 +314,6 @@ def user_page() -> rx.Component:
                         rx.text("Pay tab", size=default_button_text_size),
                         on_click=rx.redirect("/info"),
                         size=default_button_size,
-                        disabled=~State.dinner_signup_available,
                         color_scheme="yellow"
                     ),
                     rx.text(
@@ -668,20 +671,24 @@ def user_info_page() -> rx.Component:
         rx.text(f"Total amount due: €{two_decimal_points(State.get_user_debt)} ",
             size=default_text_size, weight="bold"),
         rx.hstack(
-                    rx.dialog.root(rx.dialog.trigger(rx.button(
+            rx.dialog.root(
+                rx.dialog.trigger(
+                    rx.button(
                         rx.icon("euro"),
                         rx.text("Pay tab", size=default_button_text_size, weight="bold"),
                         on_click=lambda: State.generate_item_payment_qr("tab", State.get_user_debt),
                         size=default_button_size,
-                        disabled=~State.dinner_signup_available,
                         color_scheme="yellow",
-                    )), stripe_payment_dialog("tab", State.get_user_debt)),
-                    rx.text(
-                        f"Pay your tab securely via Stripe. Please review your registrations below before paying.",
-                        size=default_text_size
-                    ),
-                    align="center"
+                    )
                 ),
+                stripe_payment_dialog("tab", State.get_user_debt)
+            ),
+            rx.text(
+                f"Pay your tab securely via Stripe. Please review your registrations below before paying.",
+                size=default_text_size
+            ),
+            align="center"
+        ),
         rx.text("Registrations:", size=default_text_size, weight="bold"),
         rx.scroll_area(
             rx.table.root(

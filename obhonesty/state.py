@@ -31,6 +31,8 @@ class State(rx.State):
     orders: List[Order] = []
     cancel_redirect: bool = False
     is_item_button_dialog_active: bool = False
+    ordered_item: str = ""
+
     
     # --- NEW: Payment State Variables ---
     current_stripe_session_id: str = ""
@@ -142,30 +144,40 @@ class State(rx.State):
             return rx.redirect("/")
 
     @rx.event
-    def order_item(self, form_data: dict):
-        item = self.items[form_data['item_name']]
+    def order_item(self):
+        item = self.items[self.ordered_item]
+
         try:
-            quantity = float(form_data['quantity'])
+            quantity = float(self.temp_quantity)
+
         except BaseException:
             return rx.toast.error("Failed to register. Quantity must be a number")
         
-        if order_sheet:
-            order_sheet.append_row([
+        now = str(datetime.now())
+        row = [
                 str(short_uid()),
                 self.current_user.nick_name,
-                str(datetime.now()),
+                now,
                 item.name,
                 quantity,
                 item.price,
                 quantity * item.price,
                 "", "", "", "",
                 item.tax_category,
-                ""
-            ], table_range="A1")
+                "",
+                self.is_stripe_session_paid
+            ]
+
+        if self.is_stripe_session_paid:
+            row += [now, "stripe", "tablet"]
+
+        if order_sheet:
+            order_sheet.append_row(row, table_range="A1")
             return rx.toast.info(
                 f"'{item.name}' registered succesfully. Thank you!",
                 position="bottom-center"
             )
+        
         else:
             return rx.toast.error("No backend connected")
 
@@ -329,9 +341,7 @@ class State(rx.State):
                 qr_data = f"Stripe Config Missing. Pay €{total_amount:.2f} for {item_name}"
                 self.payment_qr_code = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={qr_data}"
 
-              
         if self.current_stripe_session_id != "":
-            # 3. Start checking payment status
             return State.check_stripe_payment_status
 
     @rx.event(background=True)
@@ -353,23 +363,30 @@ class State(rx.State):
             if not result:
                 await asyncio.sleep(1)
                 continue
-            
+              
             async with self:
                 self.is_stripe_session_paid = True
-            
+
+            if self.ordered_item != "":
+                return State.order_item
+
             return
+
+    def open_item_dialog(self, item_name: str):
+        self.temp_quantity = 1
+        self.ordered_item = item_name
 
     @rx.event
     def show_stripe_item_payment_dialog(self, item_name: str, amount: float):
         self.is_stripe_dialog_active = True
         return State.generate_item_payment_qr(item_name, amount)
 
-    @rx.event
-    def close_stripe_item_payment_dialog(self):
+    def close_item_dialog(self):
         self.payment_qr_code = ""
         self.current_stripe_session_id = ""
         self.is_stripe_session_paid = False
         self.is_stripe_dialog_active = False
+        self.ordered_item = ""
 
     # -----------------------------------
 
