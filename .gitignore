@@ -7,4 +7,4 @@ __pycache__/
 .venv
 .credentials
 .env
-
+.DS_Store
