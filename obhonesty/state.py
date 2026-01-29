@@ -14,6 +14,7 @@ from obhonesty.sheet import user_sheet, item_sheet, order_sheet, admin_sheet
 
 from dotenv import load_dotenv
 load_dotenv()
+import os
 stripe_secret_key = os.getenv('STRIPE_SECRET_KEY')
 
 class State(rx.State):

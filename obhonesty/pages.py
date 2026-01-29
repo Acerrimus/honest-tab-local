@@ -144,102 +144,136 @@ def payment_dialog() -> rx.Component:
         ),
     )
 
+def stripe_payment_dialog(name, amount) -> rx.Component:
+  State.generate_item_payment_qr(name, amount)
+  return rx.dialog.content(
+      rx.dialog.title(f"Pay for {name}"),
+      rx.center(
+          rx.vstack(
+              rx.cond(
+                  State.is_generating_payment,
+                  rx.spinner(size="3"),
+              ),
+              rx.cond(
+                  State.payment_qr_code != "",
+                  rx.image(
+                      src=State.payment_qr_code, 
+                      width="250px", 
+                      height="250px",
+                      border="1px solid #ddd"
+                  ),
+              ),
+              # Display calculated total based on temp_quantity
+              rx.text(f"Scan to pay via Stripe"),
+              rx.text("Total: €", amount, weight="bold"),
+              spacing="4"
+          )
+      ),
+      rx.flex(
+          rx.dialog.close(
+              rx.button("Close", on_click=State.close_payment_dialog)
+          ),
+          justify="end",
+          margin_top="20px"
+      )
+  )
+
+def item_button(item: Item) -> rx.Component:
+  title: str = f"{item.name} (€{two_decimal_points(item.price)})"
+  return rx.dialog.root(
+      rx.dialog.trigger(rx.button(
+          rx.text(title, size=default_button_text_size),
+          color_scheme="blue",
+          size=default_button_size,
+          # Reset temp quantity to 1 every time we open a fresh dialog
+          on_click=lambda: State.set_temp_quantity("1") 
+      )),
+      rx.dialog.content(
+          rx.dialog.title(title),
+          rx.dialog.description(item.description),
+          rx.vstack(
+              rx.form(
+                  rx.flex(
+                      rx.input(
+                          name="item_name",
+                          type="hidden",
+                          value=item.name
+                      ),
+                      rx.input(
+                          placeholder="Quantity",
+                          name="quantity",
+                          default_value='1',
+                          type="number",
+                          # --- Track input in real-time ---
+                          on_change=State.set_temp_quantity 
+                      )
+                  ),
+                  rx.text("Total: €", State.temp_quantity * item.price, weight="bold"),
+                  rx.flex(
+                      # We use the payment_dialog logic but trigger it differently
+                      rx.dialog.root(
+                          rx.dialog.trigger(
+                              rx.button(
+                                  rx.icon("credit-card"),
+                                  rx.text("Pay Now", size=default_button_text_size),
+                                  color_scheme="green",
+                                  size='2',
+                                  type="button",
+                                  # Pass specific item details to backend
+                                  on_click=lambda: State.generate_item_payment_qr(item.name, item.price)
+                              )
+                          ),
+                          # rx.dialog.content(
+                          #     rx.dialog.title(f"Pay for {item.name}"),
+                          #     rx.center(
+                          #         rx.vstack(
+                          #             rx.cond(
+                          #                 State.is_generating_payment,
+                          #                 rx.spinner(size="3"),
+                          #             ),
+                          #             rx.cond(
+                          #                 State.payment_qr_code != "",
+                          #                 rx.image(
+                          #                     src=State.payment_qr_code, 
+                          #                     width="250px", 
+                          #                     height="250px",
+                          #                     border="1px solid #ddd"
+                          #                 ),
+                          #             ),
+                          #             # Display calculated total based on temp_quantity
+                          #             rx.text(f"Scan to pay via Stripe"),
+                          #             rx.text("Total: €", State.temp_quantity * item.price, weight="bold"),
+
+                          #             spacing="4"
+                          #         )
+                          #     ),
+                          #     rx.flex(
+                          #         rx.dialog.close(
+                          #             rx.button("Close", on_click=State.close_payment_dialog)
+                          #         ),
+                          #         justify="end",
+                          #         margin_top="20px"
+                          #     )
+                          # )
+                          stripe_payment_dialog(item.name, item.price * State.temp_quantity)
+                      ),
+                      # -----------------------------------------
+                      rx.dialog.close(
+                          rx.button("Register (Tab)", type="submit", size=default_button_size)
+                      ), 
+                      rx.dialog.close(rx.button(f"Cancel")),
+                      spacing="3",
+                      justify="end",
+                      margin_top="10px"
+                  ),
+                  on_submit=State.order_item
+              ), 
+              spacing="3"
+          ),
+      )
+  )
 
 def user_page() -> rx.Component:
-  def item_button(item: Item) -> rx.Component:
-        title: str = f"{item.name} (€{two_decimal_points(item.price)})"
-        return rx.dialog.root(
-            rx.dialog.trigger(rx.button(
-                rx.text(title, size=default_button_text_size),
-                color_scheme="blue",
-                size=default_button_size,
-                # Reset temp quantity to 1 every time we open a fresh dialog
-                on_click=lambda: State.set_temp_quantity("1") 
-            )),
-            rx.dialog.content(
-                rx.dialog.title(title),
-                rx.dialog.description(item.description),
-                rx.vstack(
-                    rx.form(
-                        rx.flex(
-                            rx.input(
-                                name="item_name",
-                                type="hidden",
-                                value=item.name
-                            ),
-                            rx.input(
-                                placeholder="Quantity",
-                                name="quantity",
-                                default_value='1',
-                                type="number",
-                                # --- Track input in real-time ---
-                                on_change=State.set_temp_quantity 
-                            )
-                        ),
-                        rx.text("Total: €", State.temp_quantity * item.price, weight="bold"),
-                        rx.flex(
-                            # We use the payment_dialog logic but trigger it differently
-                            rx.dialog.root(
-                                rx.dialog.trigger(
-                                    rx.button(
-                                        rx.icon("credit-card"),
-                                        rx.text("Pay Now", size=default_button_text_size),
-                                        color_scheme="green",
-                                        size='2',
-                                        type="button",
-                                        # Pass specific item details to backend
-                                        on_click=lambda: State.generate_item_payment_qr(item.name, item.price)
-                                    )
-                                ),
-                                rx.dialog.content(
-                                    rx.dialog.title(f"Pay for {item.name}"),
-                                    rx.center(
-                                        rx.vstack(
-                                            rx.cond(
-                                                State.is_generating_payment,
-                                                rx.spinner(size="3"),
-                                            ),
-                                            rx.cond(
-                                                State.payment_qr_code != "",
-                                                rx.image(
-                                                    src=State.payment_qr_code, 
-                                                    width="250px", 
-                                                    height="250px",
-                                                    border="1px solid #ddd"
-                                                ),
-                                            ),
-                                            # Display calculated total based on temp_quantity
-                                            rx.text(f"Scan to pay via Stripe"),
-                                            rx.text("Total: €", State.temp_quantity * item.price, weight="bold"),
-
-                                            spacing="4"
-                                        )
-                                    ),
-                                    rx.flex(
-                                        rx.dialog.close(
-                                            rx.button("Close", on_click=State.close_payment_dialog)
-                                        ),
-                                        justify="end",
-                                        margin_top="20px"
-                                    )
-                                )
-                            ),
-                            # -----------------------------------------
-                            rx.dialog.close(
-                                rx.button("Register (Tab)", type="submit", size=default_button_size)
-                            ), 
-                            rx.dialog.close(rx.button(f"Cancel")),
-                            spacing="3",
-                            justify="end",
-                            margin_top="10px"
-                        ),
-                        on_submit=State.order_item
-                    ), 
-                    spacing="3"
-                ),
-            )
-        )
-
   return rx.container(rx.center(
         rx.cond(
             State.no_user,
@@ -291,6 +325,21 @@ def user_page() -> rx.Component:
                     rx.text(
                         f"(last sign-up at {State.admin_data['dinner_signup_deadline']}, "
                         f"for late sign-ups, please ask the kitchen staff)",
+                        size=default_text_size
+                    ),
+                    align="center"
+                ),
+                rx.hstack(
+                    rx.button(
+                        rx.icon("euro"),
+                        rx.text("Pay tab", size=default_button_text_size),
+                        on_click=rx.redirect("/info"),
+                        size=default_button_size,
+                        disabled=~State.dinner_signup_available,
+                        color_scheme="yellow"
+                    ),
+                    rx.text(
+                        f"Pay your tab securely via Stripe.",
                         size=default_text_size
                     ),
                     align="center"
@@ -643,6 +692,21 @@ def user_info_page() -> rx.Component:
         ),
         rx.text(f"Total amount due: €{two_decimal_points(State.get_user_debt)} ",
             size=default_text_size, weight="bold"),
+        rx.hstack(
+                    rx.dialog.root(rx.dialog.trigger(rx.button(
+                        rx.icon("euro"),
+                        rx.text("Pay tab", size=default_button_text_size, weight="bold"),
+                        on_click=lambda: State.generate_item_payment_qr("tab", State.get_user_debt),
+                        size=default_button_size,
+                        disabled=~State.dinner_signup_available,
+                        color_scheme="yellow",
+                    )), stripe_payment_dialog("tab", State.get_user_debt)),
+                    rx.text(
+                        f"Pay your tab securely via Stripe. Please review your registrations below before paying.",
+                        size=default_text_size
+                    ),
+                    align="center"
+                ),
         rx.text("Registrations:", size=default_text_size, weight="bold"),
         rx.scroll_area(
             rx.table.root(
