@@ -1,6 +1,8 @@
 from datetime import datetime
 import asyncio
 from typing import Any, Dict, List, Optional
+from urllib.parse import quote
+
 
 import reflex as rx
 import stripe
@@ -15,7 +17,9 @@ from obhonesty.sheet import user_sheet, item_sheet, order_sheet, admin_sheet
 from dotenv import load_dotenv
 load_dotenv()
 import os
-stripe_secret_key = os.getenv('STRIPE_SECRET_KEY')
+
+stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
+
 
 class State(rx.State):
     """The app state."""
@@ -29,8 +33,9 @@ class State(rx.State):
     cancel_redirect: bool = False
     
     # --- NEW: Payment State Variables ---
+    current_stripe_session_id: str = ""
     payment_qr_code: str = ""
-    is_generating_payment: bool = False
+    is_stripe_session_paid: bool = False
     # ------------------------------------
 
     # --- NEW: Item Payment State ---
@@ -281,20 +286,18 @@ class State(rx.State):
     async def generate_item_payment_qr(self, item_name: str, unit_price: float):
         """Generates a Stripe QR for a specific item * quantity"""
         async with self:
-            self.is_generating_payment = True
+            self.is_stripe_session_paid = False
             self.payment_qr_code = "" 
             
-            # Calculate total for this specific transaction
-            quantity = self.temp_quantity if self.temp_quantity > 0 else 1.0
-            total_amount = unit_price * quantity
-            
-            # Stripe expects amounts in cents (integers)
-            amount_in_cents = int(total_amount * 100)
+        # Calculate total for this specific transaction
+        quantity = self.temp_quantity if self.temp_quantity > 0 else 1.0
+        total_amount = unit_price * quantity
+        
+        # Stripe expects amounts in cents (integers)
+        amount_in_cents = int(total_amount * 100)
 
         # 1. Create Stripe Checkout Session
         try:
-            stripe.api_key = self.stripe_secret_key
-            
             # This creates a payment page hosted by Stripe
             session = stripe.checkout.Session.create(
                 payment_method_types=['card'],
@@ -302,7 +305,7 @@ class State(rx.State):
                     'price_data': {
                         'currency': 'eur',
                         'product_data': {
-                            'name': f"{quantity}x {item_name} (Self-Service)",
+                            'name': "Honesty bar tab" if item_name == "tab" else f"{quantity}x {item_name} (Self-Service)",
                         },
                         'unit_amount': amount_in_cents, # Total amount for the line
                     },
@@ -312,12 +315,11 @@ class State(rx.State):
                 success_url='https://example.com/success', # Replace with your app URL
                 cancel_url='https://example.com/cancel',
             )
-            
-            payment_url = session.url
-            
+
             async with self:
                 # 2. Generate QR Code pointing to that Stripe URL
-                self.payment_qr_code = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={payment_url}"
+                self.current_stripe_session_id = session.id
+                self.payment_qr_code = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={quote(session.url)}"
 
         except Exception as e:
             print(f"Stripe Error: {e}")
@@ -325,19 +327,44 @@ class State(rx.State):
                 # Fallback for testing if no API key is set
                 qr_data = f"Stripe Config Missing. Pay €{total_amount:.2f} for {item_name}"
                 self.payment_qr_code = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={qr_data}"
-        
-        async with self:
-            self.is_generating_payment = False
 
+              
+        if self.current_stripe_session_id != "":
+            # 3. Start checking payment status
+            return State.check_stripe_payment_status
+
+    @rx.event(background=True)
+    async def check_stripe_payment_status(self):
+        """Periodically checks if payment was successful"""
+        while True:
+            if self.current_stripe_session_id == "" or self.is_stripe_session_paid:
+                return
+            
+            result = False
+            
+            try:
+                session = stripe.checkout.Session.retrieve(self.current_stripe_session_id)
+                result = session.payment_status == "paid"
+                
+            except Exception as e:
+                print(f"Stripe Error: {e}")
+
+            if not result:
+                await asyncio.sleep(1)
+                continue
+            
+            async with self:
+                self.is_stripe_session_paid = True
+
+            return
+    
     @rx.event
     def close_payment_dialog(self):
         """Reset payment state and quantity"""
         self.payment_qr_code = ""
-        self.is_generating_payment = False
         self.temp_quantity = 1.0 # Reset quantity for next time
-        """Reset payment state when dialog closes"""
-        self.payment_qr_code = ""
-        self.is_generating_payment = False
+        self.current_stripe_session_id = ""
+        self.is_stripe_session_paid = False
     
     # -----------------------------------
 

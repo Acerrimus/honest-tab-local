@@ -1,3 +1,4 @@
+import os
 from typing import Callable
 
 import reflex as rx
@@ -145,36 +146,42 @@ def payment_dialog() -> rx.Component:
     )
 
 def stripe_payment_dialog(name, amount) -> rx.Component:
-  State.generate_item_payment_qr(name, amount)
   return rx.dialog.content(
       rx.dialog.title(f"Pay for {name}"),
       rx.center(
           rx.vstack(
               rx.cond(
-                  State.is_generating_payment,
-                  rx.spinner(size="3"),
+                State.is_stripe_session_paid,
+                rx.vstack(
+                    rx.text("Paid! Thank you.", weight="bold"),
+                    rx.text("Press close below to finish.")
+                ),
+                rx.vstack(
+                    rx.cond(
+                        State.payment_qr_code != "",
+                        rx.image(
+                            src=State.payment_qr_code, 
+                            width="250px", 
+                            height="250px",
+                            border="1px solid #ddd"
+                        ),
+                        rx.spinner(size="3"),
+                    ),
+                    rx.text(f"Scan to pay via Stripe"),
+                    rx.text("Total: €", two_decimal_points(amount), weight="bold"),
+                    spacing="4"
+                ),
               ),
-              rx.cond(
-                  State.payment_qr_code != "",
-                  rx.image(
-                      src=State.payment_qr_code, 
-                      width="250px", 
-                      height="250px",
-                      border="1px solid #ddd"
-                  ),
-              ),
-              # Display calculated total based on temp_quantity
-              rx.text(f"Scan to pay via Stripe"),
-              rx.text("Total: €", amount, weight="bold"),
-              spacing="4"
-          )
-      ),
-      rx.flex(
+          rx.cond(
+              ~State.is_stripe_session_paid,
+              rx.text("Having issues paying? Please close and contact reception.", size=default_text_size),
+          ),
           rx.dialog.close(
               rx.button("Close", on_click=State.close_payment_dialog)
-          ),
-          justify="end",
-          margin_top="20px"
+          )
+      ),
+      justify="end",
+      margin_top="20px"
       )
   )
 
@@ -223,38 +230,6 @@ def item_button(item: Item) -> rx.Component:
                                   on_click=lambda: State.generate_item_payment_qr(item.name, item.price)
                               )
                           ),
-                          # rx.dialog.content(
-                          #     rx.dialog.title(f"Pay for {item.name}"),
-                          #     rx.center(
-                          #         rx.vstack(
-                          #             rx.cond(
-                          #                 State.is_generating_payment,
-                          #                 rx.spinner(size="3"),
-                          #             ),
-                          #             rx.cond(
-                          #                 State.payment_qr_code != "",
-                          #                 rx.image(
-                          #                     src=State.payment_qr_code, 
-                          #                     width="250px", 
-                          #                     height="250px",
-                          #                     border="1px solid #ddd"
-                          #                 ),
-                          #             ),
-                          #             # Display calculated total based on temp_quantity
-                          #             rx.text(f"Scan to pay via Stripe"),
-                          #             rx.text("Total: €", State.temp_quantity * item.price, weight="bold"),
-
-                          #             spacing="4"
-                          #         )
-                          #     ),
-                          #     rx.flex(
-                          #         rx.dialog.close(
-                          #             rx.button("Close", on_click=State.close_payment_dialog)
-                          #         ),
-                          #         justify="end",
-                          #         margin_top="20px"
-                          #     )
-                          # )
                           stripe_payment_dialog(item.name, item.price * State.temp_quantity)
                       ),
                       # -----------------------------------------
@@ -270,7 +245,7 @@ def item_button(item: Item) -> rx.Component:
               ), 
               spacing="3"
           ),
-      )
+      ),
   )
 
 def user_page() -> rx.Component:
