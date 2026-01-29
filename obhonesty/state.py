@@ -20,7 +20,6 @@ import os
 
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 
-
 class State(rx.State):
     """The app state."""
     admin_data: Dict[str, Any] = {}
@@ -31,11 +30,13 @@ class State(rx.State):
     custom_item_price: str = ""
     orders: List[Order] = []
     cancel_redirect: bool = False
+    is_item_button_dialog_active: bool = False
     
     # --- NEW: Payment State Variables ---
     current_stripe_session_id: str = ""
     payment_qr_code: str = ""
     is_stripe_session_paid: bool = False
+    is_stripe_dialog_active: bool = False
     # ------------------------------------
 
     # --- NEW: Item Payment State ---
@@ -355,17 +356,21 @@ class State(rx.State):
             
             async with self:
                 self.is_stripe_session_paid = True
-
+            
             return
-    
+
     @rx.event
-    def close_payment_dialog(self):
-        """Reset payment state and quantity"""
+    def show_stripe_item_payment_dialog(self, item_name: str, amount: float):
+        self.is_stripe_dialog_active = True
+        return State.generate_item_payment_qr(item_name, amount)
+
+    @rx.event
+    def close_stripe_item_payment_dialog(self):
         self.payment_qr_code = ""
-        self.temp_quantity = 1.0 # Reset quantity for next time
         self.current_stripe_session_id = ""
         self.is_stripe_session_paid = False
-    
+        self.is_stripe_dialog_active = False
+
     # -----------------------------------
 
     @rx.var(cache=False)
