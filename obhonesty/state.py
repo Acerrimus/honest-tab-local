@@ -152,8 +152,9 @@ class State(rx.State):
 
         except BaseException:
             return rx.toast.error("Failed to register. Quantity must be a number")
+
+        now = datetime.now().isoformat()
         
-        now = str(datetime.now())
         row = [
                 str(short_uid()),
                 self.current_user.nick_name,
@@ -172,7 +173,7 @@ class State(rx.State):
             row += [now, "stripe", "tablet"]
 
         if order_sheet:
-            order_sheet.append_row(row, table_range="A1")
+            order_sheet.append_row(row, value_input_option="USER_ENTERED", table_range="A1")
             return rx.toast.info(
                 f"'{item.name}' registered succesfully. Thank you!",
                 position="bottom-center"
