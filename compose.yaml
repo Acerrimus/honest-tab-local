@@ -1,0 +1,10 @@
+services:
+  app:
+    build: .
+    container_name: reflex_app
+    volumes:
+      - .:/app
+    ports:
+      - "3000:3000"
+      - "8000:8000"
+    command: reflex run
