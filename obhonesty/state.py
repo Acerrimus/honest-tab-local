@@ -17,6 +17,7 @@ from obhonesty.sheet import user_sheet, item_sheet, order_sheet, admin_sheet
 from dotenv import load_dotenv
 load_dotenv()
 import os
+from gspread import Cell
 
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 
@@ -107,7 +108,8 @@ class State(rx.State):
             order_data = [] if order_sheet is None else order_sheet.get_all_records(
                 expected_headers=[
                     'order_id', 'user', 'time', 'item', 'quantity', 'price', 'total',
-                    'diet', 'allergies', 'served', 'tax_category', 'comment'
+                    'diet', 'allergies', 'served', 'tax_category', 'comment', 'paid',
+                    'paid_time', 'method', 'checkout_staff'
                 ])
                 
             self.admin_data = {} if admin_sheet is None else admin_sheet.get_all_records()[0]
@@ -152,9 +154,8 @@ class State(rx.State):
 
         except BaseException:
             return rx.toast.error("Failed to register. Quantity must be a number")
-
         now = datetime.now().isoformat()
-        
+
         row = [
                 str(short_uid()),
                 self.current_user.nick_name,
@@ -178,7 +179,6 @@ class State(rx.State):
                 f"'{item.name}' registered succesfully. Thank you!",
                 position="bottom-center"
             )
-        
         else:
             return rx.toast.error("No backend connected")
 
@@ -295,6 +295,38 @@ class State(rx.State):
             user_sheet.append_row(list(form_data.values()), table_range="A1")
         return rx.redirect("/")
     
+    @rx.event
+    def pay_current_tab(self):
+        if not order_sheet:
+            return rx.error("No backend connected")
+        
+        def filter_current_user_orders(order_enumerate: list[int, Order]) -> bool:
+            order = order_enumerate[1]
+            return order.user_nick_name == self.current_user.nick_name and not order.paid_bool
+        
+        current_users_unpaid_orders = list(filter(filter_current_user_orders, [[i + 2, v] for i, v in enumerate(self.orders)]))
+        cells = []
+        now = datetime.now().isoformat()
+
+        for row_num, _ in current_users_unpaid_orders:
+            for col_num, value in [
+                  [14, True],
+                  [15, now],
+                  [16, "stripe"],
+                  [17, "tablet"]
+                ]:
+                  cells.append(Cell(row=row_num, col=col_num, value=value))
+        try:
+            order_sheet.update_cells(cells)
+
+        except Exception as e:
+            return rx.toast.error(f"Error updating cells: {e}")
+        
+        return [
+            rx.toast.success("Tab paid successfully!"),
+            State.reload_sheet_data
+        ]
+
     # --- Payment Logic Handlers ---
     @rx.event(background=True)
     async def generate_item_payment_qr(self, item_name: str, unit_price: float):
@@ -370,8 +402,9 @@ class State(rx.State):
 
             if self.ordered_item != "":
                 return State.order_item
-
-            return
+            
+            # if no item has been ordered then it must be the entire tab.
+            return State.pay_current_tab
 
     def open_item_dialog(self, item_name: str):
         self.temp_quantity = 1
@@ -398,7 +431,7 @@ class State(rx.State):
             return []
             
         for order in self.orders:
-            if order.user_nick_name == self.current_user.nick_name:
+            if order.user_nick_name == self.current_user.nick_name and not order.paid_bool:
                 order_copy = order.copy()
                 try:
                     order_copy.time = datetime.fromisoformat(

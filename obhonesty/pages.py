@@ -237,7 +237,7 @@ def item_button(item: Item) -> rx.Component:
                           on_click=lambda: State.show_stripe_item_payment_dialog(item.name, item.price * State.temp_quantity)
                       ),
                       rx.dialog.close(
-                          rx.button("Register (Tab)", size=default_button_size, on_click=State.order_item)
+                          rx.button("Register (Tab)", size=default_button_size, on_click=[State.order_item, State.close_item_dialog])
                       ),
                       rx.dialog.close(
                           rx.button(f"Cancel", on_click=State.close_item_dialog)
