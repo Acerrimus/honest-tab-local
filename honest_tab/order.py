@@ -3,6 +3,7 @@ import reflex as rx
 
 from typing import Optional
 from honest_tab.aux import safe_float_convert, value_or
+from .constants import true_values
 
 class Order(rx.Base):
   order_id: str
@@ -19,6 +20,10 @@ class Order(rx.Base):
   tax_category: str
   comment: str
 
+  @property
+  def served_bool(self) -> bool:
+    return self.served.lower() in true_values
+  
   @staticmethod
   def from_dict(x: Dict[str, str]):
     return Order(
@@ -34,6 +39,10 @@ class Order(rx.Base):
       allergies=x['allergies'],
       served=x['served'],
       tax_category=x['tax_category'],
-      comment=x['comment']
+      comment=x['comment'],
+      paid=x.get('paid'),
+      paid_time=x.get('paid_time'),
+      method=x.get('method'),
+      checkout_staff=x.get('checkout_staff')
     )
   

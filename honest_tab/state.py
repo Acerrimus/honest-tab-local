@@ -281,74 +281,156 @@ class State(rx.State):
 
   @rx.var(cache=False)
   def breakfast_signups(self) -> List[Order]:
-    signups: List[Order] = []
-    for order in self.orders:
-      try:
-        order_date = datetime.fromisoformat(order.time).date()
-      except:
-        pass
-      if order.item == "Breakfast sign-up" and \
-          order_date == datetime.today().date():
-        order_alt = order.copy()
-        order_alt.time = datetime.fromisoformat(order.time).strftime("%H:%M:%S")
-        signups.append(order_alt)
-    signups.sort(key=lambda x: x.time, reverse=True)
-    return signups
+      signups: List[Order] = []
+      for order in self.orders:
+          try:
+              order_date = datetime.fromisoformat(order.time).date()
+          except BaseException:
+              continue
+          
+          if order.item == "Breakfast sign-up" and order_date == datetime.today().date():
+              order_alt = order.copy()
+              try:
+                  order_alt.time = datetime.fromisoformat(
+                      order.time).strftime("%H:%M:%S")
+              except:
+                  pass
+              signups.append(order_alt)
+      signups.sort(key=lambda x: x.time, reverse=True)
+      return signups
   
   @rx.var(cache=False)
   def dinner_signups(self) -> List[Order]:
-    signups: List[Order] = []
-    for order in self.orders:
-      try:
-        order_date = datetime.fromisoformat(order.time).date()
-      except:
-        pass
-      if order.item == "Dinner sign-up" and \
-          order_date == datetime.today().date():
-        signups.append(order)
-    for user in self.users:
-      if user.volunteer:
-        signups.append(Order(order_id="",
-          user_nick_name=user.nick_name, time="",
-          item="Dinner sign-up (volunteer)",
-          quantity=1.0, price=0.0, total=0.0,
-          receiver=f"{user.first_name.upper()} {user.last_name.upper()}",
-          diet=user.diet, allergies=user.allergies, served="", tax_category="",
-          comment=true_values[0]
-        ))
-    signups.sort(key=lambda x: x.receiver)    
-    signups.sort(key=lambda x: x.diet)    
-    signups.sort(key=lambda x: x.comment)    
-    return signups
+      signups: List[Order] = []
+      for order in self.orders:
+          try:
+              order_date = datetime.fromisoformat(order.time).date()
+          except BaseException:
+              continue
+              
+          if order.item == "Dinner sign-up" and order_date == datetime.today().date():
+              signups.append(order)
+              
+      for user in self.users:
+          if user.volunteer:
+              full_name = f"{user.first_name.upper()} {user.last_name.upper()}"
+              signups.append(
+                  Order(
+                      order_id="",
+                      user_nick_name=user.nick_name,
+                      time="",
+                      item="Dinner sign-up (volunteer)",
+                      quantity=1.0,
+                      price=0.0,
+                      total=0.0,
+                      receiver=full_name,
+                      diet=user.diet,
+                      allergies=user.allergies,
+                      served=False,
+                      tax_category="",
+                      comment=true_values[0]))
+      signups.sort(key=lambda x: x.receiver)
+      signups.sort(key=lambda x: x.diet)
+      signups.sort(key=lambda x: x.comment)
+      return signups
+
   
+
+  @rx.event(background=True)
+  async def set_served(self, order_id: str, value: bool):
+      # Calculate string value for sheet
+      new_str = "TRUE" if value else "FALSE"
+
+      # 1. Update Backend (Google Sheet)
+      if order_sheet and order_id:
+          try:
+              cell = order_sheet.find(order_id)
+              try:
+                  header_cell = order_sheet.find("served", in_row=1)
+                  col_number = header_cell.col
+                  if cell:
+                      order_sheet.update_cell(cell.row, col_number, new_str)
+              except Exception as e:
+                  print(f"Error finding column header: {e}")
+          except Exception as e:
+              print(f"Failed to update sheet: {e}")
+      else:
+          print("Could not find order")
+
+      # 2. Update Local State (UI)
+      async with self:
+          for order in self.orders:
+              if order.order_id == order_id:
+                  order.served = new_str
+                  break
+          self.orders = self.orders
+
+
+
+# ====== GET TOTAL DINNER COUNTS ======
+
   @rx.var(cache=False)
   def dinner_count(self) -> int:
-    return len(self.dinner_signups)
-  
+      return len(self.dinner_signups)
+
   @rx.var(cache=False)
   def dinner_count_vegan(self) -> int:
-    count = 0
-    for order in self.dinner_signups:
-      if str_cmp(order.diet, str(Diet.VEGAN)):
-        count += 1
-    return count
-  
+      count = 0
+      for order in self.dinner_signups:
+          if str_cmp(order.diet, str(Diet.VEGAN)):
+              count += 1
+      return count
+
   @rx.var(cache=False)
   def dinner_count_vegetarian(self) -> int:
-    count = 0
-    for order in self.dinner_signups:
-      if str_cmp(order.diet, str(Diet.VEGETARIAN)):
-        count += 1
-    return count
-  
+      count = 0
+      for order in self.dinner_signups:
+          if str_cmp(order.diet, str(Diet.VEGETARIAN)):
+              count += 1
+      return count
+
   @rx.var(cache=False)
   def dinner_count_meat(self) -> int:
-    count = 0
-    for order in self.dinner_signups:
-      if str_cmp(order.diet, str(Diet.MEAT)):
-        count += 1
-    return count
+      count = 0
+      for order in self.dinner_signups:
+          if str_cmp(order.diet, str(Diet.MEAT)):
+              count += 1
+      return count
   
+
+# ====== GET VOLUNTEERS DINNER COUNTS ======
+
+  @rx.var(cache=False)
+  def dinner_count_volunteers(self) -> int:
+      count = 0
+      for order in self.dinner_signups:
+          if str_cmp(order.item, str("Dinner sign-up (volunteer)")):
+              count += 1
+      return count
+  
+  @rx.var(cache=False)
+  def dinner_count_vegan_volunteers(self) -> int:
+      count = 0
+      for order in self.dinner_signups:
+          if str_cmp(order.diet, str(Diet.VEGAN)) and str_cmp(order.item, str("Dinner sign-up (volunteer)")):
+              count += 1
+      return count
+
+  @rx.var(cache=False)
+  def dinner_count_vegetarian_volunteers(self) -> int:
+      count = 0
+      for order in self.dinner_signups:
+          if str_cmp(order.diet, str(Diet.VEGETARIAN)) and str_cmp(order.item, str("Dinner sign-up (volunteer)")):
+              count += 1
+      return count
+
+  @rx.var(cache=False)
+  def dinner_count_meat_volunteers(self) -> int:
+      count = 0
+      for order in self.dinner_signups:
+          if str_cmp(order.diet, str(Diet.MEAT)) and str_cmp(order.item, str("Dinner sign-up (volunteer)")):
+              count += 1
+      return count
   @rx.var(cache=False)
   def get_user_debt(self) -> float:
     return sum([order.total for order in self.current_user_orders])

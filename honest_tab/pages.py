@@ -625,83 +625,126 @@ def admin_refresh_top_bar() -> rx.Component:
   )
 
 def admin_dinner() -> rx.Component:
-  def show_signup(signup: Order):
-    return rx.table.row( 
-      rx.table.cell(signup.receiver),
-      rx.table.cell(signup.diet),
-      rx.table.cell(signup.allergies),
-      rx.table.cell(signup.comment)
-    )
+    def show_signup(signup: Order):
+        return rx.table.row( 
+            rx.table.cell(signup.receiver),
+            rx.table.cell(signup.diet),
+            rx.table.cell(signup.allergies),
+            rx.table.cell(signup.comment),
+            rx.table.cell(
+                rx.checkbox(
+                    checked=signup.served_bool,
+                    on_change=lambda val, oid=signup.order_id: State.set_served(oid, val)
+                )
+            ),
+            key=signup.order_id
+            
+        )
 
-  return rx.container(rx.center(
-    rx.vstack(
-      rx.heading("Dinner", size=default_heading_size), 
-      rx.hstack(
-        admin_refresh_top_bar(),
-        rx.button(
-          rx.text("Late sign-up", size=default_button_text_size),
-          on_click=rx.redirect("/admin/late"),
-          size=default_button_size
-        ),
-        spacing="2"
-      ),
-      rx.text(f"Total eating dinner: {State.dinner_count}"),
-      rx.text(f"Vegan: {State.dinner_count_vegan}"),
-      rx.text(f"Vegatarian: {State.dinner_count_vegetarian}"),
-      rx.text(f"Meat: {State.dinner_count_meat}"),
-      rx.table.root(
-        rx.table.header(
-          rx.table.row(
-            rx.table.column_header_cell("Name"),
-            rx.table.column_header_cell("Diet"),
-            rx.table.column_header_cell("Allergies"),
-            rx.table.column_header_cell("Volunteer"),
-          )
-        ),
-        rx.table.body(
-          rx.foreach(State.dinner_signups, show_signup)
-        ),
-        variant="surface",
-        size="3"
-      )
+    return rx.container(rx.center(
+        rx.vstack(
+            rx.heading("Dinner", size=default_heading_size), 
+            rx.hstack(
+                admin_refresh_top_bar(),
+                rx.button(
+                    rx.text("Late sign-up", size=default_button_text_size),
+                    on_click=rx.redirect("/admin/late"),
+                    size=default_button_size
+                ),
+                spacing="2"
+            ),
+            # Make the two columns share the available space evenly
+            rx.hstack(
+                rx.vstack(
+                    rx.text(f"Total eating dinner: {State.dinner_count}"),
+
+                    rx.text(f"Meat: {State.dinner_count_meat}"),
+                    rx.text(f"Vegatarian: {State.dinner_count_vegetarian}"),                  
+                    rx.text(f"Vegan: {State.dinner_count_vegan}"),
+                    flex="1"
+                ),
+                rx.vstack(
+                    rx.text(f"Guests eating dinner: {State.dinner_count_volunteers}"),
+                    rx.text(f"Meat: {State.dinner_count_meat - State.dinner_count_meat_volunteers}"),
+                    rx.text(f"Vegatarian: {State.dinner_count_vegetarian - State.dinner_count_vegetarian_volunteers}"),
+                    rx.text(f"Vegan: {State.dinner_count_vegan - State.dinner_count_vegan_volunteers}"),
+                    flex="1"
+                ),
+                rx.vstack(
+                    rx.text(f"Volunteers eating dinner: {State.dinner_count - State.dinner_count_volunteers}"),
+                    rx.text(f"Meat: {State.dinner_count_meat_volunteers}"),
+                    rx.text(f"Vegatarian: {State.dinner_count_vegetarian_volunteers}"),
+                    rx.text(f"Vegan: {State.dinner_count_vegan_volunteers}"),
+                    flex="1"
+                ),
+                spacing="4",
+                justify="between",
+                width="100%"
+            ),
+            rx.table.root(
+                rx.table.header(
+                    rx.table.row(
+                        rx.table.column_header_cell("Name"),
+                        rx.table.column_header_cell("Diet"),
+                        rx.table.column_header_cell("Allergies"),
+                        rx.table.column_header_cell("Volunteer"),
+                        rx.table.column_header_cell("Served"),
+                    )
+                ),
+                rx.table.body(
+                    rx.foreach(State.dinner_signups, show_signup)
+                ),
+                variant="surface",
+                size="3"
+            )
+        )
     )
-  ))
+)
 
 def admin_breakfast() -> rx.Component:
-  def show_signup(signup: Order):
-    return rx.table.row( 
-      rx.table.cell(signup.time),
-      rx.table.cell(signup.receiver),
-      rx.table.cell(signup.diet),
-      rx.table.cell(signup.allergies)
-    )
+    def show_signup(signup: Order):
+        return rx.table.row( 
+            rx.table.cell(signup.time),
+            rx.table.cell(signup.receiver),
+            rx.table.cell(signup.diet),
+            rx.table.cell(signup.allergies),
+            rx.table.cell(
+                rx.checkbox(
+                    checked=signup.served_bool,
+                    on_change=lambda val, oid=signup.order_id: State.set_served(oid, val)
+                )
+            ),
+            key=signup.order_id
+        )
 
-  return rx.container(rx.center(
-    rx.vstack(
-      rx.heading("Breakfast", size=default_heading_size),
-      admin_refresh_top_bar(), 
-      rx.scroll_area(
-        rx.table.root(
-          rx.table.header(
-            rx.table.row(
-              rx.table.column_header_cell("Time"),
-              rx.table.column_header_cell("Name"),
-              rx.table.column_header_cell("Menu item"),
-              rx.table.column_header_cell("Allergies")
-            )
-          ),
-          rx.table.body(
-            rx.foreach(State.breakfast_signups, show_signup)
-          ),
-          variant="surface",
-          size="3"
-        ),
-        type="always",
-        scrollbars="vertical",
-        style={"height": "80vh"}
-      ),
-    )
-  ))
+    return rx.container(rx.center(
+        rx.vstack(
+            rx.heading("Breakfast", size=default_heading_size),
+            admin_refresh_top_bar(), 
+            rx.scroll_area(
+                rx.table.root(
+                    rx.table.header(
+                        rx.table.row(
+                            rx.table.column_header_cell("Time"),
+                            rx.table.column_header_cell("Name"),
+                            rx.table.column_header_cell("Menu item"),
+                            rx.table.column_header_cell("Allergies"),
+                            rx.table.column_header_cell("Served")
+                        )
+                    ),
+                    rx.table.body(
+                        rx.foreach(State.breakfast_signups, show_signup)
+                    ),
+                    variant="surface",
+                    size="3"
+                ),
+                type="always",
+                scrollbars="vertical",
+                style={"height": "80vh"}
+            ),
+        )
+    ))
+
 
 def admin_user_page() -> rx.Component:
   return rx.container(rx.center(rx.vstack(
