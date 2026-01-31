@@ -5,6 +5,7 @@ assets/external/
 *.db
 __pycache__/
 .venv
+.venvs
 .credentials
 .env
 .DS_Store
