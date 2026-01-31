@@ -815,23 +815,24 @@ def admin_dinner() -> rx.Component:
             rx.hstack(
                 rx.vstack(
                     rx.text(f"Total eating dinner: {State.dinner_count}"),
-                    rx.text(f"Vegan: {State.dinner_count_vegan}"),
-                    rx.text(f"Vegatarian: {State.dinner_count_vegetarian}"),
+
                     rx.text(f"Meat: {State.dinner_count_meat}"),
+                    rx.text(f"Vegatarian: {State.dinner_count_vegetarian}"),                  
+                    rx.text(f"Vegan: {State.dinner_count_vegan}"),
                     flex="1"
                 ),
                 rx.vstack(
                     rx.text(f"Guests eating dinner: {State.dinner_count_volunteers}"),
-                    rx.text(f"Vegan: {State.dinner_count_vegan - State.dinner_count_vegan_volunteers}"),
-                    rx.text(f"Vegatarian: {State.dinner_count_vegetarian - State.dinner_count_vegetarian_volunteers}"),
                     rx.text(f"Meat: {State.dinner_count_meat - State.dinner_count_meat_volunteers}"),
+                    rx.text(f"Vegatarian: {State.dinner_count_vegetarian - State.dinner_count_vegetarian_volunteers}"),
+                    rx.text(f"Vegan: {State.dinner_count_vegan - State.dinner_count_vegan_volunteers}"),
                     flex="1"
                 ),
                 rx.vstack(
                     rx.text(f"Volunteers eating dinner: {State.dinner_count - State.dinner_count_volunteers}"),
-                    rx.text(f"Vegan: {State.dinner_count_vegan_volunteers}"),
-                    rx.text(f"Vegatarian: {State.dinner_count_vegetarian_volunteers}"),
                     rx.text(f"Meat: {State.dinner_count_meat_volunteers}"),
+                    rx.text(f"Vegatarian: {State.dinner_count_vegetarian_volunteers}"),
+                    rx.text(f"Vegan: {State.dinner_count_vegan_volunteers}"),
                     flex="1"
                 ),
                 spacing="4",
