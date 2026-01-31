@@ -792,10 +792,11 @@ def admin_dinner() -> rx.Component:
             rx.table.cell(
                 rx.checkbox(
                     checked=signup.served_bool,
-                    on_change=lambda val: State.set_served(signup.order_id, val),
-                    # disabled=signup.order_id == ""
+                    on_change=lambda val, oid=signup.order_id: State.set_served(oid, val)
                 )
-            )
+            ),
+            key=signup.order_id
+            
         )
 
     return rx.container(rx.center(
@@ -867,9 +868,10 @@ def admin_breakfast() -> rx.Component:
             rx.table.cell(
                 rx.checkbox(
                     checked=signup.served_bool,
-                    on_change=lambda val: State.set_served(signup.order_id, val)
+                    on_change=lambda val, oid=signup.order_id: State.set_served(oid, val)
                 )
-            )
+            ),
+            key=signup.order_id
         )
 
     return rx.container(rx.center(

@@ -56,18 +56,20 @@ class State(rx.State):
         new_str = "TRUE" if value else "FALSE"
 
         # 1. Update Backend (Google Sheet)
-        # if order_sheet and order_id:
-        #     try:
-        #         cell = order_sheet.find(order_id)
-        #         try:
-        #             header_cell = order_sheet.find("served", in_row=1)
-        #             col_number = header_cell.col
-        #             if cell:
-        #                 order_sheet.update_cell(cell.row, col_number, new_str)
-        #         except Exception as e:
-        #             print(f"Error finding column header: {e}")
-        #     except Exception as e:
-        #         print(f"Failed to update sheet: {e}")
+        if order_sheet and order_id:
+            try:
+                cell = order_sheet.find(order_id)
+                try:
+                    header_cell = order_sheet.find("served", in_row=1)
+                    col_number = header_cell.col
+                    if cell:
+                        order_sheet.update_cell(cell.row, col_number, new_str)
+                except Exception as e:
+                    print(f"Error finding column header: {e}")
+            except Exception as e:
+                print(f"Failed to update sheet: {e}")
+        else:
+            print("Could not find order")
 
         # 2. Update Local State (UI)
         async with self:
