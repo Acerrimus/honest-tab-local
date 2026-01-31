@@ -793,7 +793,7 @@ def admin_dinner() -> rx.Component:
                 rx.checkbox(
                     checked=signup.served_bool,
                     on_change=lambda val: State.set_served(signup.order_id, val),
-                    disabled=signup.order_id == ""
+                    # disabled=signup.order_id == ""
                 )
             )
         )
