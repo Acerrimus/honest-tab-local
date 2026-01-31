@@ -810,10 +810,33 @@ def admin_dinner() -> rx.Component:
                 ),
                 spacing="2"
             ),
-            rx.text(f"Total eating dinner: {State.dinner_count}"),
-            rx.text(f"Vegan: {State.dinner_count_vegan}"),
-            rx.text(f"Vegatarian: {State.dinner_count_vegetarian}"),
-            rx.text(f"Meat: {State.dinner_count_meat}"),
+            # Make the two columns share the available space evenly
+            rx.hstack(
+                rx.vstack(
+                    rx.text(f"Total eating dinner: {State.dinner_count}"),
+                    rx.text(f"Vegan: {State.dinner_count_vegan}"),
+                    rx.text(f"Vegatarian: {State.dinner_count_vegetarian}"),
+                    rx.text(f"Meat: {State.dinner_count_meat}"),
+                    flex="1"
+                ),
+                rx.vstack(
+                    rx.text(f"Guests eating dinner: {State.dinner_count_volunteers}"),
+                    rx.text(f"Vegan: {State.dinner_count_vegan - State.dinner_count_vegan_volunteers}"),
+                    rx.text(f"Vegatarian: {State.dinner_count_vegetarian - State.dinner_count_vegetarian_volunteers}"),
+                    rx.text(f"Meat: {State.dinner_count_meat - State.dinner_count_meat_volunteers}"),
+                    flex="1"
+                ),
+                rx.vstack(
+                    rx.text(f"Volunteers eating dinner: {State.dinner_count - State.dinner_count_volunteers}"),
+                    rx.text(f"Vegan: {State.dinner_count_vegan_volunteers}"),
+                    rx.text(f"Vegatarian: {State.dinner_count_vegetarian_volunteers}"),
+                    rx.text(f"Meat: {State.dinner_count_meat_volunteers}"),
+                    flex="1"
+                ),
+                spacing="4",
+                justify="between",
+                width="100%"
+            ),
             rx.table.root(
                 rx.table.header(
                     rx.table.row(
@@ -831,7 +854,8 @@ def admin_dinner() -> rx.Component:
                 size="3"
             )
         )
-    ))
+    )
+)
 
 def admin_breakfast() -> rx.Component:
     def show_signup(signup: Order):

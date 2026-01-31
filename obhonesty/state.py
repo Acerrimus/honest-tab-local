@@ -56,18 +56,18 @@ class State(rx.State):
         new_str = "TRUE" if value else "FALSE"
 
         # 1. Update Backend (Google Sheet)
-        if order_sheet and order_id:
-            try:
-                cell = order_sheet.find(order_id)
-                try:
-                    header_cell = order_sheet.find("served", in_row=1)
-                    col_number = header_cell.col
-                    if cell:
-                        order_sheet.update_cell(cell.row, col_number, new_str)
-                except Exception as e:
-                    print(f"Error finding column header: {e}")
-            except Exception as e:
-                print(f"Failed to update sheet: {e}")
+        # if order_sheet and order_id:
+        #     try:
+        #         cell = order_sheet.find(order_id)
+        #         try:
+        #             header_cell = order_sheet.find("served", in_row=1)
+        #             col_number = header_cell.col
+        #             if cell:
+        #                 order_sheet.update_cell(cell.row, col_number, new_str)
+        #         except Exception as e:
+        #             print(f"Error finding column header: {e}")
+        #     except Exception as e:
+        #         print(f"Failed to update sheet: {e}")
 
         # 2. Update Local State (UI)
         async with self:
@@ -540,13 +540,16 @@ class State(rx.State):
                         receiver=full_name,
                         diet=user.diet,
                         allergies=user.allergies,
-                        served="",
+                        served=False,
                         tax_category="",
                         comment=true_values[0]))
         signups.sort(key=lambda x: x.receiver)
         signups.sort(key=lambda x: x.diet)
         signups.sort(key=lambda x: x.comment)
         return signups
+
+
+# ====== GET TOTAL DINNER COUNTS ======
 
     @rx.var(cache=False)
     def dinner_count(self) -> int:
@@ -575,6 +578,42 @@ class State(rx.State):
             if str_cmp(order.diet, str(Diet.MEAT)):
                 count += 1
         return count
+    
+
+# ====== GET VOLUNTEERS DINNER COUNTS ======
+
+    @rx.var(cache=False)
+    def dinner_count_volunteers(self) -> int:
+        count = 0
+        for order in self.dinner_signups:
+            if str_cmp(order.item, str("Dinner sign-up (volunteer)")):
+                count += 1
+        return count
+    
+    @rx.var(cache=False)
+    def dinner_count_vegan_volunteers(self) -> int:
+        count = 0
+        for order in self.dinner_signups:
+            if str_cmp(order.diet, str(Diet.VEGAN)) and str_cmp(order.item, str("Dinner sign-up (volunteer)")):
+                count += 1
+        return count
+
+    @rx.var(cache=False)
+    def dinner_count_vegetarian_volunteers(self) -> int:
+        count = 0
+        for order in self.dinner_signups:
+            if str_cmp(order.diet, str(Diet.VEGETARIAN)) and str_cmp(order.item, str("Dinner sign-up (volunteer)")):
+                count += 1
+        return count
+
+    @rx.var(cache=False)
+    def dinner_count_meat_volunteers(self) -> int:
+        count = 0
+        for order in self.dinner_signups:
+            if str_cmp(order.diet, str(Diet.MEAT)) and str_cmp(order.item, str("Dinner sign-up (volunteer)")):
+                count += 1
+        return count
+
 
     @rx.var(cache=False)
     def get_user_debt(self) -> float:
