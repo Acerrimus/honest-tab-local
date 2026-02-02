@@ -35,20 +35,45 @@ class State(rx.State):
     ordered_item: str = ""
 
     
-    # --- NEW: Payment State Variables ---
+    # --- Payment State Variables ---
     current_stripe_session_id: str = ""
     payment_qr_code: str = ""
     is_stripe_session_paid: bool = False
     is_stripe_dialog_active: bool = False
     # ------------------------------------
 
-    # --- NEW: Item Payment State ---
+    # --- Item Payment State ---
     temp_quantity: float = 1.0 
+
+    # --- Dinner State ---
+    dinner_signup_first_name: str = ""
+    dinner_signup_last_name: str = ""
+    dinner_signup_dietary_preference: str = ""
+    dinner_signup_allergies: str = ""
+    # -----------------------------
     def set_temp_quantity(self, value: str):
         try:
             self.temp_quantity = float(value)
         except ValueError:
             self.temp_quantity = 1.0
+
+    def set_dinner_signup_first_name(self, value: str):
+        self.dinner_signup_first_name = value.strip()
+
+    def set_dinner_signup_last_name(self, value: str):
+        self.dinner_signup_last_name = value.strip()
+
+    def set_dinner_dietary_preference(self, value: str):
+        self.dinner_signup_dietary_preference = value
+
+    def set_dinner_allergies(self, value: str):
+        self.dinner_signup_allergies = value.strip()
+
+    def set_dinner_signup_default_values(self):
+        self.dinner_signup_first_name = self.current_user.first_name
+        self.dinner_signup_last_name = self.current_user.last_name
+        self.dinner_signup_dietary_preference = self.current_user.diet
+        self.dinner_signup_allergies = self.current_user.allergies
 
     @rx.event(background=True)
     async def set_served(self, order_id: str, value: bool):
@@ -78,6 +103,9 @@ class State(rx.State):
                     order.served = new_str
                     break
             self.orders = self.orders
+
+    def set_dinner_as_ordered_item(self):
+        self.ordered_item = "dinner"
 
     @rx.event
     def cancel_timeout(self):
@@ -203,33 +231,39 @@ class State(rx.State):
         return rx.redirect("/user")
 
     @rx.event
-    def order_dinner(self, form_data: dict):
-        first_name = form_data['first_name'].upper().strip()
-        last_name = form_data['last_name'].upper().strip()
-        receiver = f"{first_name} {last_name}"
+    def order_dinner(self):
+        first_name = self.dinner_signup_first_name
+        last_name = self.dinner_signup_last_name
+        receiver = f"{first_name} {last_name}".upper()
         
         if receiver in [order.receiver for order in self.dinner_signups]:
             return rx.toast.error(
                 "This person is already signed up, "
                 "please provide different name if you want to sign up another person.")
         
+        now = datetime.now().isoformat()
         row = [
             str(short_uid()),
             self.current_user.nick_name,
-            str(datetime.now()),
+            now,
             "Dinner sign-up",
             1,
             self.admin_data.get('dinner_price', 0),
             self.admin_data.get('dinner_price', 0),
             receiver,
-            form_data['diet'],
-            form_data['allergies'],
+            self.dinner_signup_dietary_preference,
+            self.dinner_signup_allergies,
             "",
             "Food and beverage non-alcoholic",
-            ""
+            "",
+            self.is_stripe_session_paid
         ]
+
+        if self.is_stripe_session_paid:
+            row += [now, "stripe", "tablet"]
+
         if order_sheet:
-            order_sheet.append_row(row, table_range="A1")
+            order_sheet.append_row(row, table_range="A1", value_input_option="USER_ENTERED")
         return rx.redirect("/user")
 
     @rx.event
@@ -403,6 +437,8 @@ class State(rx.State):
                 self.is_stripe_session_paid = True
 
             if self.ordered_item != "":
+                if self.ordered_item == "dinner":
+                    return State.order_dinner
                 return State.order_item
             
             # if no item has been ordered then it must be the entire tab.

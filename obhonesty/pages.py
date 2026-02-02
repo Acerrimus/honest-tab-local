@@ -487,9 +487,9 @@ def user_signup_page() -> rx.Component:
     )
 
 def dinner_signup_page() -> rx.Component:
-    return rx.container(rx.center(
-        rx.vstack(
-            rx.form(
+    return rx.container(
+        rx.center(
+            rx.vstack(
                 rx.vstack(
                     rx.heading("Sign up for dinner", size=default_heading_size),
                     rx.text(
@@ -506,43 +506,65 @@ def dinner_signup_page() -> rx.Component:
                         placeholder="First name of dinner guest",
                         name="first_name",
                         default_value=State.current_user.first_name,
-                        required=True
+                        required=True,
+                        on_change=State.set_dinner_signup_first_name
                     ),
                     rx.text("Last name of dinner guest", weight="bold"),
                     rx.input(
                         placeholder="Last name of dinner guest",
                         name="last_name",
                         default_value=State.current_user.last_name,
-                        required=True
+                        required=True,
+                        on_change=State.set_dinner_signup_last_name
                     ),
                     rx.text("Dietary preferences", weight="bold"),
                     rx.select(
                         [str(x) for x in Diet],
                         default_value=State.current_user.diet,
-                        name="diet"
+                        name="diet",
+                        on_change=State.set_dinner_dietary_preference,
                     ),
                     rx.text("Allergies", weight="bold"),
                     rx.input(
                         default_value=State.current_user.allergies,
-                        name="allergies"
+                        name="allergies",
+                        on_change=State.set_dinner_allergies
                     ),
                     rx.button(
                         rx.text("Register", size=default_button_text_size),
                         type="submit",
-                        size=default_button_size
+                        size=default_button_size,
+                        on_click=State.order_dinner
+                    ),
+                    rx.dialog.root(
+                        rx.dialog.trigger(
+                            rx.button(
+                                rx.icon("credit-card"),
+                                rx.text("Pay Now", size=default_button_text_size),
+                                color_scheme="green",
+                                size=default_button_size,
+                                type="button",
+                                on_click=[
+                                    State.set_dinner_as_ordered_item,
+                                    lambda: State.generate_item_payment_qr(
+                                        "dinner", State.admin_data['dinner_price']
+                                        )
+                                    ]
+                            )
+                        ),                 
+                        stripe_payment_dialog("dinner", State.admin_data['dinner_price'])
+                    ),
+                    rx.button(
+                        rx.text("Cancel", size=default_button_text_size),
+                        on_click=rx.redirect("/user"),
+                        size=default_button_size,
+                        color_scheme='red'
                     )
                 ),
-                on_submit=State.order_dinner,
-                reset_on_submit=True
-            ),
-            rx.button(
-                rx.text("Cancel", size=default_button_text_size),
-                on_click=rx.redirect("/user"),
-                size=default_button_size,
-                color_scheme='red'
             )
-        )
-    ))
+        ),
+        on_mount=State.set_dinner_signup_default_values,
+    )
 
 def late_dinner_signup_page() -> rx.Component:
     return rx.container(rx.center(
