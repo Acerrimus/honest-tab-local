@@ -269,7 +269,7 @@ class State(rx.State):
         
         if is_guest_paying_now:
             self.ordered_item = "dinner"
-            return State.generate_item_payment_qr
+            return [rx.toast.info(self.ordered_item), State.generate_item_payment_qr]
         return State.order_dinner
     
     
@@ -380,7 +380,7 @@ class State(rx.State):
             
         if self.ordered_item == "dinner":
             item_name = "dinner"
-            unit_price = State.admin_data['dinner_price']
+            unit_price = self.admin_data['dinner_price']
         # Calculate total for this specific transaction
         quantity = self.temp_quantity if self.temp_quantity > 0 else 1.0
         total_amount = unit_price * quantity

@@ -537,14 +537,16 @@ def dinner_signup_page() -> rx.Component:
                         on_click=State.sign_guest_up_for_dinner
                     ),
                     rx.dialog.root(
-                        rx.button(
-                            rx.icon("credit-card"),
-                            rx.text("Pay Now", size=default_button_text_size),
-                            color_scheme="green",
-                            size=default_button_size,
-                            type="button",
-                            on_click=lambda: State.sign_guest_up_for_dinner(True)
-                        ),              
+                        rx.dialog.trigger(
+                            rx.button(
+                                rx.icon("credit-card"),
+                                rx.text("Pay Now", size=default_button_text_size),
+                                color_scheme="green",
+                                size=default_button_size,
+                                type="button",
+                                on_click=lambda: State.sign_guest_up_for_dinner(True)
+                            )
+                        ),                 
                         rx.cond(
                             State.ordered_item == "dinner",
                             stripe_payment_dialog("dinner", State.admin_data['dinner_price'])
