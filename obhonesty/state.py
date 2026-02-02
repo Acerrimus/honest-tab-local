@@ -319,7 +319,7 @@ class State(rx.State):
                 ]:
                   cells.append(Cell(row=row_num, col=col_num, value=value))
         try:
-            order_sheet.update_cells(cells)
+            order_sheet.update_cells(cells, value_input_option="USER_ENTERED")
 
         except Exception as e:
             return rx.toast.error(f"Error updating cells: {e}")
