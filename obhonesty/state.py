@@ -230,7 +230,8 @@ class State(rx.State):
             ], table_range="A1")
         return rx.redirect("/user")
 
-    def get_dinner_receiver(self):
+    @rx.var(cache=False)
+    def get_dinner_receiver(self) -> str:
         return f"{self.dinner_signup_first_name.upper().strip()} {self.dinner_signup_last_name.upper().strip()}"
         
     @rx.event
@@ -244,7 +245,7 @@ class State(rx.State):
             1,
             self.admin_data.get('dinner_price', 0),
             self.admin_data.get('dinner_price', 0),
-            self.get_dinner_receiver(),
+            self.get_dinner_receiver,
             self.dinner_signup_dietary_preference,
             self.dinner_signup_allergies,
             "",
@@ -258,18 +259,22 @@ class State(rx.State):
 
         if order_sheet:
             order_sheet.append_row(row, table_range="A1", value_input_option="USER_ENTERED")
-        return rx.redirect("/user")
+        
+        if not self.is_stripe_session_paid:
+            # only redirect if the user hasn't paid with stripe
+            return rx.redirect("/user")
 
     @rx.event
     def sign_guest_up_for_dinner(self, is_guest_paying_now=False):
-        if self.get_dinner_receiver() in [order.receiver for order in self.dinner_signups]:
+        if self.get_dinner_receiver in [order.receiver for order in self.dinner_signups]:
             return rx.toast.error(
-                "This person is already signed up, "
+                f"{self.get_dinner_receiver} is already signed up, "
                 "please provide different name if you want to sign up another person.")
         
         if is_guest_paying_now:
             self.ordered_item = "dinner"
             return [rx.toast.info(self.ordered_item), State.generate_item_payment_qr]
+        
         return State.order_dinner
     
     
@@ -430,18 +435,18 @@ class State(rx.State):
             if self.current_stripe_session_id == "" or self.is_stripe_session_paid:
                 return
             
-            result = False
+            # result = False
             
-            try:
-                session = stripe.checkout.Session.retrieve(self.current_stripe_session_id)
-                result = session.payment_status == "paid"
+            # try:
+            #     session = stripe.checkout.Session.retrieve(self.current_stripe_session_id)
+            #     result = session.payment_status == "paid"
                 
-            except Exception as e:
-                print(f"Stripe Error: {e}")
+            # except Exception as e:
+            #     print(f"Stripe Error: {e}")
 
-            if not result:
-                await asyncio.sleep(1)
-                continue
+            # if not result:
+            #     await asyncio.sleep(1)
+            #     continue
               
             async with self:
                 self.is_stripe_session_paid = True
@@ -463,12 +468,18 @@ class State(rx.State):
         self.is_stripe_dialog_active = True
         return State.generate_item_payment_qr(item_name, amount)
 
+    @rx.event
     def close_item_dialog(self):
+        temp_ordered_item = self.ordered_item
+        temp_is_stripe_session_paid = self.is_stripe_session_paid
         self.payment_qr_code = ""
         self.current_stripe_session_id = ""
         self.is_stripe_session_paid = False
         self.is_stripe_dialog_active = False
         self.ordered_item = ""
+        if temp_ordered_item == "dinner" and temp_is_stripe_session_paid:
+            return rx.redirect("/user")
+
 
     # -----------------------------------
 
