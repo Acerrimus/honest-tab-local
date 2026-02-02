@@ -230,17 +230,11 @@ class State(rx.State):
             ], table_range="A1")
         return rx.redirect("/user")
 
+    def get_dinner_receiver(self):
+        return f"{self.dinner_signup_first_name.upper().strip()} {self.dinner_signup_last_name.upper().strip()}"
+        
     @rx.event
     def order_dinner(self):
-        first_name = self.dinner_signup_first_name
-        last_name = self.dinner_signup_last_name
-        receiver = f"{first_name} {last_name}".upper()
-        
-        if receiver in [order.receiver for order in self.dinner_signups]:
-            return rx.toast.error(
-                "This person is already signed up, "
-                "please provide different name if you want to sign up another person.")
-        
         now = datetime.now().isoformat()
         row = [
             str(short_uid()),
@@ -250,7 +244,7 @@ class State(rx.State):
             1,
             self.admin_data.get('dinner_price', 0),
             self.admin_data.get('dinner_price', 0),
-            receiver,
+            self.get_dinner_receiver(),
             self.dinner_signup_dietary_preference,
             self.dinner_signup_allergies,
             "",
@@ -266,6 +260,19 @@ class State(rx.State):
             order_sheet.append_row(row, table_range="A1", value_input_option="USER_ENTERED")
         return rx.redirect("/user")
 
+    @rx.event
+    def sign_guest_up_for_dinner(self, is_guest_paying_now=False):
+        if self.get_dinner_receiver() in [order.receiver for order in self.dinner_signups]:
+            return rx.toast.error(
+                "This person is already signed up, "
+                "please provide different name if you want to sign up another person.")
+        
+        if is_guest_paying_now:
+            self.ordered_item = "dinner"
+            return State.generate_item_payment_qr
+        return State.order_dinner
+    
+    
     @rx.event
     def order_dinner_late(self, form_data: dict):
         row = [
@@ -365,12 +372,15 @@ class State(rx.State):
 
     # --- Payment Logic Handlers ---
     @rx.event(background=True)
-    async def generate_item_payment_qr(self, item_name: str, unit_price: float):
+    async def generate_item_payment_qr(self, item_name: str= "", unit_price: float=0):
         """Generates a Stripe QR for a specific item * quantity"""
         async with self:
             self.is_stripe_session_paid = False
             self.payment_qr_code = "" 
             
+        if self.ordered_item == "dinner":
+            item_name = "dinner"
+            unit_price = State.admin_data['dinner_price']
         # Calculate total for this specific transaction
         quantity = self.temp_quantity if self.temp_quantity > 0 else 1.0
         total_amount = unit_price * quantity

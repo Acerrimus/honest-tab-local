@@ -534,25 +534,21 @@ def dinner_signup_page() -> rx.Component:
                         rx.text("Register", size=default_button_text_size),
                         type="submit",
                         size=default_button_size,
-                        on_click=State.order_dinner
+                        on_click=State.sign_guest_up_for_dinner
                     ),
                     rx.dialog.root(
-                        rx.dialog.trigger(
-                            rx.button(
-                                rx.icon("credit-card"),
-                                rx.text("Pay Now", size=default_button_text_size),
-                                color_scheme="green",
-                                size=default_button_size,
-                                type="button",
-                                on_click=[
-                                    State.set_dinner_as_ordered_item,
-                                    lambda: State.generate_item_payment_qr(
-                                        "dinner", State.admin_data['dinner_price']
-                                        )
-                                    ]
+                        rx.button(
+                            rx.icon("credit-card"),
+                            rx.text("Pay Now", size=default_button_text_size),
+                            color_scheme="green",
+                            size=default_button_size,
+                            type="button",
+                            on_click=lambda: State.sign_guest_up_for_dinner(True)
+                        ),              
+                        rx.cond(
+                            State.ordered_item == "dinner",
+                            stripe_payment_dialog("dinner", State.admin_data['dinner_price'])
                             )
-                        ),                 
-                        stripe_payment_dialog("dinner", State.admin_data['dinner_price'])
                     ),
                     rx.button(
                         rx.text("Cancel", size=default_button_text_size),
