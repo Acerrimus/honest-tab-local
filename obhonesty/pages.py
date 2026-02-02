@@ -299,7 +299,7 @@ def user_page() -> rx.Component:
                         rx.text("Sign up for dinner", size=default_button_text_size),
                         on_click=rx.redirect("/dinner"),
                         size=default_button_size,
-                        # disabled=~State.dinner_signup_available
+                        disabled=~State.dinner_signup_available
                     ),
                     rx.text(
                         f"(last sign-up at {State.admin_data['dinner_signup_deadline']}, "
@@ -536,10 +536,6 @@ def dinner_signup_page() -> rx.Component:
                         size=default_button_size,
                         on_click=State.sign_guest_up_for_dinner
                     ),
-                    rx.text(State.dinner_signup_first_name),
-                    rx.text(State.dinner_signup_last_name),
-                    rx.text(State.get_dinner_receiver),
-
                     rx.dialog.root(
                         rx.dialog.trigger(
                             rx.button(

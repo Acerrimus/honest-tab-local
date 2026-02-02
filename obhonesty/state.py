@@ -435,18 +435,18 @@ class State(rx.State):
             if self.current_stripe_session_id == "" or self.is_stripe_session_paid:
                 return
             
-            # result = False
+            result = False
             
-            # try:
-            #     session = stripe.checkout.Session.retrieve(self.current_stripe_session_id)
-            #     result = session.payment_status == "paid"
+            try:
+                session = stripe.checkout.Session.retrieve(self.current_stripe_session_id)
+                result = session.payment_status == "paid"
                 
-            # except Exception as e:
-            #     print(f"Stripe Error: {e}")
+            except Exception as e:
+                print(f"Stripe Error: {e}")
 
-            # if not result:
-            #     await asyncio.sleep(1)
-            #     continue
+            if not result:
+                await asyncio.sleep(1)
+                continue
               
             async with self:
                 self.is_stripe_session_paid = True
