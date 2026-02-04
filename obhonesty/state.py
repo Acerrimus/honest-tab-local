@@ -360,7 +360,7 @@ class State(rx.State):
         row = [
             str(short_uid()),
             form_data['nick_name'],
-            str(datetime.now()),
+            datetime.now().isoformat(),
             "Dinner sign-up",
             1,
             self.admin_data.get('dinner_price', 0),
@@ -370,10 +370,13 @@ class State(rx.State):
             form_data['allergies'],
             "",
             "Food and beverage non-alcoholic",
-            ""
+            "",
+            False
         ]
+
         if order_sheet:
-            order_sheet.append_row(row, table_range="A1")
+            order_sheet.append_row(row, table_range="A1", value_input_option="USER_ENTERED")
+
         return rx.redirect("/admin/dinner")
 
     @rx.var(cache=False)
