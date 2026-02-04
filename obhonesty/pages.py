@@ -285,7 +285,7 @@ def user_page() -> rx.Component:
                         ),
                         on_click=rx.redirect("/breakfast"),
                         size=default_button_size,
-                        disabled=~State.breakfast_signup_available,
+                        # disabled=~State.breakfast_signup_available,
                     ),
                     rx.text(
                         f"(last sign-up at {State.admin_data['breakfast_signup_deadline']})",
@@ -602,65 +602,84 @@ def late_dinner_signup_page() -> rx.Component:
     ))
 
 def breakfast_signup_page() -> rx.Component:
-    return rx.container(rx.center(
-        rx.vstack(
-            rx.form(
-                rx.vstack(
-                    rx.heading("Sign up for breakfast", size=default_heading_size),
-                    rx.text(
-                        "Note: you are signing up for todays breakfast. "
-                        "Sign up again tomorrow for tomorrows breakfast."
-                    ),
-                    rx.spacer(),
-                    rx.text("First name of breakfast guest"),
-                    rx.input(
-                        placeholder="First name of breakfast guest",
-                        default_value=State.current_user.first_name,
-                        name="first_name",
-                        required=True
-                    ),
-                    rx.text("Last name of breakfast guest"),
-                    rx.input(
-                        placeholder="Last name of breakfast guest",
-                        default_value=State.current_user.last_name,
-                        name="last_name",
-                        required=True
-                    ),
-                    rx.text("Menu"),
-                    rx.select.root(
-                        rx.select.trigger(),
-                        rx.select.content(
-                            rx.foreach(
-                                [str(x) for x in BreakfastMenuItem],
-                                lambda item: rx.select.item(
-                                    f"{item} ({State.admin_data[item + '_price']}€)",
-                                    value=item
-                                )
-                            )
-                        ),
-                        name="menu_item",
-                        required=True
-                    ),
-                    rx.text("Allergies"),
-                    rx.input(
-                        name="allergies"
-                    ),
-                    rx.button(
-                        rx.text("Register", size=default_button_text_size),
-                        type="submit",
-                        size=default_button_size
-                    )
+    return rx.container(
+        rx.center(
+            rx.vstack(
+                rx.heading("Sign up for breakfast", size=default_heading_size),
+                rx.text(
+                    "Note: you are signing up for todays breakfast. "
+                    "Sign up again tomorrow for tomorrows breakfast."
                 ),
-                on_submit=State.order_breakfast,
-                reset_on_submit=True
-            ),
-            rx.button(
-                rx.text("Cancel", size=default_button_text_size),
-                on_click=rx.redirect("/user"),
-                size=default_button_size
+                rx.spacer(),
+                rx.text("First name of breakfast guest"),
+                rx.input(
+                    placeholder="First name of breakfast guest",
+                    default_value=State.current_user.first_name,
+                    name="first_name",
+                    required=True,
+                    on_change=State.set_breakfast_signup_first_name
+                ),
+                rx.text("Last name of breakfast guest"),
+                rx.input(
+                    placeholder="Last name of breakfast guest",
+                    default_value=State.current_user.last_name,
+                    name="last_name",
+                    required=True,
+                    on_change=State.set_breakfast_signup_last_name
+                ),
+                rx.text("Menu"),
+                rx.select.root(
+                    rx.select.trigger(),
+                    rx.select.content(
+                        rx.foreach(
+                            [str(x) for x in BreakfastMenuItem],
+                            lambda item: rx.select.item(
+                                f"{item} ({State.admin_data[item + '_price']}€)",
+                                value=item
+                            )
+                        )
+                    ),
+                    name="menu_item",
+                    required=True,
+                    on_change=State.set_breakfast_signup_item
+                ),
+                rx.text("Allergies"),
+                rx.input(
+                    name="allergies",
+                    default_value=State.current_user.allergies,
+                    on_change=State.set_breakfast_signup_allergies
+                ),
+                rx.button(
+                    rx.text("Register", size=default_button_text_size),
+                    size=default_button_size,
+                    on_click=State.sign_guest_up_for_breakfast
+                ),
+                rx.dialog.root(
+                    rx.dialog.trigger(
+                        rx.button(
+                            rx.icon("credit-card"),
+                            rx.text("Pay Now", size=default_button_text_size),
+                            color_scheme="green",
+                            size=default_button_size,
+                            type="button",
+                            on_click=lambda: State.sign_guest_up_for_breakfast(True)
+                        )
+                    ),                 
+                    rx.cond(
+                        State.ordered_item == "breakfast",
+                        stripe_payment_dialog("breakfast", State.get_breakfast_price)
+                        )
+                ),
+                rx.button(
+                    rx.text("Cancel", size=default_button_text_size),
+                    on_click=rx.redirect("/user"),
+                    size=default_button_size
+                )
+
             )
-        )
-    ))
+    ),
+    on_mount=State.set_breakfast_signup_default_values
+    )
 
 def user_info_page() -> rx.Component:
     def show_row(order: Order):

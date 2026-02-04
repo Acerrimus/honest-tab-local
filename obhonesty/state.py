@@ -45,17 +45,42 @@ class State(rx.State):
     # --- Item Payment State ---
     temp_quantity: float = 1.0 
 
+    # --- Breakfast state ---
+    breakfast_signup_first_name: str = ""
+    breakfast_signup_last_name: str = ""
+    breakfast_signup_item: str = ""
+    breakfast_signup_allergies: str = ""
+
     # --- Dinner State ---
     dinner_signup_first_name: str = ""
     dinner_signup_last_name: str = ""
     dinner_signup_dietary_preference: str = ""
     dinner_signup_allergies: str = ""
     # -----------------------------
+
     def set_temp_quantity(self, value: str):
         try:
             self.temp_quantity = float(value)
         except ValueError:
             self.temp_quantity = 1.0
+
+    def set_breakfast_signup_default_values(self):
+        self.breakfast_signup_first_name = self.current_user.first_name
+        self.breakfast_signup_last_name = self.current_user.last_name
+        self.breakfast_signup_item = ""
+        self.breakfast_signup_allergies = self.current_user.allergies
+        
+    def set_breakfast_signup_first_name(self, value: str):
+        self.breakfast_signup_first_name = value.strip()
+
+    def set_breakfast_signup_last_name(self, value: str):
+        self.breakfast_signup_last_name = value.strip()
+
+    def set_breakfast_signup_item(self, value: str):
+        self.breakfast_signup_item = value
+
+    def set_breakfast_signup_allergies(self, value: str):
+        self.breakfast_signup_allergies = value.strip()
 
     def set_dinner_signup_first_name(self, value: str):
         self.dinner_signup_first_name = value.strip()
@@ -74,6 +99,16 @@ class State(rx.State):
         self.dinner_signup_last_name = self.current_user.last_name
         self.dinner_signup_dietary_preference = self.current_user.diet
         self.dinner_signup_allergies = self.current_user.allergies
+
+    def clear_signup_values(self):
+        self.dinner_signup_first_name = ""
+        self.dinner_signup_last_name = ""
+        self.dinner_signup_dietary_preference = ""
+        self.dinner_signup_allergies = ""
+        self.breakfast_signup_first_name = ""
+        self.breakfast_signup_last_name = ""
+        self.breakfast_signup_item = ""
+        self.dinner_signup_allergies = ""
 
     @rx.event(background=True)
     async def set_served(self, order_id: str, value: bool):
@@ -231,8 +266,10 @@ class State(rx.State):
         return rx.redirect("/user")
 
     @rx.var(cache=False)
-    def get_dinner_receiver(self) -> str:
-        return f"{self.dinner_signup_first_name.upper().strip()} {self.dinner_signup_last_name.upper().strip()}"
+    def get_receiver(self) -> str:
+        first_name = self.dinner_signup_first_name if self.dinner_signup_first_name != "" else self.breakfast_signup_first_name
+        last_name = self.dinner_signup_last_name if self.dinner_signup_last_name != "" else self.breakfast_signup_last_name
+        return f"{first_name.upper().strip()} {last_name.upper().strip()}"
         
     @rx.event
     def order_dinner(self):
@@ -245,7 +282,7 @@ class State(rx.State):
             1,
             self.admin_data.get('dinner_price', 0),
             self.admin_data.get('dinner_price', 0),
-            self.get_dinner_receiver,
+            self.get_receiver,
             self.dinner_signup_dietary_preference,
             self.dinner_signup_allergies,
             "",
@@ -265,10 +302,26 @@ class State(rx.State):
             return rx.redirect("/user")
 
     @rx.event
-    def sign_guest_up_for_dinner(self, is_guest_paying_now=False):
-        if self.get_dinner_receiver in [order.receiver for order in self.dinner_signups]:
+    def sign_guest_up_for_breakfast(self, is_guest_paying_now=False):
+      # guests should not be able to sign up for multiple breakfasts, but they can sign up for multiple packed lunches
+      if not self.breakfast_signup_item.lower().startswith("packed lunch") and self.get_receiver in [
+            order.receiver for order in self.breakfast_signups
+        ]:
             return rx.toast.error(
-                f"{self.get_dinner_receiver} is already signed up, "
+                f"{self.get_receiver} is already signed up, "
+                "please provide different name if you want to sign up another person.")
+      
+      if is_guest_paying_now:
+          self.ordered_item = "breakfast"
+          return State.generate_item_payment_qr
+      
+      return State.order_breakfast
+    
+    @rx.event
+    def sign_guest_up_for_dinner(self, is_guest_paying_now=False):
+        if self.get_receiver in [order.receiver for order in self.dinner_signups]:
+            return rx.toast.error(
+                f"{self.get_receiver} is already signed up, "
                 "please provide different name if you want to sign up another person.")
         
         if is_guest_paying_now:
@@ -299,42 +352,37 @@ class State(rx.State):
             order_sheet.append_row(row, table_range="A1")
         return rx.redirect("/admin/dinner")
 
+    @rx.var(cache=False)
+    def get_breakfast_price(self) -> float:
+        return self.admin_data.get(f"{self.breakfast_signup_item}_price", 0.0)
+
     @rx.event
-    def order_breakfast(self, form_data: dict):
-        first_name = form_data['first_name'].upper().strip()
-        last_name = form_data['last_name'].upper().strip()
-        receiver = f"{first_name} {last_name}"
-        
-        if not form_data['menu_item'].lower().startswith("packed lunch") and receiver in [
-            order.receiver for order in self.breakfast_signups
-            if not order.diet.lower().startswith("packed lunch")
-        ]:
-            return rx.toast.error(
-                "This person is already signed up, "
-                "please provide different name if you want to sign up another person.")
-        
-        menu_item = form_data['menu_item']
-        key = f"{menu_item}_price"
-        base_price = self.admin_data.get(key, 0.0)
-        price = base_price if not self.current_user.volunteer else 0.0
-        
+    def order_breakfast(self):
+        price = self.get_breakfast_price if not self.current_user.volunteer else 0.0
+        now = datetime.now().isoformat()
         row = [
             str(short_uid()),
             self.current_user.nick_name,
-            str(datetime.now()),
+            now,
             "Breakfast sign-up",
             1,
             price,
             price,
-            receiver,
-            menu_item,
-            form_data['allergies'],
+            self.get_receiver,
+            self.breakfast_signup_item,
+            self.breakfast_signup_allergies,
             "",
             "Food and beverage non-alcoholic",
-            ""
+            "",
+            self.is_stripe_session_paid
         ]
+
+        if self.is_stripe_session_paid:
+            row += [now, "stripe", "tablet"]
+
         if order_sheet:
-            order_sheet.append_row(row, table_range="A1")
+            order_sheet.append_row(row, table_range="A1", value_input_option="USER_ENTERED")
+
         return rx.redirect("/user")
 
     @rx.event
@@ -383,9 +431,14 @@ class State(rx.State):
             self.is_stripe_session_paid = False
             self.payment_qr_code = "" 
             
+        if self.ordered_item == "breakfast":
+            item_name = self.breakfast_signup_item
+            unit_price = self.get_breakfast_price
+
         if self.ordered_item == "dinner":
             item_name = "dinner"
             unit_price = self.admin_data['dinner_price']
+
         # Calculate total for this specific transaction
         quantity = self.temp_quantity if self.temp_quantity > 0 else 1.0
         total_amount = unit_price * quantity
@@ -454,6 +507,10 @@ class State(rx.State):
             if self.ordered_item != "":
                 if self.ordered_item == "dinner":
                     return State.order_dinner
+
+                if self.ordered_item == "breakfast":
+                    return State.order_breakfast
+                
                 return State.order_item
             
             # if no item has been ordered then it must be the entire tab.
@@ -561,7 +618,7 @@ class State(rx.State):
             except BaseException:
                 continue
             
-            if order.item == "Breakfast sign-up" and order_date == datetime.today().date():
+            if order.item == "Breakfast sign-up" and not order.item.lower().startswith("packed lunch") and order_date == datetime.today().date():
                 order_alt = order.copy()
                 try:
                     order_alt.time = datetime.fromisoformat(
