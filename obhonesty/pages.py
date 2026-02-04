@@ -285,7 +285,7 @@ def user_page() -> rx.Component:
                         ),
                         on_click=rx.redirect("/breakfast"),
                         size=default_button_size,
-                        # disabled=~State.breakfast_signup_available,
+                        disabled=~State.breakfast_signup_available,
                     ),
                     rx.text(
                         f"(last sign-up at {State.admin_data['breakfast_signup_deadline']})",
@@ -610,24 +610,23 @@ def breakfast_signup_page() -> rx.Component:
                     "Note: you are signing up for todays breakfast. "
                     "Sign up again tomorrow for tomorrows breakfast."
                 ),
+                rx.text("* = Required field"),
                 rx.spacer(),
-                rx.text("First name of breakfast guest"),
+                rx.text("First name of breakfast guest *"),
                 rx.input(
                     placeholder="First name of breakfast guest",
                     default_value=State.current_user.first_name,
                     name="first_name",
-                    required=True,
                     on_change=State.set_breakfast_signup_first_name
                 ),
-                rx.text("Last name of breakfast guest"),
+                rx.text("Last name of breakfast guest *"),
                 rx.input(
                     placeholder="Last name of breakfast guest",
                     default_value=State.current_user.last_name,
                     name="last_name",
-                    required=True,
                     on_change=State.set_breakfast_signup_last_name
                 ),
-                rx.text("Menu"),
+                rx.text("Breakfast item *"),
                 rx.select.root(
                     rx.select.trigger(),
                     rx.select.content(
@@ -640,7 +639,6 @@ def breakfast_signup_page() -> rx.Component:
                         )
                     ),
                     name="menu_item",
-                    required=True,
                     on_change=State.set_breakfast_signup_item
                 ),
                 rx.text("Allergies"),

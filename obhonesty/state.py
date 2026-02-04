@@ -303,6 +303,24 @@ class State(rx.State):
 
     @rx.event
     def sign_guest_up_for_breakfast(self, is_guest_paying_now=False):
+      # Check for missing required fields
+      missing_required_field_messages: list[str] = []
+      
+      def append_missing_field_message(message_suffix):
+          missing_required_field_messages.append(f"MISSING FIELD - {message_suffix}")
+
+      if self.breakfast_signup_first_name == "":
+          append_missing_field_message("Please enter a first name.")
+
+      if self.breakfast_signup_last_name == "":
+          append_missing_field_message("Please enter a last name.")
+        
+      if self.breakfast_signup_item == "":
+          append_missing_field_message("Please select a breakfast item to order")
+
+      if len(missing_required_field_messages):
+          return list(map(lambda message: rx.toast.error(message), missing_required_field_messages))
+
       # guests should not be able to sign up for multiple breakfasts, but they can sign up for multiple packed lunches
       if not self.breakfast_signup_item.lower().startswith("packed lunch") and self.get_receiver in [
             order.receiver for order in self.breakfast_signups
