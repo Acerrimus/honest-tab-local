@@ -116,7 +116,6 @@ class State(rx.State):
         self.is_stripe_dialog_active = ""
         self.ordered_item = ""
 
-
     @rx.event(background=True)
     async def set_served(self, order_id: str, value: bool):
         # Calculate string value for sheet
