@@ -95,13 +95,13 @@ class State(rx.State):
         self.dinner_signup_allergies = value.strip()
 
     def set_dinner_signup_default_values(self):
-        self.dinner_signup_first_name = self.current_user.first_name
-        self.dinner_signup_last_name = self.current_user.last_name
-        self.dinner_signup_dietary_preference = self.current_user.diet
-        self.dinner_signup_allergies = self.current_user.allergies
+        self.dinner_signup_first_name = self.current_user.first_name if self.current_user else ""
+        self.dinner_signup_last_name = self.current_user.last_name if self.current_user else ""
+        self.dinner_signup_dietary_preference = self.current_user.diet if self.current_user else ""
+        self.dinner_signup_allergies = self.current_user.allergies if self.current_user else ""
 
     def clear_temp_state_values(self):
-        self.is_item_button_dialog_active
+        self.is_item_button_dialog_active = False
         self.dinner_signup_first_name = ""
         self.dinner_signup_last_name = ""
         self.dinner_signup_dietary_preference = ""
@@ -112,8 +112,8 @@ class State(rx.State):
         self.dinner_signup_allergies = ""
         self.current_stripe_session_id = ""
         self.payment_qr_code = ""
-        self.is_stripe_session_paid = ""
-        self.is_stripe_dialog_active = ""
+        self.is_stripe_session_paid = False
+        self.is_stripe_dialog_active = False
         self.ordered_item = ""
 
     @rx.event(background=True)
