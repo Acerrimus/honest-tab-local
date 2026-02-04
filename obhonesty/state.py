@@ -401,7 +401,9 @@ class State(rx.State):
         if order_sheet:
             order_sheet.append_row(row, table_range="A1", value_input_option="USER_ENTERED")
 
-        return rx.redirect("/user")
+        if not self.is_stripe_session_paid:
+            # only redirect if the user hasn't paid with stripe
+            return rx.redirect("/user")
 
     @rx.event
     def submit_signup(self, form_data: dict):
