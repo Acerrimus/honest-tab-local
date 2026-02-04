@@ -100,7 +100,8 @@ class State(rx.State):
         self.dinner_signup_dietary_preference = self.current_user.diet
         self.dinner_signup_allergies = self.current_user.allergies
 
-    def clear_signup_values(self):
+    def clear_temp_state_values(self):
+        self.is_item_button_dialog_active
         self.dinner_signup_first_name = ""
         self.dinner_signup_last_name = ""
         self.dinner_signup_dietary_preference = ""
@@ -109,6 +110,12 @@ class State(rx.State):
         self.breakfast_signup_last_name = ""
         self.breakfast_signup_item = ""
         self.dinner_signup_allergies = ""
+        self.current_stripe_session_id = ""
+        self.payment_qr_code = ""
+        self.is_stripe_session_paid = ""
+        self.is_stripe_dialog_active = ""
+        self.ordered_item = ""
+
 
     @rx.event(background=True)
     async def set_served(self, order_id: str, value: bool):
