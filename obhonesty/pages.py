@@ -650,23 +650,21 @@ def breakfast_signup_page() -> rx.Component:
                 rx.button(
                     rx.text("Register", size=default_button_text_size),
                     size=default_button_size,
-                    on_click=State.sign_guest_up_for_breakfast
+                    loading=State.is_breakfast_button_loading,
+                    on_click=[State.set_breakfast_signup_request_id, State.sign_guest_up_for_breakfast]
+                ),
+                rx.button(
+                    rx.icon("credit-card"),
+                    rx.text("Pay Now", size=default_button_text_size),
+                    color_scheme="green",
+                    size=default_button_size,
+                    type="button",
+                    loading=State.is_breakfast_button_loading,
+                    on_click=[State.set_breakfast_signup_request_id, lambda: State.sign_guest_up_for_breakfast(True)]
                 ),
                 rx.dialog.root(
-                    rx.dialog.trigger(
-                        rx.button(
-                            rx.icon("credit-card"),
-                            rx.text("Pay Now", size=default_button_text_size),
-                            color_scheme="green",
-                            size=default_button_size,
-                            type="button",
-                            on_click=lambda: State.sign_guest_up_for_breakfast(True)
-                        )
-                    ),                 
-                    rx.cond(
-                        State.ordered_item == "breakfast",
-                        stripe_payment_dialog("breakfast", State.get_breakfast_price)
-                        )
+                  stripe_payment_dialog("breakfast", State.get_breakfast_price),
+                  open=State.ordered_item == "breakfast"
                 ),
                 rx.button(
                     rx.text("Cancel", size=default_button_text_size),
