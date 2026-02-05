@@ -299,7 +299,7 @@ def user_page() -> rx.Component:
                         rx.text("Sign up for dinner", size=default_button_text_size),
                         on_click=rx.redirect("/dinner"),
                         size=default_button_size,
-                        disabled=~State.dinner_signup_available
+                        # disabled=~State.dinner_signup_available
                     ),
                     rx.text(
                         f"(last sign-up at {State.admin_data['dinner_signup_deadline']}, "
@@ -534,23 +534,21 @@ def dinner_signup_page() -> rx.Component:
                         rx.text("Register", size=default_button_text_size),
                         type="submit",
                         size=default_button_size,
-                        on_click=State.sign_guest_up_for_dinner
+                        on_click=[State.set_signup_request_id, State.sign_guest_up_for_dinner],
+                        loading=State.is_signup_request_loading
                     ),
+                    rx.button(
+                        rx.icon("credit-card"),
+                        rx.text("Pay Now", size=default_button_text_size),
+                        color_scheme="green",
+                        size=default_button_size,
+                        type="button",
+                        loading=State.is_signup_request_loading,
+                        on_click=[State.set_signup_request_id, lambda: State.sign_guest_up_for_dinner(True)]
+                    ),                 
                     rx.dialog.root(
-                        rx.dialog.trigger(
-                            rx.button(
-                                rx.icon("credit-card"),
-                                rx.text("Pay Now", size=default_button_text_size),
-                                color_scheme="green",
-                                size=default_button_size,
-                                type="button",
-                                on_click=lambda: State.sign_guest_up_for_dinner(True)
-                            )
-                        ),                 
-                        rx.cond(
-                            State.ordered_item == "dinner",
-                            stripe_payment_dialog("dinner", State.admin_data['dinner_price'])
-                            )
+                        stripe_payment_dialog("dinner", State.admin_data['dinner_price']),
+                        open=State.ordered_item == "dinner"
                     ),
                     rx.button(
                         rx.text("Cancel", size=default_button_text_size),
@@ -650,8 +648,8 @@ def breakfast_signup_page() -> rx.Component:
                 rx.button(
                     rx.text("Register", size=default_button_text_size),
                     size=default_button_size,
-                    loading=State.is_breakfast_button_loading,
-                    on_click=[State.set_breakfast_signup_request_id, State.sign_guest_up_for_breakfast]
+                    loading=State.is_signup_request_loading,
+                    on_click=[State.set_signup_request_id, State.sign_guest_up_for_breakfast]
                 ),
                 rx.button(
                     rx.icon("credit-card"),
@@ -659,8 +657,8 @@ def breakfast_signup_page() -> rx.Component:
                     color_scheme="green",
                     size=default_button_size,
                     type="button",
-                    loading=State.is_breakfast_button_loading,
-                    on_click=[State.set_breakfast_signup_request_id, lambda: State.sign_guest_up_for_breakfast(True)]
+                    loading=State.is_signup_request_loading,
+                    on_click=[State.set_signup_request_id, lambda: State.sign_guest_up_for_breakfast(True)]
                 ),
                 rx.dialog.root(
                   stripe_payment_dialog("breakfast", State.get_breakfast_price),

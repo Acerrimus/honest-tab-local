@@ -45,9 +45,11 @@ class State(rx.State):
     # --- Item Payment State ---
     temp_quantity: float = 1.0 
 
+    # --- Signup button state
+    signup_request_id: str = ""
+    current_signup_request_id: str = ""
+
     # --- Breakfast state ---
-    breakfast_signup_request_id: str = ""
-    current_breakfast_signup_request_id = ""
     breakfast_signup_first_name: str = ""
     breakfast_signup_last_name: str = ""
     breakfast_signup_item: str = ""
@@ -67,23 +69,23 @@ class State(rx.State):
             self.temp_quantity = 1.0
 
     @rx.var(cache=False)
-    def is_breakfast_button_loading(self) -> bool:
-        return self.current_breakfast_signup_request_id != ""
+    def is_signup_request_loading(self) -> bool:
+        return self.current_signup_request_id != ""
         
     @rx.event
-    def set_breakfast_signup_request_id(self):
+    def set_signup_request_id(self):
         request_id = str(short_uid())
-        self.breakfast_signup_request_id = request_id
+        self.signup_request_id = request_id
 
-        if self.current_breakfast_signup_request_id != "":
+        if self.current_signup_request_id != "":
             return
         
-        self.current_breakfast_signup_request_id = request_id
+        self.current_signup_request_id = request_id
 
     @rx.event
-    def reset_breakfast_signup_request_id(self):
-        self.breakfast_signup_request_id = ""
-        self.current_breakfast_signup_request_id = ""
+    def reset_signup_request_id(self):
+        self.signup_request_id = ""
+        self.current_signup_request_id = ""
 
     def set_breakfast_signup_default_values(self):
         self.breakfast_signup_first_name = self.current_user.first_name
@@ -136,8 +138,8 @@ class State(rx.State):
         self.is_stripe_session_paid = False
         self.is_stripe_dialog_active = False
         self.ordered_item = ""
-        self.breakfast_signup_request_id = ""
-        self.current_breakfast_signup_request_id = ""
+        self.signup_request_id = ""
+        self.current_signup_request_id = ""
 
     @rx.event(background=True)
     async def set_served(self, order_id: str, value: bool):
@@ -332,7 +334,7 @@ class State(rx.State):
 
     @rx.event
     def sign_guest_up_for_breakfast(self, is_guest_paying_now=False):
-      if self.breakfast_signup_request_id != self.current_breakfast_signup_request_id:
+      if self.signup_request_id != self.current_signup_request_id:
           return
       # Check for missing required fields
       missing_required_field_messages: list[str] = []
@@ -350,7 +352,7 @@ class State(rx.State):
           append_missing_field_message("Please select a breakfast item to order")
 
       if len(missing_required_field_messages):
-          return list(map(lambda message: rx.toast.error(message), missing_required_field_messages)) + [State.reset_breakfast_signup_request_id]
+          return list(map(lambda message: rx.toast.error(message), missing_required_field_messages)) + [State.reset_signup_request_id]
 
       # guests should not be able to sign up for multiple breakfasts, but they can sign up for multiple packed lunches
       if not self.breakfast_signup_item.lower().startswith("packed lunch") and self.get_receiver in [
@@ -368,6 +370,9 @@ class State(rx.State):
     
     @rx.event
     def sign_guest_up_for_dinner(self, is_guest_paying_now=False):
+        if self.signup_request_id != self.current_signup_request_id:
+            return
+        
         if self.get_receiver in [order.receiver for order in self.dinner_signups]:
             return rx.toast.error(
                 f"{self.get_receiver} is already signed up, "
@@ -588,7 +593,7 @@ class State(rx.State):
         self.is_stripe_session_paid = False
         self.is_stripe_dialog_active = False
         self.ordered_item = ""
-        yield State.reset_breakfast_signup_request_id
+        yield State.reset_signup_request_id
         if [temp_ordered_item == "dinner" or temp_ordered_item == "breakfast"] and temp_is_stripe_session_paid:
             return rx.redirect("/user")
 
