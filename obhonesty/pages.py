@@ -234,7 +234,8 @@ def item_button(item: Item) -> rx.Component:
                           size='2',
                           type="button",
                           # Pass specific item details to backend
-                          on_click=lambda: State.show_stripe_item_payment_dialog(item.name, item.price * State.temp_quantity)
+                          loading=State.is_order_request_loading,
+                          on_click=[State.set_order_request_id, lambda: State.show_stripe_item_payment_dialog(item.name, item.price * State.temp_quantity)]
                       ),
                       rx.dialog.close(
                           rx.button("Register (Tab)", size=default_button_size, on_click=[State.order_item, State.close_item_dialog])
@@ -534,8 +535,8 @@ def dinner_signup_page() -> rx.Component:
                         rx.text("Register", size=default_button_text_size),
                         type="submit",
                         size=default_button_size,
-                        on_click=[State.set_signup_request_id, State.sign_guest_up_for_dinner],
-                        loading=State.is_signup_request_loading
+                        on_click=[State.set_order_request_id, State.sign_guest_up_for_dinner],
+                        loading=State.is_order_request_loading
                     ),
                     rx.button(
                         rx.icon("credit-card"),
@@ -543,8 +544,8 @@ def dinner_signup_page() -> rx.Component:
                         color_scheme="green",
                         size=default_button_size,
                         type="button",
-                        loading=State.is_signup_request_loading,
-                        on_click=[State.set_signup_request_id, lambda: State.sign_guest_up_for_dinner(True)]
+                        loading=State.is_order_request_loading,
+                        on_click=[State.set_order_request_id, lambda: State.sign_guest_up_for_dinner(True)]
                     ),                 
                     rx.dialog.root(
                         stripe_payment_dialog("dinner", State.admin_data['dinner_price']),
@@ -648,8 +649,8 @@ def breakfast_signup_page() -> rx.Component:
                 rx.button(
                     rx.text("Register", size=default_button_text_size),
                     size=default_button_size,
-                    loading=State.is_signup_request_loading,
-                    on_click=[State.set_signup_request_id, State.sign_guest_up_for_breakfast]
+                    loading=State.is_order_request_loading,
+                    on_click=[State.set_order_request_id, State.sign_guest_up_for_breakfast]
                 ),
                 rx.button(
                     rx.icon("credit-card"),
@@ -657,8 +658,8 @@ def breakfast_signup_page() -> rx.Component:
                     color_scheme="green",
                     size=default_button_size,
                     type="button",
-                    loading=State.is_signup_request_loading,
-                    on_click=[State.set_signup_request_id, lambda: State.sign_guest_up_for_breakfast(True)]
+                    loading=State.is_order_request_loading,
+                    on_click=[State.set_order_request_id, lambda: State.sign_guest_up_for_breakfast(True)]
                 ),
                 rx.dialog.root(
                   stripe_payment_dialog("breakfast", State.get_breakfast_price),
