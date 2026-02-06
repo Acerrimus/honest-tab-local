@@ -4,4 +4,4 @@ WORKDIR /app
 COPY . .
 RUN chmod +x requirements.bash
 RUN ./requirements.bash
-CMD ["reflex", "run"]
+CMD ["reflex", "run", "--loglevel", "debug"]
