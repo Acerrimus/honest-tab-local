@@ -48,3 +48,9 @@ To setup:
 1. Create a free Stripe account at [https://stripe.com/](https://stripe.com/)
 2. Copy the private key and put in in a `.env` file with the key `STRIPE_SECRET_KEY`.
 3. It should look like `STRIPE_SECRET_KEY=XXXXXXXXX...`
+
+## Local Database
+
+This app uses SQLite to store an offline verison of the Google Sheet.
+
+To access it run `sqlite3 reflex.db` in the docker container.

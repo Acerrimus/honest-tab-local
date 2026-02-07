@@ -2,7 +2,7 @@ from typing import Dict
 import reflex as rx
 
 from typing import Optional
-from obhonesty.aux import safe_float_convert, value_or
+from obhonesty.aux import safe_float_convert, value_or, lower_non_alpha_num
 from .constants import true_values
 
 class Order(rx.Base):
@@ -23,6 +23,7 @@ class Order(rx.Base):
   paid_time: str | None
   method: str | None 
   checkout_staff: str | None
+  synced: bool
 
   @property
   def served_bool(self) -> bool:
@@ -51,6 +52,7 @@ class Order(rx.Base):
       paid=x.get('paid'),
       paid_time=x.get('paid_time'),
       method=x.get('method'),
-      checkout_staff=x.get('checkout_staff')
+      checkout_staff=x.get('checkout_staff'),
+      synced=lower_non_alpha_num(x['synced']) in true_values
     )
   

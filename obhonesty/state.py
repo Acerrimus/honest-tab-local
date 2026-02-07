@@ -13,6 +13,7 @@ from obhonesty.user import User
 from obhonesty.item import Item
 from obhonesty.order import Order
 from obhonesty.sheet import user_sheet, item_sheet, order_sheet, admin_sheet
+from obhonesty.models import User as User_Model, Order as Order_Model, Item as Item_Model
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -187,27 +188,39 @@ class State(rx.State):
 
     @rx.event(background=True)
     async def reload_sheet_data(self):
+        def get_records(sheet, headers, add_synced: bool = False):
+            if sheet is None:
+                return []
+            
+            records = sheet.get_all_records(expected_headers=headers)
+
+            for record in records:
+                if "" in record:
+                    del record[""]
+
+            if not add_synced:
+                return records
+            return [{**record, "synced": "true"} for record in records]
+        
         async with self:
             self.cancel_redirect = True
-            
-            user_data = [] if user_sheet is None else user_sheet.get_all_records(
-                expected_headers=[
-                    'nick_name', 'first_name', 'last_name', 'phone_number', 'email',
-                    'diet', 'allergies', 'volunteer', 'away', 'owes'
-                ])
-            
-            item_data = [] if item_sheet is None else item_sheet.get_all_records(
-                expected_headers=[
-                    'name', 'price', 'description', 'tax_category'
-                ])
-            
-            order_data = [] if order_sheet is None else order_sheet.get_all_records(
-                expected_headers=[
-                    'order_id', 'user', 'time', 'item', 'quantity', 'price', 'total',
-                    'diet', 'allergies', 'served', 'tax_category', 'comment', 'paid',
-                    'paid_time', 'method', 'checkout_staff'
-                ])
-                
+
+        user_data = get_records(user_sheet, [
+                'nick_name', 'first_name', 'last_name', 'phone_number', 'email',
+                'diet', 'allergies', 'volunteer', 'away', 'owes'
+            ], True)
+        
+        item_data = get_records(item_sheet, [
+                'name', 'price', 'description', 'tax_category'
+            ])
+        
+        order_data = get_records(order_sheet, [
+                'order_id', 'user', 'time', 'item', 'quantity', 'price', 'total',
+                'diet', 'allergies', 'served', 'tax_category', 'comment', 'paid',
+                'paid_time', 'method', 'checkout_staff'
+            ], True)
+
+        async with self:
             self.admin_data = {} if admin_sheet is None else admin_sheet.get_all_records()[0]
             
             self.users = [
@@ -220,7 +233,22 @@ class State(rx.State):
                 Order.from_dict(x) for x in order_data
             ]
             self.users.sort(key=lambda x: x.nick_name)
-            
+
+        with rx.session() as session:
+            for model in [User_Model, Item_Model, Order_Model]:
+                for row in session.exec(model.select()).all():
+                    session.delete(row)
+            session.add_all(
+                User_Model.model_validate(dict(user)) for user in self.users
+            )
+            session.add_all(
+                Item_Model.model_validate(dict(user)) for user in self.items.values()
+            )
+            session.add_all(
+                Order_Model.model_validate(dict(user)) for user in self.orders
+            )
+            session.commit()
+                
         # if has_backend:
         #     yield rx.toast.info("Data reloaded", duration=1000)
         # else:
@@ -721,7 +749,10 @@ class State(rx.State):
                         allergies=user.allergies,
                         served=False,
                         tax_category="",
-                        comment=true_values[0]))
+                        comment=true_values[0],
+                        # Not synced but necessary to avoid reflex from crashing at runtime.
+                        # These order objects never interact with the db or google sheet so this is an arbitrary value.
+                        synced=True))
         signups.sort(key=lambda x: x.receiver)
         signups.sort(key=lambda x: x.diet)
         signups.sort(key=lambda x: x.comment)

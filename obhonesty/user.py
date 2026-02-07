@@ -14,6 +14,7 @@ class User(rx.Base):
   away: bool
   diet: str
   allergies: str
+  synced: bool
 
   @staticmethod
   def from_dict(x: Dict[str, str]):
@@ -26,6 +27,7 @@ class User(rx.Base):
       volunteer=lower_non_alpha_num(x['volunteer']) in true_values,
       diet=x['diet'],
       allergies=x['allergies'],
-      away=lower_non_alpha_num(x['away']) in true_values
+      away=lower_non_alpha_num(x['away']) in true_values,
+      synced=lower_non_alpha_num(x['synced']) in true_values
     )
 
