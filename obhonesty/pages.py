@@ -533,9 +533,8 @@ def dinner_signup_page() -> rx.Component:
                     ),
                     rx.button(
                         rx.text("Register", size=default_button_text_size),
-                        type="submit",
                         size=default_button_size,
-                        on_click=[State.set_order_request_id, State.sign_guest_up_for_dinner],
+                        on_click=[State.set_order_request_id, lambda: State.sign_guest_up_for_dinner(False)],
                         loading=State.is_order_request_loading
                     ),
                     rx.button(
@@ -650,7 +649,7 @@ def breakfast_signup_page() -> rx.Component:
                     rx.text("Register", size=default_button_text_size),
                     size=default_button_size,
                     loading=State.is_order_request_loading,
-                    on_click=[State.set_order_request_id, State.sign_guest_up_for_breakfast]
+                    on_click=[State.set_order_request_id, lambda: State.sign_guest_up_for_breakfast(False)]
                 ),
                 rx.button(
                     rx.icon("credit-card"),

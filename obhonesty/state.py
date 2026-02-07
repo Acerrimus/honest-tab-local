@@ -333,7 +333,7 @@ class State(rx.State):
             return rx.redirect("/user")
 
     @rx.event
-    def sign_guest_up_for_breakfast(self, is_guest_paying_now=False):
+    def sign_guest_up_for_breakfast(self, is_guest_paying_now: bool):
       if self.order_request_id != self.current_order_request_id:
           return
       # Check for missing required fields
@@ -367,9 +367,9 @@ class State(rx.State):
           return State.generate_item_payment_qr
       
       return State.order_breakfast
-    
+
     @rx.event
-    def sign_guest_up_for_dinner(self, is_guest_paying_now=False):
+    def sign_guest_up_for_dinner(self, is_guest_paying_now: bool):
         if self.order_request_id != self.current_order_request_id:
             return
         
@@ -380,7 +380,7 @@ class State(rx.State):
         
         if is_guest_paying_now:
             self.ordered_item = "dinner"
-            return [rx.toast.info(self.ordered_item), State.generate_item_payment_qr]
+            return State.generate_item_payment_qr
         
         return State.order_dinner
     
