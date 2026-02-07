@@ -614,7 +614,7 @@ class State(rx.State):
                 order_copy = order.copy()
                 try:
                     order_copy.time = datetime.fromisoformat(
-                        order.time).strftime("%Y-%m-%d, %H:%M:%S")
+                        order.time).strftime("%d/%m/%Y, %H:%M:%S")
                 except BaseException:
                     pass
                 filtered.append(order_copy)
