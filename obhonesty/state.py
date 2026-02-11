@@ -289,32 +289,36 @@ class State(rx.State):
     @rx.event
     def order_dinner(self):
         now = datetime.now().isoformat()
-        row = [
-            str(short_uid()),
-            self.current_user.nick_name,
-            now,
-            "Dinner sign-up",
-            1,
-            self.admin_data.get('dinner_price', 0),
-            self.admin_data.get('dinner_price', 0),
-            self.get_receiver,
-            self.dinner_signup_dietary_preference,
-            self.dinner_signup_allergies,
-            "",
-            "Food and beverage non-alcoholic",
-            "",
-            self.is_stripe_session_paid
-        ]
 
-        if self.is_stripe_session_paid:
-            row += [now, "stripe", "tablet"]
+        with rx.session() as session:
+            session.add(
+                Order_Model(
+                    order_id=str(short_uid()),
+                    user_nick_name=self.current_user.nick_name,
+                    time=now,
+                    item="Dinner sign-up",
+                    quantity=1,
+                    price=self.admin_data.get('dinner_price', 0),
+                    total=self.admin_data.get('dinner_price', 0),
+                    receiver=self.get_receiver,
+                    diet=self.dinner_signup_dietary_preference,
+                    allergies=self.dinner_signup_allergies,
+                    served="",
+                    tax_category="Food and beverage non-alcoholic",
+                    comment="",
+                    paid=self.is_stripe_session_paid,
+                    paid_time=now if self.is_stripe_session_paid else "",
+                    method="stripe" if self.is_stripe_session_paid else "",
+                    checkout_staff="tablet" if self.is_stripe_session_paid else "",
+                    synced=False
+                )
+            )
+            session.commit()
 
-        if order_sheet:
-            order_sheet.append_row(row, table_range="A1", value_input_option="USER_ENTERED")
-        
         if not self.is_stripe_session_paid:
             # only redirect if the user hasn't paid with stripe
             return rx.redirect("/user")
+
 
     @rx.event
     def sign_guest_up_for_breakfast(self, is_guest_paying_now: bool):
