@@ -358,9 +358,9 @@ class State(rx.State):
       if not self.breakfast_signup_item.lower().startswith("packed lunch") and self.get_receiver in [
             order.receiver for order in self.breakfast_signups
         ]:
-            return rx.toast.error(
+            return [State.reset_order_request_id, rx.toast.error(
                 f"{self.get_receiver} is already signed up, "
-                "please provide different name if you want to sign up another person.")
+                "please provide different name if you want to sign up another person.")]
       
       if is_guest_paying_now:
           self.ordered_item = "breakfast"
@@ -374,9 +374,9 @@ class State(rx.State):
             return
         
         if self.get_receiver in [order.receiver for order in self.dinner_signups]:
-            return rx.toast.error(
+            return [State.reset_order_request_id, rx.toast.error(
                 f"{self.get_receiver} is already signed up, "
-                "please provide different name if you want to sign up another person.")
+                "please provide different name if you want to sign up another person.")]
         
         if is_guest_paying_now:
             self.ordered_item = "dinner"
