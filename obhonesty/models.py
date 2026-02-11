@@ -4,6 +4,7 @@ import reflex as rx
 # They must be updated if any new columns are added.
 
 # synced is a prop only in the sqlite db.
+
 class User(rx.Model, table=True):
   nick_name: str
   first_name: str
@@ -15,6 +16,8 @@ class User(rx.Model, table=True):
   diet: str
   allergies: str
   synced: bool
+  current_guest: bool = False
+  active_tab: bool = False
 
 class Order(rx.Model, table=True):
   order_id: str
@@ -41,3 +44,7 @@ class Item(rx.Model, table=True):
   price: float
   description: str
   tax_category: str
+
+class Admin(rx.Model, table=True):
+  key: str
+  value: str

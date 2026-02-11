@@ -13,7 +13,7 @@ from obhonesty.user import User
 from obhonesty.item import Item
 from obhonesty.order import Order
 from obhonesty.sheet import user_sheet, item_sheet, order_sheet, admin_sheet
-from obhonesty.models import User as User_Model, Order as Order_Model, Item as Item_Model
+from obhonesty.models import User as User_Model, Order as Order_Model, Item as Item_Model, Admin as Admin_Model
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -188,71 +188,27 @@ class State(rx.State):
 
     @rx.event(background=True)
     async def reload_sheet_data(self):
-        def get_records(sheet, headers, add_synced: bool = False):
-            if sheet is None:
-                return []
-            
-            records = sheet.get_all_records(expected_headers=headers)
-
-            for record in records:
-                if "" in record:
-                    del record[""]
-
-            if not add_synced:
-                return records
-            return [{**record, "synced": "true"} for record in records]
-        
-        async with self:
-            self.cancel_redirect = True
-
-        user_data = get_records(user_sheet, [
-                'nick_name', 'first_name', 'last_name', 'phone_number', 'email',
-                'diet', 'allergies', 'volunteer', 'away', 'owes'
-            ], True)
-        
-        item_data = get_records(item_sheet, [
-                'name', 'price', 'description', 'tax_category'
-            ])
-        
-        order_data = get_records(order_sheet, [
-                'order_id', 'user', 'time', 'item', 'quantity', 'price', 'total',
-                'diet', 'allergies', 'served', 'tax_category', 'comment', 'paid',
-                'paid_time', 'method', 'checkout_staff'
-            ], True)
-
-        async with self:
-            self.admin_data = {} if admin_sheet is None else admin_sheet.get_all_records()[0]
-            
-            self.users = [
-                User.from_dict(x) for x in user_data if x['nick_name'] != ''
-            ]
-            self.items = {
-                x['name']: Item.from_dict(x) for x in item_data if x['name'] != ''
-            }
-            self.orders = [
-                Order.from_dict(x) for x in order_data
-            ]
-            self.users.sort(key=lambda x: x.nick_name)
-
         with rx.session() as session:
-            for model in [User_Model, Item_Model, Order_Model]:
-                for row in session.exec(model.select()).all():
-                    session.delete(row)
-            session.add_all(
-                User_Model.model_validate(dict(user)) for user in self.users
-            )
-            session.add_all(
-                Item_Model.model_validate(dict(user)) for user in self.items.values()
-            )
-            session.add_all(
-                Order_Model.model_validate(dict(user)) for user in self.orders
-            )
-            session.commit()
-                
-        # if has_backend:
-        #     yield rx.toast.info("Data reloaded", duration=1000)
-        # else:
-        #     yield rx.toast.warning("No backend connection", duration=2000)
+              users = [User.from_dict(row.model_dump()) for row in session.exec(User_Model.select()).all()]
+              items = {}
+
+              for row in session.exec(Item_Model.select()).all():
+                  if row.name == "":
+                    continue
+
+                  items[row.name] = Item.from_dict(row.model_dump())
+
+              orders = [Order.from_dict(row.model_dump()) for row in session.exec(Order_Model.select()).all()]
+              admin_data = {}
+
+              for row in session.exec(Admin_Model.select()).all():
+                  admin_data[row.key] = row.value if "deadline" in row.key else float(row.value)
+
+        async with self:
+              self.items = items
+              self.orders = orders
+              self.users = users
+              self.admin_data = admin_data
 
     @rx.event
     def redirect_to_user_page(self, user: User):
@@ -364,6 +320,7 @@ class State(rx.State):
     def sign_guest_up_for_breakfast(self, is_guest_paying_now: bool):
       if self.order_request_id != self.current_order_request_id:
           return
+      
       # Check for missing required fields
       missing_required_field_messages: list[str] = []
       
@@ -445,28 +402,31 @@ class State(rx.State):
     def order_breakfast(self):
         price = self.get_breakfast_price if not self.current_user.volunteer else 0.0
         now = datetime.now().isoformat()
-        row = [
-            str(short_uid()),
-            self.current_user.nick_name,
-            now,
-            "Breakfast sign-up",
-            1,
-            price,
-            price,
-            self.get_receiver,
-            self.breakfast_signup_item,
-            self.breakfast_signup_allergies,
-            "",
-            "Food and beverage non-alcoholic",
-            "",
-            self.is_stripe_session_paid
-        ]
 
-        if self.is_stripe_session_paid:
-            row += [now, "stripe", "tablet"]
-
-        if order_sheet:
-            order_sheet.append_row(row, table_range="A1", value_input_option="USER_ENTERED")
+        with rx.session() as session:
+            session.add(
+                Order_Model(
+                    order_id=str(short_uid()),
+                    user_nick_name=self.current_user.nick_name,
+                    time=now,
+                    item="Breakfast sign-up",
+                    quantity=1,
+                    price=price,
+                    total=price,
+                    receiver=self.get_receiver,
+                    diet=self.breakfast_signup_item,
+                    allergies=self.breakfast_signup_allergies,
+                    served="",
+                    tax_category="Food and beverage non-alcoholic",
+                    comment="",
+                    paid=self.is_stripe_session_paid,
+                    paid_time=now if self.is_stripe_session_paid else "",
+                    method="stripe" if self.is_stripe_session_paid else "",
+                    checkout_staff="tablet" if self.is_stripe_session_paid else "",
+                    synced=False
+                )
+            )
+            session.commit()
 
         if not self.is_stripe_session_paid:
             # only redirect if the user hasn't paid with stripe

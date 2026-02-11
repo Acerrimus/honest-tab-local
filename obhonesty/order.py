@@ -37,7 +37,7 @@ class Order(rx.Base):
   def from_dict(x: Dict[str, str]):
     return Order(
       order_id=x['order_id'],
-      user_nick_name=x['user'],
+      user_nick_name=x['user_nick_name'],
       time=x['time'],
       item=x['item'],
       quantity=value_or(safe_float_convert(x['quantity']), 1.0),
@@ -53,6 +53,6 @@ class Order(rx.Base):
       paid_time=x.get('paid_time'),
       method=x.get('method'),
       checkout_staff=x.get('checkout_staff'),
-      synced=lower_non_alpha_num(x['synced']) in true_values
+      synced=x["synced"]
     )
   

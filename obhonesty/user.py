@@ -1,7 +1,6 @@
 from typing import Dict
 import reflex as rx
 
-from obhonesty.aux import lower_non_alpha_num
 from obhonesty.constants import true_values
 
 class User(rx.Base):
@@ -24,10 +23,10 @@ class User(rx.Base):
       last_name=x['last_name'],
       email=x['email'],
       phone_number=x['phone_number'],
-      volunteer=lower_non_alpha_num(x['volunteer']) in true_values,
+      volunteer=x["volunteer"],
       diet=x['diet'],
       allergies=x['allergies'],
-      away=lower_non_alpha_num(x['away']) in true_values,
-      synced=lower_non_alpha_num(x['synced']) in true_values
+      away=x["away"],
+      synced=x["synced"]
     )
 
