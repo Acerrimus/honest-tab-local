@@ -7,7 +7,7 @@ from urllib.parse import quote
 import reflex as rx
 import stripe
 
-from obhonesty.aux import short_uid, str_cmp
+from obhonesty.aux import short_uid, str_cmp, check_internet_connection
 from obhonesty.constants import Diet, true_values
 from obhonesty.user import User
 from obhonesty.item import Item
@@ -270,21 +270,40 @@ class State(rx.State):
 
     @rx.event
     def order_custom_item(self, form_data: dict):
+        now = datetime.now().strftime(DATETIME_FORMAT)
+        price = float(form_data['custom_item_price'])
         item_name = form_data['custom_item_name']
-        if order_sheet:
-            order_sheet.append_row([
-                str(short_uid()),
-                self.current_user.nick_name,
-                str(datetime.now()),
-                item_name,
-                1.0,
-                float(form_data['custom_item_price']),
-                float(form_data['custom_item_price']),
-                "", "", "", "",
-                form_data['tax_category'],
-                form_data['custom_item_description']
-            ], table_range="A1")
-        return rx.redirect("/user")
+
+        with rx.session() as session:
+            session.add(
+                Order_Model(
+                    order_id=str(short_uid()),
+                    user_nick_name=self.current_user.nick_name,
+                    time=now,
+                    item=item_name,
+                    quantity=1,
+                    price=price,
+                    total=price,
+                    receiver="",
+                    diet="",
+                    allergies="",
+                    served="",
+                    tax_category=form_data['tax_category'],
+                    comment=form_data['custom_item_description'],
+                    paid=self.is_stripe_session_paid,
+                    paid_time=now if self.is_stripe_session_paid else "",
+                    method="stripe" if self.is_stripe_session_paid else "",
+                    checkout_staff="tablet" if self.is_stripe_session_paid else "",
+                    synced=False
+                )
+            )
+            session.commit()
+
+        return rx.toast.info(
+            f"'{item_name}' registered succesfully. Thank you!",
+            position="bottom-center"
+        )
+
 
     @rx.var(cache=False)
     def get_receiver(self) -> str:
@@ -487,7 +506,7 @@ class State(rx.State):
         async with self:
             self.is_stripe_session_paid = False
             self.payment_qr_code = "" 
-            
+        
         if self.ordered_item == "breakfast":
             item_name = self.breakfast_signup_item
             unit_price = self.get_breakfast_price
