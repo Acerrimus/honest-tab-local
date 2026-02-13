@@ -3,6 +3,7 @@
 import reflex as rx
 import asyncio
 from datetime import datetime
+import socket 
 
 from obhonesty.pages import * 
 from obhonesty.state import State
@@ -25,7 +26,16 @@ app.add_page(admin_tax, route="/admin/tax", on_load=State.reload_sheet_data)
 app.add_page(admin_user_page, route="/admin/user", on_load=State.reload_sheet_data)
 app.add_page(late_dinner_signup_page, route="/admin/late", on_load=State.reload_sheet_data)
 
+def check_internet_connection():
+    try:
+        socket.create_connection(("www.google.com", 443), timeout=3) 
+    except OSError: 
+        print(f"No internet connection - {datetime.now()}", flush=True)
+        raise
+    
 def get_records(sheet, headers: list[str] = [], add_synced: bool = False):
+    check_internet_connection()
+
     if sheet is None:
         return []
     
@@ -159,10 +169,11 @@ async def sync_google_sheet_and_local_db():
             sync_users()
             sync_items()
             sync_admin_data()
-            await asyncio.sleep(20)
+            await asyncio.sleep(5)
 
         except Exception as e:
             print(e)
-            await asyncio.sleep(60)
+        
+        await asyncio.sleep(5)
             
 app.register_lifespan_task(sync_google_sheet_and_local_db)
