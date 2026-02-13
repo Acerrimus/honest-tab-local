@@ -7,6 +7,7 @@ default_heading_size = "7"
 default_text_size = "4"
 default_button_size = "4"
 
+DATETIME_FORMAT = "%d/%m/%Y %H:%M:%S"
 
 class Diet(StrEnum):
   VEGAN = "Vegan"

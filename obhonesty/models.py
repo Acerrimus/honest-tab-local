@@ -1,4 +1,6 @@
 import reflex as rx
+from datetime import datetime, timedelta
+from sqlalchemy import select
 
 # These classes specify the table info for the SQL database, storing google sheets data offline.
 # They must be updated if any new columns are added.
@@ -49,3 +51,28 @@ class Item(rx.Model, table=True):
 class Admin(rx.Model, table=True):
   key: str
   value: str
+
+class Meal(rx.Model, table=True):
+  meal_id: str
+  order_id: str
+  user_nick_name: str
+  receiver: str
+  order_time: datetime
+  meal_type: str
+  diet: str
+  allergies: str
+  volunteer: bool
+  served: bool
+
+  @classmethod
+  def select_todays_dinner_meals(cls):
+      now = datetime.now()
+      today = now.date()
+      start = datetime.combine(today, datetime.min.time())
+      end = start + timedelta(days=1)
+
+      return select(cls).where(
+              cls.meal_type == "dinner",
+              cls.order_time >= start,
+              cls.order_time < end
+          )

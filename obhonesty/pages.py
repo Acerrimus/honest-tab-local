@@ -816,19 +816,19 @@ def admin_refresh_top_bar() -> rx.Component:
     )
 
 def admin_dinner() -> rx.Component:
-    def show_signup(signup: Order):
+    def show_signup(meal):
         return rx.table.row( 
-            rx.table.cell(signup.receiver),
-            rx.table.cell(signup.diet),
-            rx.table.cell(signup.allergies),
-            rx.table.cell(signup.comment),
+            rx.table.cell(meal.receiver),
+            rx.table.cell(meal.diet),
+            rx.table.cell(meal.allergies),
+            rx.table.cell(rx.cond(meal.volunteer, "yes", "")),
             rx.table.cell(
                 rx.checkbox(
-                    checked=signup.served_bool,
-                    on_change=lambda val, oid=signup.order_id: State.set_served(oid, val)
+                    checked=meal.served,
+                    on_change=lambda val, id=meal.meal_id: State.set_served(id, val)
                 )
             ),
-            key=signup.order_id
+            key=meal.meal_id
             
         )
 
@@ -883,7 +883,7 @@ def admin_dinner() -> rx.Component:
                     )
                 ),
                 rx.table.body(
-                    rx.foreach(State.dinner_signups, show_signup)
+                    rx.foreach(State.tonights_dinner_signups, show_signup)
                 ),
                 variant="surface",
                 size="3"

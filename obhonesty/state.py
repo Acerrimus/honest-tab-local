@@ -7,13 +7,14 @@ from urllib.parse import quote
 import reflex as rx
 import stripe
 
-from obhonesty.aux import short_uid, str_cmp, check_internet_connection
-from obhonesty.constants import Diet, true_values
+from sqlalchemy import update
+from obhonesty.aux import short_uid, str_cmp, generate_receiver_from_names
+from obhonesty.constants import Diet, true_values, DATETIME_FORMAT
 from obhonesty.user import User
 from obhonesty.item import Item
 from obhonesty.order import Order
 from obhonesty.sheet import user_sheet, item_sheet, order_sheet, admin_sheet
-from obhonesty.models import User as User_Model, Order as Order_Model, Item as Item_Model, Admin as Admin_Model
+from obhonesty.models import User as User_Model, Order as Order_Model, Item as Item_Model, Admin as Admin_Model, Meal as Meal_Model
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -21,13 +22,13 @@ import os
 from gspread import Cell
 
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
-DATETIME_FORMAT = "%d/%m/%Y %H:%M:%S"
 
 class State(rx.State):
     """The app state."""
     admin_data: Dict[str, Any] = {}
     users: List[User] = []
     items: Dict[str, Item] = {}
+    tonights_dinner_meals: List[Meal_Model] = []
     current_user: Optional[User] = None
     new_nick_name: str = ""
     custom_item_price: str = ""
@@ -144,33 +145,20 @@ class State(rx.State):
         self.current_order_request_id = ""
 
     @rx.event(background=True)
-    async def set_served(self, order_id: str, value: bool):
-        # Calculate string value for sheet
-        new_str = "TRUE" if value else "FALSE"
-
-        # 1. Update Backend (Google Sheet)
-        if order_sheet and order_id:
-            try:
-                cell = order_sheet.find(order_id)
-                try:
-                    header_cell = order_sheet.find("served", in_row=1)
-                    col_number = header_cell.col
-                    if cell:
-                        order_sheet.update_cell(cell.row, col_number, new_str)
-                except Exception as e:
-                    print(f"Error finding column header: {e}")
-            except Exception as e:
-                print(f"Failed to update sheet: {e}")
-        else:
-            print("Could not find order")
-
-        # 2. Update Local State (UI)
-        async with self:
-            for order in self.orders:
-                if order.order_id == order_id:
-                    order.served = new_str
-                    break
-            self.orders = self.orders
+    async def set_served(self, meal_id: str, value: bool):
+        for index, meal in enumerate(self.tonights_dinner_meals):
+            if meal.meal_id != meal_id:
+                continue
+            
+            async with self:
+                self.tonights_dinner_meals[index].served = value
+            break
+        
+        with rx.session() as session:
+            session.exec(
+                update(Meal_Model).where(Meal_Model.meal_id == meal_id).values(served=value)
+            )
+            session.commit()
 
     def set_dinner_as_ordered_item(self):
         self.ordered_item = "dinner"
@@ -191,6 +179,7 @@ class State(rx.State):
     async def reload_sheet_data(self):
         with rx.session() as session:
               users = [User.from_dict(row.model_dump()) for row in session.exec(User_Model.select()).all()]
+              tonights_dinner_meals = session.execute(Meal_Model.select_todays_dinner_meals()).scalars().all()
               items = {}
 
               for row in session.exec(Item_Model.select()).all():
@@ -210,7 +199,8 @@ class State(rx.State):
               self.orders = orders
               self.users = users
               self.admin_data = admin_data
-
+              self.tonights_dinner_meals = tonights_dinner_meals
+        
     @rx.event
     def redirect_to_user_page(self, user: User):
         self.current_user = user
@@ -309,7 +299,7 @@ class State(rx.State):
     def get_receiver(self) -> str:
         first_name = self.dinner_signup_first_name if self.dinner_signup_first_name != "" else self.breakfast_signup_first_name
         last_name = self.dinner_signup_last_name if self.dinner_signup_last_name != "" else self.breakfast_signup_last_name
-        return f"{first_name.upper().strip()} {last_name.upper().strip()}"
+        return generate_receiver_from_names(first_name, last_name)
         
     @rx.event
     def order_dinner(self):
@@ -721,6 +711,10 @@ class State(rx.State):
                 signups.append(order_alt)
         signups.sort(key=lambda x: x.time, reverse=True)
         return signups
+    
+    @rx.var(cache=False)
+    def tonights_dinner_signups(self) -> List[Meal_Model]:
+        return self.tonights_dinner_meals
 
     @rx.var(cache=False)
     def dinner_signups(self) -> List[Order]:

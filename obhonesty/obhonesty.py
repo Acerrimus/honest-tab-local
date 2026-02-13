@@ -1,13 +1,16 @@
 """Welcome to Reflex! This file outlines the steps to create a basic app."""
 
 import reflex as rx
+from sqlalchemy import select
 import asyncio
+from datetime import datetime, timedelta
 
 from obhonesty.pages import * 
 from obhonesty.state import State
 from obhonesty.sheet import user_sheet, item_sheet, order_sheet, admin_sheet
-from obhonesty.models import User as User_Model, Order as Order_Model, Item as Item_Model, Admin as Admin_Model
-from obhonesty.aux import check_internet_connection, get_model_string_type_columns, sanitise_record_strings
+from obhonesty.models import User as User_Model, Order as Order_Model, Item as Item_Model, Admin as Admin_Model, Meal as Meal_Model
+from obhonesty.aux import check_internet_connection, get_model_string_type_columns, sanitise_record_strings, short_uid, generate_receiver_from_names
+from obhonesty.constants import DATETIME_FORMAT
 
 app = rx.App()
 app.add_page(index, route="/", on_load=[State.clear_temp_state_values, State.reload_sheet_data])
@@ -194,20 +197,89 @@ def sync_admin_data():
 
         session.commit()
 
+
+def update_meals_table_for_todays_dinner():
+    with rx.session() as session:
+        volunteers: list[User_Model] = session.exec(
+            select(User_Model).where(User_Model.volunteer == True)
+            ).scalars().all()
+        orders = session.exec(Order_Model.select()).all()
+        now = datetime.now()
+        dinner_meals_today = session.execute(Meal_Model.select_todays_dinner_meals()).scalars().all()
+        dinner_orders_today = list(filter(lambda order: order.item == "Dinner sign-up" and datetime.strptime(order.time, DATETIME_FORMAT).date() == now.date(), orders))
+        dinner_orders_today_as_receivers = list(map(lambda order: order.receiver, dinner_orders_today))
+        # remove guest meals from today's dinner meals if they've been removed from orders
+        for meal in dinner_meals_today:
+            if meal.receiver in dinner_orders_today_as_receivers or meal.volunteer:
+                continue
+
+            session.delete(meal)
+                
+        dinner_meals_today_as_receivers = list(map(lambda meal: meal.receiver, dinner_meals_today))
+
+        # add volunteers to today's dinner meals if not already added
+        for volunteer in volunteers:
+            volunteer_receiver_name = generate_receiver_from_names(volunteer.first_name, volunteer.last_name)
+
+            if volunteer_receiver_name in dinner_meals_today_as_receivers:
+                continue
+            
+            session.add(
+                Meal_Model(
+                    meal_id=str(short_uid()),
+                    order_id="N/A",
+                    user_nick_name=volunteer.nick_name,
+                    receiver=volunteer_receiver_name,
+                    order_time=now,
+                    meal_type="dinner",
+                    diet=volunteer.diet,
+                    allergies=volunteer.allergies,
+                    volunteer=True,
+                    served=False
+                )
+            )
+
+        # add new orders to today's dinner meals if not already added
+        for order in dinner_orders_today:
+            if order.receiver in dinner_meals_today_as_receivers:
+                continue
+            
+            session.add(
+                Meal_Model(
+                    meal_id=str(short_uid()),
+                    order_id=order.order_id,
+                    user_nick_name=order.user_nick_name,
+                    receiver=order.receiver,
+                    order_time=datetime.strptime(order.time, DATETIME_FORMAT),
+                    meal_type="dinner",
+                    diet=volunteer.diet,
+                    allergies=volunteer.allergies,
+                    volunteer=False,
+                    served=False
+                    )
+                )
+            
+        if len(session.new) or len(session.dirty) or len(session.deleted):
+            session.commit()
+
 async def sync_google_sheet_and_local_db():
+    sync_orders()
+    await asyncio.sleep(1)
+    sync_users()
+    await asyncio.sleep(1)
+    sync_items()
+    await asyncio.sleep(1)
+    sync_admin_data()
+
+async def run_loop_tasks():
     while True:
         try:
-            sync_orders()
-            await asyncio.sleep(1)
-            sync_users()
-            await asyncio.sleep(1)
-            sync_items()
-            await asyncio.sleep(1)
-            sync_admin_data()
+            update_meals_table_for_todays_dinner()
+            await sync_google_sheet_and_local_db()
 
         except Exception as e:
             print(e)
         
         await asyncio.sleep(5)
             
-app.register_lifespan_task(sync_google_sheet_and_local_db)
+app.register_lifespan_task(run_loop_tasks)

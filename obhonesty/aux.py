@@ -64,3 +64,5 @@ def sanitise_record_strings(string_type_columns, record):
         record[key] = str(record[key])
     return record
         
+def generate_receiver_from_names(first_name, last_name):
+    return f"{first_name.upper().strip()} {last_name.upper().strip()}"
