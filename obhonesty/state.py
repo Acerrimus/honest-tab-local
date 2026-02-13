@@ -234,33 +234,38 @@ class State(rx.State):
 
         except BaseException:
             return rx.toast.error("Failed to register. Quantity must be a number")
-        now = datetime.now().isoformat()
 
-        row = [
-                str(short_uid()),
-                self.current_user.nick_name,
-                now,
-                item.name,
-                quantity,
-                item.price,
-                quantity * item.price,
-                "", "", "", "",
-                item.tax_category,
-                "",
-                self.is_stripe_session_paid
-            ]
+        now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
-        if self.is_stripe_session_paid:
-            row += [now, "stripe", "tablet"]
-
-        if order_sheet:
-            order_sheet.append_row(row, value_input_option="USER_ENTERED", table_range="A1")
-            return rx.toast.info(
-                f"'{item.name}' registered succesfully. Thank you!",
-                position="bottom-center"
+        with rx.session() as session:
+            session.add(
+                Order_Model(
+                    order_id=str(short_uid()),
+                    user_nick_name=self.current_user.nick_name,
+                    time=now,
+                    item=item.name,
+                    quantity=1,
+                    price=item.price,
+                    total=quantity * item.price,
+                    receiver="",
+                    diet="",
+                    allergies="",
+                    served="",
+                    tax_category=item.tax_category,
+                    comment="",
+                    paid=self.is_stripe_session_paid,
+                    paid_time=now if self.is_stripe_session_paid else "",
+                    method="stripe" if self.is_stripe_session_paid else "",
+                    checkout_staff="tablet" if self.is_stripe_session_paid else "",
+                    synced=False
+                )
             )
-        else:
-            return rx.toast.error("No backend connected")
+            session.commit()
+
+        return rx.toast.info(
+            f"'{item.name}' registered succesfully. Thank you!",
+            position="bottom-center"
+        )
 
     @rx.event
     def order_custom_item(self, form_data: dict):
@@ -288,7 +293,7 @@ class State(rx.State):
         
     @rx.event
     def order_dinner(self):
-        now = datetime.now().isoformat()
+        now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
         with rx.session() as session:
             session.add(
@@ -379,7 +384,7 @@ class State(rx.State):
         row = [
             str(short_uid()),
             form_data['nick_name'],
-            datetime.now().isoformat(),
+            datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
             "Dinner sign-up",
             1,
             self.admin_data.get('dinner_price', 0),
@@ -405,7 +410,7 @@ class State(rx.State):
     @rx.event
     def order_breakfast(self):
         price = self.get_breakfast_price if not self.current_user.volunteer else 0.0
-        now = datetime.now().isoformat()
+        now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
         with rx.session() as session:
             session.add(
@@ -453,7 +458,7 @@ class State(rx.State):
         
         current_users_unpaid_orders = list(filter(filter_current_user_orders, [[i + 2, v] for i, v in enumerate(self.orders)]))
         cells = []
-        now = datetime.now().isoformat()
+        now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
         for row_num, _ in current_users_unpaid_orders:
             for col_num, value in [

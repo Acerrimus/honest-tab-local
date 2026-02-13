@@ -2,6 +2,7 @@
 
 import reflex as rx
 import asyncio
+from datetime import datetime
 
 from obhonesty.pages import * 
 from obhonesty.state import State
@@ -56,7 +57,7 @@ def sync_new_orders(unsynced_orders):
             order.served,
             order.tax_category,
             order.comment,
-            order.paid == 0,
+            order.paid == 1,
             order.paid_time,
             order.method, 
             order.checkout_staff
@@ -89,7 +90,6 @@ def sync_orders():
 
         for order in current_unsynced_orders:
             if order.order_id in google_sheet_order_ids:
-                print(order)
                 order.synced = True
                 continue
             
