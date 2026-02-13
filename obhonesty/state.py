@@ -201,6 +201,12 @@ class State(rx.State):
               self.admin_data = admin_data
               self.tonights_dinner_meals = tonights_dinner_meals
         
+    @rx.event(background=True)
+    async def reload_admin_dinner_data(self):
+        while self.router.page.path == "/admin/dinner":
+            yield State.reload_sheet_data
+            await asyncio.sleep(10)
+
     @rx.event
     def redirect_to_user_page(self, user: User):
         self.current_user = user
