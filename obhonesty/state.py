@@ -21,6 +21,7 @@ import os
 from gspread import Cell
 
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
+DATETIME_FORMAT = "%d/%m/%Y %H:%M:%S"
 
 class State(rx.State):
     """The app state."""
@@ -235,7 +236,7 @@ class State(rx.State):
         except BaseException:
             return rx.toast.error("Failed to register. Quantity must be a number")
 
-        now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        now = datetime.now().strftime(DATETIME_FORMAT)
 
         with rx.session() as session:
             session.add(
@@ -293,7 +294,7 @@ class State(rx.State):
         
     @rx.event
     def order_dinner(self):
-        now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        now = datetime.now().strftime(DATETIME_FORMAT)
 
         with rx.session() as session:
             session.add(
@@ -319,7 +320,7 @@ class State(rx.State):
                 )
             )
             session.commit()
-
+        
         if not self.is_stripe_session_paid:
             # only redirect if the user hasn't paid with stripe
             return rx.redirect("/user")
@@ -384,7 +385,7 @@ class State(rx.State):
         row = [
             str(short_uid()),
             form_data['nick_name'],
-            datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+            datetime.now().strftime(DATETIME_FORMAT),
             "Dinner sign-up",
             1,
             self.admin_data.get('dinner_price', 0),
@@ -410,7 +411,7 @@ class State(rx.State):
     @rx.event
     def order_breakfast(self):
         price = self.get_breakfast_price if not self.current_user.volunteer else 0.0
-        now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        now = datetime.now().strftime(DATETIME_FORMAT)
 
         with rx.session() as session:
             session.add(
@@ -458,7 +459,7 @@ class State(rx.State):
         
         current_users_unpaid_orders = list(filter(filter_current_user_orders, [[i + 2, v] for i, v in enumerate(self.orders)]))
         cells = []
-        now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        now = datetime.now().strftime(DATETIME_FORMAT)
 
         for row_num, _ in current_users_unpaid_orders:
             for col_num, value in [
@@ -674,7 +675,7 @@ class State(rx.State):
         signups: List[Order] = []
         for order in self.orders:
             try:
-                order_date = datetime.fromisoformat(order.time).date()
+                order_date = datetime.strptime(order.time, DATETIME_FORMAT).date()
             except BaseException:
                 continue
             
@@ -694,7 +695,7 @@ class State(rx.State):
         signups: List[Order] = []
         for order in self.orders:
             try:
-                order_date = datetime.fromisoformat(order.time).date()
+                order_date = datetime.strptime(order.time, DATETIME_FORMAT).date()
             except BaseException:
                 continue
                 
