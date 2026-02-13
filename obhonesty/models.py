@@ -16,6 +16,7 @@ class User(rx.Model, table=True):
   diet: str
   allergies: str
   synced: bool
+  # these must default to False otherwise the app crashes on startup
   current_guest: bool = False
   active_tab: bool = False
 
