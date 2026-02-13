@@ -66,6 +66,25 @@ def sync_new_orders(unsynced_orders):
             order.checkout_staff
             ])
     order_sheet.append_rows(new_rows, value_input_option="USER_ENTERED", table_range="A1")
+
+def sync_new_users(unsynced_users):
+    new_rows = []
+    for user in unsynced_users:
+        new_rows.append([
+            user.nick_name,
+            user.first_name,
+            user.last_name,
+            user.phone_number,
+            user.email,
+            user.diet,
+            user.allergies,
+            user.volunteer,
+            user.away,
+            "",
+            user.current_guest,
+            user.active_tab,
+            ])
+    user_sheet.append_rows(new_rows, value_input_option="USER_ENTERED", table_range="A1")
         
 def sync_orders():
     with rx.session() as session:
@@ -105,27 +124,55 @@ def sync_orders():
             sync_new_orders(remaining_unsynced_orders)
 
 def sync_users():
+    user_string_columns = []
+
+    for col in User_Model.__table__.columns:
+        if str(col.type) != "VARCHAR":
+            continue
+        
+        user_string_columns.append(col.name)
+
     with rx.session() as session:
         user_data = get_records(user_sheet, [
                 'nick_name', 'first_name', 'last_name', 'phone_number', 'email',
                 'diet', 'allergies', 'volunteer', 'away', 'owes', "current_guest", "active_tab"
             ], True)
+        current_unsynced_users = session.query(User_Model).filter(~User_Model.synced).all()
 
-        for user in user_data:
-            del user["owes"]
-            for key in ["volunteer", "away", "current_guest", "active_tab"]:
-                user[key] = user[key].lower() in ["yes", "true"]
+        if not len(current_unsynced_users):
+            for user in user_data:
+                del user["owes"]
+                for key in ["volunteer", "away", "current_guest", "active_tab"]:
+                    user[key] = user[key].lower() in ["yes", "true"]
 
-            user["phone_number"] = str(user["phone_number"])
+                for key in user:
+                    if not key in user_string_columns:
+                        continue
+                    
+                    user[key] = str(user[key])
 
-        for row in session.exec(User_Model.select()).all():
-            session.delete(row)
+            for row in session.exec(User_Model.select()).all():
+                session.delete(row)
 
-        session.add_all(
-            User_Model.model_validate(user) for user in user_data
+            session.add_all(
+                User_Model.model_validate(user) for user in user_data
             )
-        
-        session.commit()
+
+        google_sheet_user_nick_names = [user["nick_name"] for user in user_data]
+        remaining_unsynced_users = []
+
+        for user in current_unsynced_users:
+            if user.nick_name in google_sheet_user_nick_names:
+                user.synced = True
+                continue
+            
+            remaining_unsynced_users.append(user)
+
+        if len(session.new) or len(session.dirty):
+            session.commit()
+
+        if len(remaining_unsynced_users):
+            sync_new_users(remaining_unsynced_users)
 
 def sync_items():
     with rx.session() as session:
@@ -159,8 +206,11 @@ async def sync_google_sheet_and_local_db():
     while True:
         try:
             sync_orders()
+            await asyncio.sleep(1)
             sync_users()
+            await asyncio.sleep(1)
             sync_items()
+            await asyncio.sleep(1)
             sync_admin_data()
             await asyncio.sleep(5)
 

@@ -463,8 +463,13 @@ class State(rx.State):
 
     @rx.event
     def submit_signup(self, form_data: dict):
-        if user_sheet:
-            user_sheet.append_row(list(form_data.values()), table_range="A1")
+        print(form_data, flush=True)
+        
+        with rx.session() as session:
+            session.add(User_Model.model_validate({
+                **{key: str(form_data[key]) for key in form_data},
+                "synced": False, "volunteer": False, "away": False}))
+            session.commit()
         return rx.redirect("/")
     
     @rx.event
