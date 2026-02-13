@@ -7,8 +7,7 @@ from obhonesty.pages import *
 from obhonesty.state import State
 from obhonesty.sheet import user_sheet, item_sheet, order_sheet, admin_sheet
 from obhonesty.models import User as User_Model, Order as Order_Model, Item as Item_Model, Admin as Admin_Model
-from obhonesty.aux import check_internet_connection
-
+from obhonesty.aux import check_internet_connection, get_model_string_type_columns, sanitise_record_strings
 
 app = rx.App()
 app.add_page(index, route="/", on_load=[State.clear_temp_state_values, State.reload_sheet_data])
@@ -24,7 +23,6 @@ app.add_page(admin_breakfast, route="/admin/breakfast", on_load=State.reload_she
 app.add_page(admin_tax, route="/admin/tax", on_load=State.reload_sheet_data)
 app.add_page(admin_user_page, route="/admin/user", on_load=State.reload_sheet_data)
 app.add_page(late_dinner_signup_page, route="/admin/late", on_load=State.reload_sheet_data)
-
 
 def get_records(sheet, headers: list[str] = [], add_synced: bool = False):
     check_internet_connection()
@@ -86,7 +84,10 @@ def sync_new_users(unsynced_users):
             ])
     user_sheet.append_rows(new_rows, value_input_option="USER_ENTERED", table_range="A1")
         
+
 def sync_orders():
+    order_string_columns = get_model_string_type_columns(Order_Model)
+
     with rx.session() as session:
         order_data = get_records(order_sheet, [
             'order_id', 'user', 'time', 'item', 'quantity', 'price', 'total',
@@ -99,6 +100,7 @@ def sync_orders():
             for order in order_data:
                 order["user_nick_name"] = order["user"]
                 del order["user"]
+                sanitise_record_strings(order_string_columns, order)
 
             for row in session.exec(Order_Model.select()).all():
                 session.delete(row)
@@ -124,13 +126,7 @@ def sync_orders():
             sync_new_orders(remaining_unsynced_orders)
 
 def sync_users():
-    user_string_columns = []
-
-    for col in User_Model.__table__.columns:
-        if str(col.type) != "VARCHAR":
-            continue
-        
-        user_string_columns.append(col.name)
+    user_string_columns = get_model_string_type_columns(User_Model)
 
     with rx.session() as session:
         user_data = get_records(user_sheet, [
@@ -145,11 +141,7 @@ def sync_users():
                 for key in ["volunteer", "away", "current_guest", "active_tab"]:
                     user[key] = user[key].lower() in ["yes", "true"]
 
-                for key in user:
-                    if not key in user_string_columns:
-                        continue
-                    
-                    user[key] = str(user[key])
+                user = sanitise_record_strings(user_string_columns, user)
 
             for row in session.exec(User_Model.select()).all():
                 session.delete(row)

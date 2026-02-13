@@ -45,3 +45,22 @@ def check_internet_connection():
         print(f"No internet connection - {datetime.now()}", flush=True)
         raise
     
+def get_model_string_type_columns(model):
+    string_type_columns = []
+
+    for col in model.__table__.columns:
+        if str(col.type) != "VARCHAR":
+            continue
+        
+        string_type_columns.append(col.name)
+    
+    return string_type_columns
+
+def sanitise_record_strings(string_type_columns, record):
+    for key in record:
+        if not key in string_type_columns:
+            continue
+        
+        record[key] = str(record[key])
+    return record
+        
