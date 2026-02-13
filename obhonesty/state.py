@@ -13,7 +13,7 @@ from obhonesty.constants import Diet, true_values, DATETIME_FORMAT
 from obhonesty.user import User
 from obhonesty.item import Item
 from obhonesty.order import Order
-from obhonesty.sheet import user_sheet, item_sheet, order_sheet, admin_sheet
+from obhonesty.sheet import order_sheet
 from obhonesty.models import User as User_Model, Order as Order_Model, Item as Item_Model, Admin as Admin_Model, Meal as Meal_Model
 
 from dotenv import load_dotenv
