@@ -204,7 +204,6 @@ async def sync_google_sheet_and_local_db():
             sync_items()
             await asyncio.sleep(1)
             sync_admin_data()
-            await asyncio.sleep(5)
 
         except Exception as e:
             print(e)
