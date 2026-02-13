@@ -3,6 +3,8 @@ import re
 import random
 import string
 from typing import Any, Optional
+import socket 
+from datetime import datetime
 
 from reflex.vars import NumberVar, var_operation, var_operation_return
 
@@ -36,3 +38,10 @@ def lower_non_alpha_num(s: str) -> str:
 def str_cmp(s: str, t: str) -> bool:
   return lower_non_alpha_num(s) == lower_non_alpha_num(t)
 
+def check_internet_connection():
+    try:
+        socket.create_connection(("www.google.com", 443), timeout=3) 
+    except OSError: 
+        print(f"No internet connection - {datetime.now()}", flush=True)
+        raise
+    

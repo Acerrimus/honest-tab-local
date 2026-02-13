@@ -2,13 +2,12 @@
 
 import reflex as rx
 import asyncio
-from datetime import datetime
-import socket 
 
 from obhonesty.pages import * 
 from obhonesty.state import State
 from obhonesty.sheet import user_sheet, item_sheet, order_sheet, admin_sheet
 from obhonesty.models import User as User_Model, Order as Order_Model, Item as Item_Model, Admin as Admin_Model
+from obhonesty.aux import check_internet_connection
 
 
 app = rx.App()
@@ -26,13 +25,7 @@ app.add_page(admin_tax, route="/admin/tax", on_load=State.reload_sheet_data)
 app.add_page(admin_user_page, route="/admin/user", on_load=State.reload_sheet_data)
 app.add_page(late_dinner_signup_page, route="/admin/late", on_load=State.reload_sheet_data)
 
-def check_internet_connection():
-    try:
-        socket.create_connection(("www.google.com", 443), timeout=3) 
-    except OSError: 
-        print(f"No internet connection - {datetime.now()}", flush=True)
-        raise
-    
+
 def get_records(sheet, headers: list[str] = [], add_synced: bool = False):
     check_internet_connection()
 
