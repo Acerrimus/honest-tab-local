@@ -401,26 +401,34 @@ class State(rx.State):
     
     @rx.event
     def order_dinner_late(self, form_data: dict):
-        row = [
-            str(short_uid()),
-            form_data['nick_name'],
-            datetime.now().strftime(DATETIME_FORMAT),
-            "Dinner sign-up",
-            1,
-            self.admin_data.get('dinner_price', 0),
-            self.admin_data.get('dinner_price', 0),
-            form_data['full_name'].upper().strip(),
-            form_data['diet'],
-            form_data['allergies'],
-            "",
-            "Food and beverage non-alcoholic",
-            "",
-            False
-        ]
+        now = datetime.now().strftime(DATETIME_FORMAT)
+        price = self.admin_data.get('dinner_price', 0)
 
-        if order_sheet:
-            order_sheet.append_row(row, table_range="A1", value_input_option="USER_ENTERED")
-
+        with rx.session() as session:
+            session.add(
+                Order_Model(
+                    order_id=str(short_uid()),
+                    user_nick_name=form_data['nick_name'],
+                    time=now,
+                    item="Dinner sign-up",
+                    quantity=1,
+                    price=price,
+                    total=price,
+                    receiver=form_data['full_name'].upper().strip(),
+                    diet=form_data['diet'],
+                    allergies=form_data['allergies'],
+                    served="",
+                    tax_category="Food and beverage non-alcoholic",
+                    comment="Late dinner signup",
+                    paid=False,
+                    paid_time="",
+                    method="",
+                    checkout_staff="",
+                    synced=False
+                )
+            )
+            session.commit()
+            
         return rx.redirect("/admin/dinner")
 
     @rx.var(cache=False)
