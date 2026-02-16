@@ -60,7 +60,7 @@ def sync_new_orders(unsynced_orders):
             order.served,
             order.tax_category,
             order.comment,
-            order.paid == 1,
+            str(order.paid) == "1",
             order.paid_time,
             order.method, 
             order.checkout_staff
