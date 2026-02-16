@@ -850,24 +850,24 @@ def admin_dinner() -> rx.Component:
             # Make the two columns share the available space evenly
             rx.hstack(
                 rx.vstack(
-                    rx.text(f"Total eating dinner: {State.dinner_count}"),
-                    rx.text(f"Total served: {State.total_dinner_meals_served_count}"),
+                    rx.text.strong(f"Total eating dinner: {State.dinner_count}"),
+                    rx.text.strong(f"Total served: {State.total_dinner_meals_served_count}"),
                     rx.text(f"Meat: {State.dinner_count_meat}"),
                     rx.text(f"Vegetarian: {State.dinner_count_vegetarian}"),                  
                     rx.text(f"Vegan: {State.dinner_count_vegan}"),
                     flex="1"
                 ),
                 rx.vstack(
-                    rx.text(f"Guests eating dinner: {State.dinner_count_volunteers}"),
-                    rx.text(f"Total served: {State.guest_dinner_meals_served_count}"),
+                    rx.text.strong(f"Guests eating dinner: {State.dinner_count_volunteers}"),
+                    rx.text.strong(f"Total served: {State.guest_dinner_meals_served_count}"),
                     rx.text(f"Meat: {State.dinner_count_meat - State.dinner_count_meat_volunteers}"),
                     rx.text(f"Vegetarian: {State.dinner_count_vegetarian - State.dinner_count_vegetarian_volunteers}"),
                     rx.text(f"Vegan: {State.dinner_count_vegan - State.dinner_count_vegan_volunteers}"),
                     flex="1"
                 ),
                 rx.vstack(
-                    rx.text(f"Volunteers eating dinner: {State.dinner_count - State.dinner_count_volunteers}"),
-                    rx.text(f"Total served: {State.volunteer_dinner_meals_served_count}"),
+                    rx.text.strong(f"Volunteers eating dinner: {State.dinner_count - State.dinner_count_volunteers}"),
+                    rx.text.strong(f"Total served: {State.volunteer_dinner_meals_served_count}"),
                     rx.text(f"Meat: {State.dinner_count_meat_volunteers}"),
                     rx.text(f"Vegetarian: {State.dinner_count_vegetarian_volunteers}"),
                     rx.text(f"Vegan: {State.dinner_count_vegan_volunteers}"),
@@ -903,7 +903,7 @@ def admin_breakfast() -> rx.Component:
             rx.heading("Breakfast", size=default_heading_size),
             admin_refresh_top_bar(), 
             rx.vstack(
-                rx.text(f"Total served: {State.total_breakfast_meals_served_count}"),
+                rx.text.strong(f"Total served: {State.total_breakfast_meals_served_count}"),
                 rx.text(f"Remaining: {State.remaining_breakfast_meals_count}"),
                 flex="1"
             ),
