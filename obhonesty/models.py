@@ -65,7 +65,7 @@ class Meal(rx.Model, table=True):
   served: bool
 
   @classmethod
-  def select_todays_meals(cls, meal_type: str):
+  def select_todays_meals(cls, meal_type: str | None = None):
       now = datetime.now()
       today = now.date()
       start = datetime.combine(today, datetime.min.time())
@@ -73,6 +73,9 @@ class Meal(rx.Model, table=True):
 
       return select(cls).where(
               cls.meal_type == meal_type,
+              cls.order_time >= start,
+              cls.order_time < end
+          ) if meal_type is not None else select(cls).where(
               cls.order_time >= start,
               cls.order_time < end
           )

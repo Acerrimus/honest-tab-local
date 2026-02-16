@@ -197,33 +197,26 @@ def sync_admin_data():
 
         session.commit()
 
-def update_meals_table_for_todays_dinner():
+def update_meals_table():
     with rx.session() as session:
         volunteers: list[User_Model] = session.exec(
             select(User_Model).where(User_Model.volunteer == True)
             ).scalars().all()
         orders: list[Order_Model] = session.exec(Order_Model.select()).all()
         now = datetime.now()
-        breakfast_meals_today: list[Meal_Model] = session.execute(Meal_Model.select_todays_breakfast_meals()).scalars().all()
+        todays_meals: list[Meal_Model] = session.execute(Meal_Model.select_todays_meals()).scalars().all()
         dinner_meals_today: list[Meal_Model] = session.execute(Meal_Model.select_todays_dinner_meals()).scalars().all()
-        orders_today = list(filter(lambda order: (order.item == "Breakfast sign-up" or order.item == "Dinner sign-up") and datetime.strptime(order.time, DATETIME_FORMAT).date() == now.date(), orders))
-        orders_today_as_ids = list(map(lambda order: order.order_id, orders_today))
-        dinner_orders_today = list(filter(lambda order: order.item == "Dinner sign-up", orders_today))
-        dinner_orders_today_as_receivers = list(map(lambda order: order.receiver, dinner_orders_today))
-        # remove guest meals from today's breakfast signups if they've been removed from orders
-        for meal in breakfast_meals_today:
-            if meal.order_id in orders_today_as_ids:
+        signups_in_todays_orders = list(filter(lambda order: (order.item == "Breakfast sign-up" or order.item == "Dinner sign-up") and datetime.strptime(order.time, DATETIME_FORMAT).date() == now.date(), orders))
+        signups_in_todays_orders_as_order_ids = list(map(lambda order: order.order_id, signups_in_todays_orders))
+        
+        # remove guest meals from today's signups if they've been removed from orders
+        for meal in todays_meals:
+            # if order_id is "N/A" they are a volunteer getting dinner automatically, so this meal will not appear in the order table
+            if meal.order_id in signups_in_todays_orders_as_order_ids or meal.order_id == "N/A":
                 continue
             
             session.delete(meal)
 
-        # remove guest meals from today's dinner signups if they've been removed from orders
-        for meal in dinner_meals_today:
-            if meal.receiver in dinner_orders_today_as_receivers or meal.volunteer:
-                continue
-
-            session.delete(meal)
-                
         dinner_meals_today_as_receivers = list(map(lambda meal: meal.receiver, dinner_meals_today))
 
         # add volunteers to today's dinner meals if not already added
@@ -247,32 +240,12 @@ def update_meals_table_for_todays_dinner():
                     served=False
                 )
             )
-
-        # add new orders to today's breakfast meals if not already added
-        breakfast_meals_as_order_ids = list(map(lambda meal: meal.order_id, breakfast_meals_today))
-        for order in orders_today:
-            if order.item == "Breakfast sign-up":
-                if order.order_id in breakfast_meals_as_order_ids:
-                    continue
-                
-                session.add(
-                    Meal_Model(
-                        meal_id=str(short_uid()),
-                        order_id=order.order_id,
-                        user_nick_name=order.user_nick_name,
-                        receiver=order.receiver,
-                        order_time=datetime.strptime(order.time, DATETIME_FORMAT),
-                        meal_type="breakfast",
-                        diet=order.diet,
-                        allergies=order.allergies,
-                        volunteer=False,
-                        served=False
-                        )
-                    )
-
-        # add new orders to today's dinner meals if not already added
-        for order in dinner_orders_today:
-            if order.receiver in dinner_meals_today_as_receivers:
+        
+        todays_meals_as_order_ids = list(map(lambda meal: meal.order_id, todays_meals))
+        
+        # add new orders to today's meals if not already added
+        for order in signups_in_todays_orders:
+            if order.order_id in todays_meals_as_order_ids:
                 continue
             
             session.add(
@@ -282,7 +255,7 @@ def update_meals_table_for_todays_dinner():
                     user_nick_name=order.user_nick_name,
                     receiver=order.receiver,
                     order_time=datetime.strptime(order.time, DATETIME_FORMAT),
-                    meal_type="dinner",
+                    meal_type="breakfast" if order.item == "Breakfast sign-up" else "dinner",
                     diet=order.diet,
                     allergies=order.allergies,
                     volunteer=False,
@@ -305,7 +278,7 @@ async def sync_google_sheet_and_local_db():
 async def run_loop_tasks():
     while True:
         try:
-            update_meals_table_for_todays_dinner()
+            update_meals_table()
             await sync_google_sheet_and_local_db()
 
         except Exception as e:
