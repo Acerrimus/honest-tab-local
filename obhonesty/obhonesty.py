@@ -22,7 +22,7 @@ app.add_page(custom_item_page, route="/custom_item", on_load=State.cancel_timeou
 app.add_page(user_info_page, route="/info", on_load=State.reload_sheet_data)
 app.add_page(admin, route="/admin", on_load=[State.clear_temp_state_values, State.reload_sheet_data])
 app.add_page(admin_dinner, route="/admin/dinner", on_load=State.reload_admin_dinner_data)
-app.add_page(admin_breakfast, route="/admin/breakfast", on_load=State.reload_sheet_data)
+app.add_page(admin_breakfast, route="/admin/breakfast", on_load=State.reload_admin_dinner_data)
 app.add_page(admin_tax, route="/admin/tax", on_load=State.reload_sheet_data)
 app.add_page(admin_user_page, route="/admin/user", on_load=State.reload_sheet_data)
 app.add_page(late_dinner_signup_page, route="/admin/late", on_load=State.reload_sheet_data)
@@ -197,18 +197,27 @@ def sync_admin_data():
 
         session.commit()
 
-
 def update_meals_table_for_todays_dinner():
     with rx.session() as session:
         volunteers: list[User_Model] = session.exec(
             select(User_Model).where(User_Model.volunteer == True)
             ).scalars().all()
-        orders = session.exec(Order_Model.select()).all()
+        orders: list[Order_Model] = session.exec(Order_Model.select()).all()
         now = datetime.now()
-        dinner_meals_today = session.execute(Meal_Model.select_todays_dinner_meals()).scalars().all()
-        dinner_orders_today = list(filter(lambda order: order.item == "Dinner sign-up" and datetime.strptime(order.time, DATETIME_FORMAT).date() == now.date(), orders))
+        breakfast_meals_today: list[Meal_Model] = session.execute(Meal_Model.select_todays_breakfast_meals()).scalars().all()
+        dinner_meals_today: list[Meal_Model] = session.execute(Meal_Model.select_todays_dinner_meals()).scalars().all()
+        orders_today = list(filter(lambda order: (order.item == "Breakfast sign-up" or order.item == "Dinner sign-up") and datetime.strptime(order.time, DATETIME_FORMAT).date() == now.date(), orders))
+        orders_today_as_ids = list(map(lambda order: order.order_id, orders_today))
+        dinner_orders_today = list(filter(lambda order: order.item == "Dinner sign-up", orders_today))
         dinner_orders_today_as_receivers = list(map(lambda order: order.receiver, dinner_orders_today))
-        # remove guest meals from today's dinner meals if they've been removed from orders
+        # remove guest meals from today's breakfast signups if they've been removed from orders
+        for meal in breakfast_meals_today:
+            if meal.order_id in orders_today_as_ids:
+                continue
+            
+            session.delete(meal)
+
+        # remove guest meals from today's dinner signups if they've been removed from orders
         for meal in dinner_meals_today:
             if meal.receiver in dinner_orders_today_as_receivers or meal.volunteer:
                 continue
@@ -239,6 +248,28 @@ def update_meals_table_for_todays_dinner():
                 )
             )
 
+        # add new orders to today's breakfast meals if not already added
+        breakfast_meals_as_order_ids = list(map(lambda meal: meal.order_id, breakfast_meals_today))
+        for order in orders_today:
+            if order.item == "Breakfast sign-up":
+                if order.order_id in breakfast_meals_as_order_ids:
+                    continue
+                
+                session.add(
+                    Meal_Model(
+                        meal_id=str(short_uid()),
+                        order_id=order.order_id,
+                        user_nick_name=order.user_nick_name,
+                        receiver=order.receiver,
+                        order_time=datetime.strptime(order.time, DATETIME_FORMAT),
+                        meal_type="breakfast",
+                        diet=order.diet,
+                        allergies=order.allergies,
+                        volunteer=False,
+                        served=False
+                        )
+                    )
+
         # add new orders to today's dinner meals if not already added
         for order in dinner_orders_today:
             if order.receiver in dinner_meals_today_as_receivers:
@@ -252,8 +283,8 @@ def update_meals_table_for_todays_dinner():
                     receiver=order.receiver,
                     order_time=datetime.strptime(order.time, DATETIME_FORMAT),
                     meal_type="dinner",
-                    diet=volunteer.diet,
-                    allergies=volunteer.allergies,
+                    diet=order.diet,
+                    allergies=order.allergies,
                     volunteer=False,
                     served=False
                     )

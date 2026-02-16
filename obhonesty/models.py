@@ -65,14 +65,22 @@ class Meal(rx.Model, table=True):
   served: bool
 
   @classmethod
-  def select_todays_dinner_meals(cls):
+  def select_todays_meals(cls, meal_type: str):
       now = datetime.now()
       today = now.date()
       start = datetime.combine(today, datetime.min.time())
       end = start + timedelta(days=1)
 
       return select(cls).where(
-              cls.meal_type == "dinner",
+              cls.meal_type == meal_type,
               cls.order_time >= start,
               cls.order_time < end
           )
+  
+  @classmethod
+  def select_todays_breakfast_meals(cls):
+    return cls.select_todays_meals("breakfast")
+  
+  @classmethod
+  def select_todays_dinner_meals(cls):
+    return cls.select_todays_meals("dinner")

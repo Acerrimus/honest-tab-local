@@ -28,7 +28,8 @@ class State(rx.State):
     admin_data: Dict[str, Any] = {}
     users: List[User] = []
     items: Dict[str, Item] = {}
-    tonights_dinner_meals: List[Meal_Model] = []
+    todays_breakfast_meals: List[Meal_Model] = []
+    todays_dinner_meals: List[Meal_Model] = []
     current_user: Optional[User] = None
     new_nick_name: str = ""
     custom_item_price: str = ""
@@ -146,12 +147,12 @@ class State(rx.State):
 
     @rx.event(background=True)
     async def set_served(self, meal_id: str, value: bool):
-        for index, meal in enumerate(self.tonights_dinner_meals):
+        for index, meal in enumerate(self.todays_dinner_meals):
             if meal.meal_id != meal_id:
                 continue
             
             async with self:
-                self.tonights_dinner_meals[index].served = value
+                self.todays_dinner_meals[index].served = value
             break
         
         with rx.session() as session:
@@ -179,7 +180,8 @@ class State(rx.State):
     async def reload_sheet_data(self):
         with rx.session() as session:
               users = [User.from_dict(row.model_dump()) for row in session.exec(User_Model.select()).all()]
-              tonights_dinner_meals = session.execute(Meal_Model.select_todays_dinner_meals()).scalars().all()
+              todays_breakfast_meals = session.execute(Meal_Model.select_todays_breakfast_meals()).scalars().all()
+              todays_dinner_meals = session.execute(Meal_Model.select_todays_dinner_meals()).scalars().all()
               items = {}
 
               for row in session.exec(Item_Model.select()).all():
@@ -199,11 +201,12 @@ class State(rx.State):
               self.orders = orders
               self.users = users
               self.admin_data = admin_data
-              self.tonights_dinner_meals = tonights_dinner_meals
+              self.todays_dinner_meals = todays_dinner_meals
+              self.todays_breakfast_meals = todays_breakfast_meals
         
     @rx.event(background=True)
     async def reload_admin_dinner_data(self):
-        while self.router.page.path == "/admin/dinner":
+        while self.router.page.path in ["/admin/breakfast", "/admin/dinner"]:
             yield State.reload_sheet_data
             await asyncio.sleep(10)
 
@@ -720,7 +723,7 @@ class State(rx.State):
     
     @rx.var(cache=False)
     def tonights_dinner_signups(self) -> List[Meal_Model]:
-        return self.tonights_dinner_meals
+        return self.todays_dinner_meals
 
     @rx.var(cache=False)
     def dinner_signups(self) -> List[Order]:

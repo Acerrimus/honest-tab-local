@@ -8,6 +8,7 @@ from obhonesty.item import Item
 from obhonesty.order import Order
 from obhonesty.state import State
 from obhonesty.user import User
+from obhonesty.models import Meal as Meal_Model
 
 
 
@@ -814,23 +815,26 @@ def admin_refresh_top_bar() -> rx.Component:
         spacing="2"
     )
 
-def admin_dinner() -> rx.Component:
-    def show_signup(meal):
-        return rx.table.row( 
-            rx.table.cell(meal.receiver),
-            rx.table.cell(meal.diet),
-            rx.table.cell(meal.allergies),
-            rx.table.cell(rx.cond(meal.volunteer, "yes", "")),
-            rx.table.cell(
-                rx.checkbox(
-                    checked=meal.served,
-                    on_change=lambda val, id=meal.meal_id: State.set_served(id, val)
-                )
-            ),
-            key=meal.meal_id
-            
-        )
+def show_signup(meal: Meal_Model):
+    return rx.table.row( 
+        rx.table.cell(meal.receiver),
+        rx.table.cell(meal.diet),
+        rx.table.cell(meal.allergies),
+        rx.cond(
+            meal.meal_type == "dinner",
+            rx.table.cell(rx.cond(meal.volunteer, "yes", ""))
+        ),
+        rx.table.cell(
+            rx.checkbox(
+                checked=meal.served,
+                on_change=lambda val, id=meal.meal_id: State.set_served(id, val)
+            )
+        ),
+        key=meal.meal_id
+        
+    )
 
+def admin_dinner() -> rx.Component:
     return rx.container(rx.center(
         rx.vstack(
             rx.heading("Dinner", size=default_heading_size), 
@@ -882,7 +886,7 @@ def admin_dinner() -> rx.Component:
                     )
                 ),
                 rx.table.body(
-                    rx.foreach(State.tonights_dinner_signups, show_signup)
+                    rx.foreach(State.todays_dinner_meals, show_signup)
                 ),
                 variant="surface",
                 size="3"
@@ -892,21 +896,6 @@ def admin_dinner() -> rx.Component:
 )
 
 def admin_breakfast() -> rx.Component:
-    def show_signup(signup: Order):
-        return rx.table.row( 
-            rx.table.cell(signup.time),
-            rx.table.cell(signup.receiver),
-            rx.table.cell(signup.diet),
-            rx.table.cell(signup.allergies),
-            rx.table.cell(
-                rx.checkbox(
-                    checked=signup.served_bool,
-                    on_change=lambda val, oid=signup.order_id: State.set_served(oid, val)
-                )
-            ),
-            key=signup.order_id
-        )
-
     return rx.container(rx.center(
         rx.vstack(
             rx.heading("Breakfast", size=default_heading_size),
@@ -915,7 +904,6 @@ def admin_breakfast() -> rx.Component:
                 rx.table.root(
                     rx.table.header(
                         rx.table.row(
-                            rx.table.column_header_cell("Time"),
                             rx.table.column_header_cell("Name"),
                             rx.table.column_header_cell("Menu item"),
                             rx.table.column_header_cell("Allergies"),
@@ -923,7 +911,7 @@ def admin_breakfast() -> rx.Component:
                         )
                     ),
                     rx.table.body(
-                        rx.foreach(State.breakfast_signups, show_signup)
+                        rx.foreach(State.todays_breakfast_meals, show_signup)
                     ),
                     variant="surface",
                     size="3"
