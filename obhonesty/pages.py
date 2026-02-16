@@ -827,7 +827,7 @@ def show_signup(meal: Meal_Model):
         rx.table.cell(
             rx.checkbox(
                 checked=meal.served,
-                on_change=lambda val, id=meal.meal_id: State.set_served(id, val)
+                on_change=lambda val: State.set_served(meal.meal_id, val, meal.meal_type)
             )
         ),
         key=meal.meal_id
