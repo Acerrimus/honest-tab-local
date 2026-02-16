@@ -750,21 +750,14 @@ def admin() -> rx.Component:
         rx.vstack(
             rx.heading(f"Admin", size=default_heading_size),
             rx.button(
-                rx.icon("refresh-cw"),
-                rx.text("Reload", size=default_button_text_size),
-                on_click=State.reload_sheet_data,
-                color_scheme="green",
-                size=default_button_size
+                rx.text("Breakfast", size=default_button_text_size),
+                on_click=rx.redirect("/admin/breakfast"),
+                size=default_button_size	
             ),
             rx.button(
                 rx.text("Dinner", size=default_button_text_size),
                 on_click=rx.redirect("/admin/dinner"),
                 size=default_button_size
-            ),
-            rx.button(
-                rx.text("Breakfast", size=default_button_text_size),
-                on_click=rx.redirect("/admin/breakfast"),
-                size=default_button_size	
             ),
         ) 
     ))
