@@ -858,7 +858,7 @@ def admin_dinner() -> rx.Component:
                     flex="1"
                 ),
                 rx.vstack(
-                    rx.text.strong(f"Guests eating dinner: {State.dinner_count_volunteers}"),
+                    rx.text.strong(f"Guests eating dinner: {State.dinner_count - State.dinner_count_volunteers}"),
                     rx.text.strong(f"Total served: {State.guest_dinner_meals_served_count}"),
                     rx.text(f"Meat: {State.dinner_count_meat - State.dinner_count_meat_volunteers}"),
                     rx.text(f"Vegetarian: {State.dinner_count_vegetarian - State.dinner_count_vegetarian_volunteers}"),
@@ -866,7 +866,7 @@ def admin_dinner() -> rx.Component:
                     flex="1"
                 ),
                 rx.vstack(
-                    rx.text.strong(f"Volunteers eating dinner: {State.dinner_count - State.dinner_count_volunteers}"),
+                    rx.text.strong(f"Volunteers eating dinner: {State.dinner_count_volunteers}"),
                     rx.text.strong(f"Total served: {State.volunteer_dinner_meals_served_count}"),
                     rx.text(f"Meat: {State.dinner_count_meat_volunteers}"),
                     rx.text(f"Vegetarian: {State.dinner_count_vegetarian_volunteers}"),
