@@ -218,11 +218,6 @@ class State(rx.State):
         return rx.redirect("/user")
 
     @rx.event
-    def redirect_to_admin_user_page(self, user: User):
-        self.current_user = user
-        return rx.redirect("/admin/user")
-
-    @rx.event
     def redirect_no_user(self):
         if self.current_user is None:
             return rx.redirect("/")

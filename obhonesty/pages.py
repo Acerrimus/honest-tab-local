@@ -746,15 +746,6 @@ def user_info_page() -> rx.Component:
     )))
 
 def admin() -> rx.Component:
-    def user_button(user: User):
-        return rx.button(
-            rx.text(
-                f"{user.first_name} {user.last_name} ({user.nick_name})",
-                size=default_button_text_size
-            ),
-            on_click=State.redirect_to_admin_user_page(user),
-            size=default_button_size
-        )
     return rx.container(rx.center(
         rx.vstack(
             rx.heading(f"Admin", size=default_heading_size),
@@ -775,8 +766,6 @@ def admin() -> rx.Component:
                 on_click=rx.redirect("/admin/breakfast"),
                 size=default_button_size	
             ),
-            rx.text("Users:"),
-            rx.foreach(State.users, user_button)
         ) 
     ))
 
