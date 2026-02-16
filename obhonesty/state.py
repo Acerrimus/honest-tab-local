@@ -148,7 +148,7 @@ class State(rx.State):
     @rx.event(background=True)
     async def set_served(self, meal_id: str, value: bool, meal_type: Literal["breakfast", "dinner"]):
         meal_state = self.todays_breakfast_meals if meal_type == "breakfast" else self.todays_dinner_meals
-        
+
         for index, meal in enumerate(meal_state):
                 if meal.meal_id != meal_id:
                     continue
@@ -798,6 +798,41 @@ class State(rx.State):
     
 
 # ====== GET VOLUNTEERS DINNER COUNTS ======
+
+    def _get_served_count(
+            self,
+            meal_state: list[Meal_Model],
+            user_type: Literal["volunteer", "guest", None] = None
+            ) -> int:
+        served_count = 0
+
+        for meal in meal_state:
+            if not meal.served or (user_type == "volunteer" and not meal.volunteer) or (user_type != "volunteer" and meal.volunteer):
+                continue
+
+            served_count += 1
+
+        return served_count
+  
+    @rx.var(cache=False)
+    def total_breakfast_meals_served_count(self) -> int:
+        return self._get_served_count(self.todays_breakfast_meals)
+      
+    @rx.var(cache=False)
+    def remaining_breakfast_meals_count(self) -> int:
+        return len(self.todays_breakfast_meals) - self._get_served_count(self.todays_breakfast_meals)
+  
+    @rx.var(cache=False)
+    def total_dinner_meals_served_count(self) -> int:
+        return self._get_served_count(self.todays_dinner_meals)
+    
+    @rx.var(cache=False)
+    def guest_dinner_meals_served_count(self) -> int:
+        return self._get_served_count(self.todays_dinner_meals, "guest")
+    
+    @rx.var(cache=False)
+    def volunteer_dinner_meals_served_count(self) -> int:
+        return self._get_served_count(self.todays_dinner_meals, "volunteer")
 
     @rx.var(cache=False)
     def dinner_count_volunteers(self) -> int:
