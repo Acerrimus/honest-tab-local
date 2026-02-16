@@ -147,23 +147,16 @@ class State(rx.State):
 
     @rx.event(background=True)
     async def set_served(self, meal_id: str, value: bool, meal_type: Literal["breakfast", "dinner"]):
-        if meal_type == "breakfast":
-            for index, meal in enumerate(self.todays_breakfast_meals):
+        meal_state = self.todays_breakfast_meals if meal_type == "breakfast" else self.todays_dinner_meals
+        
+        for index, meal in enumerate(meal_state):
                 if meal.meal_id != meal_id:
                     continue
                 
                 async with self:
-                    self.todays_breakfast_meals[index].served = value
+                    meal_state[index].served = value
                 break
-        else:
-            for index, meal in enumerate(self.todays_dinner_meals):
-                if meal.meal_id != meal_id:
-                    continue
-                
-                async with self:
-                    self.todays_dinner_meals[index].served = value
-                break
-            
+        
         with rx.session() as session:
             session.exec(
                 update(Meal_Model).where(Meal_Model.meal_id == meal_id).values(served=value)
