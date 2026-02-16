@@ -775,29 +775,10 @@ def admin() -> rx.Component:
                 on_click=rx.redirect("/admin/breakfast"),
                 size=default_button_size	
             ),
-            rx.button(
-                rx.text("Tax", size=default_button_text_size),
-                on_click=rx.redirect("/admin/tax"),
-                size=default_button_size
-            ),
             rx.text("Users:"),
             rx.foreach(State.users, user_button)
         ) 
     ))
-
-def admin_tax() -> rx.Component:
-    return rx.container(rx.center(rx.vstack(
-        rx.heading("Tax categories", size=default_heading_size),
-        rx.button(
-            rx.text("Go back", size=default_button_text_size),
-            on_click=rx.redirect("/admin"),
-            size=default_button_size
-        ),
-        rx.foreach(
-            State.tax_categories.items(),
-            lambda x: rx.text(f"{x[0]}: {x[1]}")
-        )
-    )))
 
 def admin_refresh_top_bar() -> rx.Component:
     return rx.flex(

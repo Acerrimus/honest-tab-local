@@ -23,7 +23,6 @@ app.add_page(user_info_page, route="/info", on_load=State.reload_sheet_data)
 app.add_page(admin, route="/admin", on_load=[State.clear_temp_state_values, State.reload_sheet_data])
 app.add_page(admin_dinner, route="/admin/dinner", on_load=State.reload_admin_dinner_data)
 app.add_page(admin_breakfast, route="/admin/breakfast", on_load=State.reload_admin_dinner_data)
-app.add_page(admin_tax, route="/admin/tax", on_load=State.reload_sheet_data)
 app.add_page(admin_user_page, route="/admin/user", on_load=State.reload_sheet_data)
 app.add_page(late_dinner_signup_page, route="/admin/late", on_load=State.reload_sheet_data)
 

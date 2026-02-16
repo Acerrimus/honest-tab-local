@@ -695,15 +695,6 @@ class State(rx.State):
         return now_minutes < deadline_minutes
 
     @rx.var(cache=False)
-    def tax_categories(self) -> Dict[str, float]:
-        result: Dict[str, float] = {}
-        for order in self.orders:
-            if order.tax_category not in result:
-                result[order.tax_category] = 0.0
-            result[order.tax_category] += order.price
-        return result
-
-    @rx.var(cache=False)
     def breakfast_signups(self) -> List[Order]:
         signups: List[Order] = []
         for order in self.orders:
