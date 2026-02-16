@@ -1,6 +1,12 @@
-# Honest tab
+# Honest Tab
 
-A digital POS/tab system for small businesses.
+A digital POS/tab system for small businesses, written in Python with [Reflex](https://reflex.dev/). Created for the [Olive Branch hostel](https://www.olivebranchelchorro.com/) in El Chorro, Spain.
+
+Contents:
+
+1. [Setup](#setup)
+2. [Local Database](#local-database)
+3. [How To Contribute](#how-to-contribute)
 
 ## Setup
 
@@ -53,4 +59,28 @@ To setup:
 
 This app uses SQLite to store an offline verison of the Google Sheet.
 
-To access it run `sqlite3 reflex.db` in the docker container.
+To access it run `sqlite3 reflex.db`
+
+## Contributing
+
+### Branches
+
+`main` represents live production code. **Do not commit directly to this branch.**
+
+`ci` is the current state of development. Please do not commit directly to this branch unless it is a minor fix.
+
+### How To Contribute
+
+Create a new branch for your changes. Ideally create a pull request so it can be reviewed by a collaborator. Once approved merge these changes into the `ci` branch.
+
+Once agreed features are complete in `ci` it will be merged into `main`.
+
+### Altering the SQLite Database
+
+Honest Tab uses [SQLAlchemy v1.4](https://docs.sqlalchemy.org/en/14/orm/quickstart.html) ORM as part of Reflex to manage and interact with the SQLite database.
+
+How to make changes to the SQLite databaser:
+
+1. Make your changes to tables in `obhonesty/models.py`
+2. Run `reflex db makemigrations` to generate new version files.
+3. Run `reflex db migrate` to apply these changes to the db.
