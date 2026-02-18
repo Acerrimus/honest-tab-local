@@ -181,7 +181,7 @@ class State(rx.State):
     @rx.event(background=True)
     async def reload_sheet_data(self):
         with rx.session() as session:
-              users = [User.from_dict(row.model_dump()) for row in session.exec(User_Model.select()).all()]
+              users = [User.from_dict(row.model_dump()) for row in session.exec(User_Model.select_users_with_an_active_tab()).scalars().all()]
               todays_breakfast_meals = session.execute(Meal_Model.select_todays_breakfast_meals()).scalars().all()
               todays_dinner_meals = session.execute(Meal_Model.select_todays_dinner_meals()).scalars().all()
               items = {}

@@ -20,7 +20,12 @@ class User(rx.Model, table=True):
   synced: bool
   # these must default to False otherwise the app crashes on startup
   current_guest: bool = False
+  active_tab: bool = True
   prepaid_dinners_quantity: int = 0
+
+  @classmethod
+  def select_users_with_an_active_tab(cls):
+      return select(cls).where(cls.active_tab == True)
 
 class Order(rx.Model, table=True):
   order_id: str
