@@ -807,7 +807,6 @@ def admin_refresh_top_bar() -> rx.Component:
 def show_signup(meal: Meal_Model):
     
     has_allergies = meal.allergies != ""
-    has_intolerances = meal.allergies != ""
 
     return rx.table.row(
         rx.table.cell(meal.receiver),
