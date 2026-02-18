@@ -531,6 +531,10 @@ def dinner_signup_page() -> rx.Component:
                         name="allergies",
                         on_change=State.set_dinner_allergies
                     ),
+                    rx.divider(),
+                    rx.cond(
+                        State.remaining_prepaid_dinners_count > 0,
+                        rx.text.strong(f"You currently have {State.remaining_prepaid_dinners_count} prepaid dinner{rx.cond(State.remaining_prepaid_dinners_count > 1, "s", "")} remaining.")),
                     rx.button(
                         rx.text("Register", size=default_button_text_size),
                         size=default_button_size,
@@ -680,9 +684,27 @@ def user_info_page() -> rx.Component:
         return rx.table.row(
             rx.table.cell(order.time),
             rx.table.cell(order.item),
-            rx.table.cell(f"{order.quantity}", align="right"),
-            rx.table.cell(f"€{two_decimal_points(order.price)}", align="right"),
-            rx.table.cell(f"€{two_decimal_points(order.total)}", align="right")
+            rx.table.cell(
+                rx.cond(
+                    State.prepaid_dinner_ids.contains(order.order_id),
+                    rx.text.strong("Prepaid dinner"),
+                    f"{order.quantity}"
+                )
+            , align="right"),
+            rx.table.cell(
+                rx.cond(
+                    State.prepaid_dinner_ids.contains(order.order_id),
+                    "€0",
+                    f"€{two_decimal_points(order.price)}"
+                    ),
+            align="right"),
+            rx.table.cell(
+                rx.cond(
+                    State.prepaid_dinner_ids.contains(order.order_id),
+                    "€0",
+                    f"€{two_decimal_points(order.total)}"
+                    ),
+            align="right")
         )
     
     return rx.container(rx.center(rx.vstack(

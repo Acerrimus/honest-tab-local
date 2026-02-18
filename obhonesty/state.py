@@ -13,7 +13,7 @@ from obhonesty.constants import Diet, true_values, DATETIME_FORMAT
 from obhonesty.user import User
 from obhonesty.item import Item
 from obhonesty.order import Order
-from obhonesty.sheet import order_sheet
+from obhonesty.sheet import order_sheet, user_sheet
 from obhonesty.models import User as User_Model, Order as Order_Model, Item as Item_Model, Admin as Admin_Model, Meal as Meal_Model
 
 from dotenv import load_dotenv
@@ -466,13 +466,14 @@ class State(rx.State):
             return rx.redirect("/user")
 
     @rx.event
-    def submit_signup(self, form_data: dict):
-        print(form_data, flush=True)
-        
+    def submit_signup(self, form_data: dict):        
         with rx.session() as session:
             session.add(User_Model.model_validate({
                 **{key: str(form_data[key]) for key in form_data},
-                "synced": False, "volunteer": False, "away": False}))
+                "synced": False,
+                "volunteer": False,
+                "away": False,
+                }))
             session.commit()
         return rx.redirect("/")
     
@@ -503,6 +504,16 @@ class State(rx.State):
         except Exception as e:
             return rx.toast.error(f"Error updating cells: {e}")
         
+        for index, user in enumerate(self.users):
+            if user.nick_name != self.current_user.nick_name:
+                continue
+
+            try:
+                user_sheet.update_cell(index + 2, 13, "")
+            except Exception as e:
+                return rx.toast.error(f"Error updating cells: {e}")
+            break
+
         return [
             rx.toast.success("Tab paid successfully!"),
             State.reload_sheet_data
@@ -637,12 +648,13 @@ class State(rx.State):
             
         for order in self.orders:
             if order.user_nick_name == self.current_user.nick_name and not order.paid_bool:
-                order_copy = order.copy()
+                order_copy: Order = order.copy()
                 try:
                     order_copy.time = datetime.fromisoformat(
                         order.time).strftime("%d/%m/%Y, %H:%M:%S")
                 except BaseException:
                     pass
+
                 filtered.append(order_copy)
         filtered.sort(key=lambda x: x.time, reverse=True)
         return filtered
@@ -855,8 +867,35 @@ class State(rx.State):
 
     @rx.var(cache=False)
     def get_user_debt(self) -> float:
-        return sum([order.total for order in self.current_user_orders])
+        return sum([order.total for order in self.current_user_orders if order.order_id not in self.prepaid_dinner_ids])
 
     @rx.var(cache=False)
     def get_all_nick_names(self) -> List[str]:
         return [user.nick_name for user in self.users]
+    
+    @rx.var
+    def remaining_prepaid_dinners_count(self) -> int:
+        if not self.current_user:
+            return 0
+
+        prepaid_dinner_count: int = self.current_user.prepaid_dinners_quantity
+
+        for order in self.current_user_orders:
+            if not prepaid_dinner_count:
+                return prepaid_dinner_count
+            
+            if order.item != "Dinner sign-up":
+                continue
+            
+            prepaid_dinner_count -= 1
+
+        return prepaid_dinner_count
+    
+    @rx.var
+    def prepaid_dinner_ids(self) -> List[str]:
+        if not self.current_user:
+            return []
+        
+        return [
+            o.order_id for o in self.current_user_orders if o.item == "Dinner sign-up"
+        ][:self.current_user.prepaid_dinners_quantity]

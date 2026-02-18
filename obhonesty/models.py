@@ -21,6 +21,7 @@ class User(rx.Model, table=True):
   # these must default to False otherwise the app crashes on startup
   current_guest: bool = False
   active_tab: bool = False
+  prepaid_dinners_quantity: int
 
 class Order(rx.Model, table=True):
   order_id: str

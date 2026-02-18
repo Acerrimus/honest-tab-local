@@ -60,6 +60,7 @@ def sync_new_orders(unsynced_orders):
             order.served,
             order.tax_category,
             order.comment,
+            # this str conversion is temporary until this column can be turned into a bool in the SQLite db
             str(order.paid) == "1",
             order.paid_time,
             order.method, 
@@ -83,6 +84,7 @@ def sync_new_users(unsynced_users):
             "",
             user.current_guest,
             user.active_tab,
+            ""
             ])
     user_sheet.append_rows(new_rows, value_input_option="USER_ENTERED", table_range="A1")
         
@@ -133,7 +135,8 @@ def sync_users():
     with rx.session() as session:
         user_data = get_records(user_sheet, [
                 'nick_name', 'first_name', 'last_name', 'phone_number', 'email',
-                'diet', 'allergies', 'volunteer', 'away', 'owes', "current_guest", "active_tab"
+                'diet', 'allergies', 'volunteer', 'away', 'owes', "current_guest",
+                "active_tab", "prepaid_dinners_quantity"
             ], True)
         current_unsynced_users = session.query(User_Model).filter(~User_Model.synced).all()
 
@@ -144,6 +147,7 @@ def sync_users():
                     user[key] = user[key].lower() in ["yes", "true"]
 
                 user = sanitise_record_strings(user_string_columns, user)
+                user["prepaid_dinners_quantity"] = 0 if user["prepaid_dinners_quantity"] == "" else int(user["prepaid_dinners_quantity"])
 
             for row in session.exec(User_Model.select()).all():
                 session.delete(row)
