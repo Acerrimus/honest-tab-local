@@ -463,10 +463,24 @@ def user_signup_page() -> rx.Component:
                             name="diet",
                             required=True
                         ),
-                        rx.text("Allergies", weight="medium"),
+                        rx.text("Help us keep you safe. Please distinguish between life-threatening allergies and general sensitivities.", weight="light"),
+
+                        rx.text("Severe Allergies", weight="bold", color="tomato"),
+                        rx.text("Requires strict cross-contamination protocols.", size="1", color="gray"),
                         rx.input(
-                            placeholder="E.g. Gluten-free",
-                            name="allergies"
+                            placeholder="e.g. Peanuts, Shellfish (Anaphylaxis risk)",
+                            name="allergies",
+                            width="100%",
+                            border_color="tomato" # Subtle visual cue for importance
+                        ),
+
+
+                        rx.text("Intolerances & Preferences", weight="medium"),
+                        rx.text("Ingredients to avoid to prevent discomfort.", size="1", color="gray"),
+                        rx.input(
+                            placeholder="e.g. Lactose, Gluten (non-celiac), Onions",
+                            name="intolerances",
+                            width="100%"
                         ),
                         rx.spacer(),
                         rx.button(
