@@ -471,7 +471,9 @@ def user_signup_page() -> rx.Component:
                             width="70%",
                             border_color="tomato" 
                         ),
-
+                        rx.text("Are you currently staying at the Olive Branch?", weight="medium"),
+                        rx.radio(["Yes", "No"], name="current_guest", default_value="Yes", direction="row"),
+                        rx.text("If this changes please notify reception."),
                         rx.spacer(),
                         rx.button(
                             rx.text("Submit", size=default_button_text_size), type="submit",
