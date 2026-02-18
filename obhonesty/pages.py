@@ -10,8 +10,6 @@ from obhonesty.state import State
 from obhonesty.user import User
 from obhonesty.models import Meal as Meal_Model
 
-
-
 def index() -> rx.Component:
     # Welcome Page (Index)
     user_button: Callable[[User], rx.Component] = lambda user: \
