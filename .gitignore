@@ -9,3 +9,6 @@ __pycache__/
 .credentials
 .env
 .DS_Store
+alembic/
+alembic.ini
+db
