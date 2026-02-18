@@ -801,7 +801,11 @@ def admin_refresh_top_bar() -> rx.Component:
     )
 
 def show_signup(meal: Meal_Model):
-    return rx.table.row( 
+    
+    has_allergies = meal.allergies != ""
+    has_intolerances = meal.allergies != ""
+
+    return rx.table.row(
         rx.table.cell(meal.receiver),
         rx.table.cell(meal.diet),
         rx.table.cell(meal.allergies),
@@ -815,8 +819,16 @@ def show_signup(meal: Meal_Model):
                 on_change=lambda val: State.set_served(meal.meal_id, val, meal.meal_type)
             )
         ),
-        key=meal.meal_id
-        
+        key=meal.meal_id,
+        bg=rx.cond(
+            has_allergies,
+            "#FC281D20",  # red for allergies
+            rx.cond(
+                has_intolerances,
+                "#FCD31D1F",  # yellow for intolerances
+                "transparent"
+            )
+        )
     )
 
 def admin_dinner() -> rx.Component:
