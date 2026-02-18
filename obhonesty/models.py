@@ -20,8 +20,7 @@ class User(rx.Model, table=True):
   synced: bool
   # these must default to False otherwise the app crashes on startup
   current_guest: bool = False
-  active_tab: bool = False
-  prepaid_dinners_quantity: int
+  prepaid_dinners_quantity: int = 0
 
 class Order(rx.Model, table=True):
   order_id: str
