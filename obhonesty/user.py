@@ -15,6 +15,7 @@ class User(rx.Base):
   allergies: str
   synced: bool
   prepaid_dinners_quantity: int
+  current_guest: bool
 
   @staticmethod
   def from_dict(x: Dict[str, str | bool | int]):
@@ -29,6 +30,7 @@ class User(rx.Base):
       allergies=x['allergies'],
       away=x["away"],
       synced=x["synced"],
-      prepaid_dinners_quantity=x["prepaid_dinners_quantity"]
+      prepaid_dinners_quantity=x["prepaid_dinners_quantity"],
+      current_guest=x["current_guest"]
     )
 

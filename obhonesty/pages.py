@@ -144,50 +144,69 @@ def payment_dialog() -> rx.Component:
     )
 
 def stripe_payment_dialog(name, amount) -> rx.Component:
-  return rx.dialog.content(
-      rx.dialog.title(f"Pay for {name}"),
-      rx.center(
-          rx.vstack(
-              rx.cond(
-                State.is_stripe_session_paid,
-                rx.vstack(
-                    rx.text("Paid! Thank you.", weight="bold"),
-                    rx.text("Press close below to finish.")
+    return rx.dialog.content(
+        rx.dialog.title(f"Pay for {name}"),
+        rx.center(
+            rx.vstack(
+                rx.cond(
+                  State.is_stripe_session_paid,
+                  rx.vstack(
+                      rx.text("Paid! Thank you."),
+                      rx.cond(
+                          State.current_user.current_guest & State.is_closing_account,
+                          rx.text("Please see reception to complete your checkout.", weight="bold")
+                      ),
+                      rx.text("Press close below to finish.")
+                  ),
+                  rx.vstack(
+                      rx.cond(
+                          State.payment_qr_code != "",
+                          rx.image(
+                              src=State.payment_qr_code, 
+                              width="250px", 
+                              height="250px",
+                              border="1px solid #ddd"
+                          ),
+                          rx.spinner(size="3"),
+                      ),
+                      rx.text(f"Scan to pay via Stripe"),
+                      rx.text("Total: €", two_decimal_points(amount), weight="bold"),
+                      spacing="4"
+                  ),
                 ),
-                rx.vstack(
-                    rx.cond(
-                        State.payment_qr_code != "",
-                        rx.image(
-                            src=State.payment_qr_code, 
-                            width="250px", 
-                            height="250px",
-                            border="1px solid #ddd"
-                        ),
-                        rx.spinner(size="3"),
-                    ),
-                    rx.text(f"Scan to pay via Stripe"),
-                    rx.text("Total: €", two_decimal_points(amount), weight="bold"),
-                    spacing="4"
+            rx.cond(
+                ~State.is_stripe_session_paid,
+                rx.text("Having issues paying? Please close and contact reception.", size=default_text_size),
+            ),
+            rx.cond(            
+                ~State.is_stripe_session_paid,
+                rx.button("Back", on_click=State.close_item_dialog)
+            ),
+            rx.cond(
+                # if paying the tab the close button should immediately rediret
+                State.is_stripe_session_paid & State.ordered_item == "",
+                rx.button(
+                    "Close",
+                    on_click=rx.redirect(
+                        rx.cond(
+                            State.is_closing_account,
+                            "/",
+                            "/user"
+                        )
+                    )
                 ),
-              ),
-          rx.cond(
-              ~State.is_stripe_session_paid,
-              rx.text("Having issues paying? Please close and contact reception.", size=default_text_size),
-          ),
-          rx.cond(            
-              ~State.is_stripe_session_paid,
-              rx.button("Back", on_click=State.close_item_dialog)
-          ),
-          rx.dialog.close(
-              rx.button("Close", on_click=State.close_item_dialog)
-          )
-      ),
-      justify="end",
-      margin_top="20px"
-      ),
-      on_interact_outside=rx.prevent_default,
-      on_escape_key_down=rx.prevent_default,
-  )
+                rx.dialog.close(
+                    rx.button("Close", on_click=State.close_item_dialog)
+                )
+            )
+            
+        ),
+        justify="end",
+        margin_top="20px"
+        ),
+        on_interact_outside=rx.prevent_default,
+        on_escape_key_down=rx.prevent_default,
+    )
 
 def item_button(item: Item) -> rx.Component:
   title: str = f"{item.name} (€{two_decimal_points(item.price)})"
@@ -740,7 +759,36 @@ def user_info_page() -> rx.Component:
                         color_scheme="yellow",
                     )
                 ),
-                stripe_payment_dialog("tab", State.get_user_debt)
+                rx.cond(
+                    State.is_closing_account == None,
+                    rx.dialog.content(
+                        rx.form(
+                            rx.vstack(
+                                rx.text(
+                                    rx.cond(
+                                        State.current_user.current_guest == True,
+                                        "Are you leaving the Olive Branch?",
+                                        "Are you closing your account?",
+                                    ),
+                                    weight="medium"
+                                ),
+                                rx.radio(["Yes", "No"], name="is_closing_account", default_value="Yes", direction="row"),
+                                rx.hstack(
+                                    rx.button(
+                                        rx.text("Submit", size=default_button_text_size),
+                                        type="submit",
+                                        size=default_button_size
+                                    ),
+                                    rx.dialog.close(
+                                        rx.button("Close", size=default_button_size)
+                                    )
+                                )
+                            ),
+                            on_submit=State.handle_checkout_choice
+                        )
+                    ),
+                    stripe_payment_dialog("tab", State.get_user_debt)
+                )
             ),
             rx.text(
                 f"Pay your tab securely via Stripe. Please review your registrations below before paying.",

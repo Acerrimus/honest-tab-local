@@ -37,7 +37,7 @@ class State(rx.State):
     cancel_redirect: bool = False
     is_item_button_dialog_active: bool = False
     ordered_item: str = ""
-
+    is_closing_account: Optional[bool] = None
     
     # --- Payment State Variables ---
     current_stripe_session_id: str = ""
@@ -144,6 +144,7 @@ class State(rx.State):
         self.ordered_item = ""
         self.order_request_id = ""
         self.current_order_request_id = ""
+        self.is_closing_account = None
 
     @rx.event(background=True)
     async def set_served(self, meal_id: str, value: bool, meal_type: Literal["breakfast", "dinner"]):
@@ -478,6 +479,55 @@ class State(rx.State):
         return rx.redirect("/")
     
     @rx.event
+    def handle_checkout_choice(self, form_data: dict):
+        self.is_closing_account = form_data["is_closing_account"] == "Yes"
+
+    @rx.event
+    def close_guest_account(self):
+        with rx.session() as session:
+            user_sheet_row_number: int
+            all_users = session.exec(User_Model.select()).all()
+            user_model: User_Model
+
+            for index, user in enumerate(all_users):
+                if user.nick_name != self.current_user.nick_name:
+                    continue
+                
+                user_model = user
+                user_sheet_row_number = index + 2
+                break
+            
+            values = []
+
+            if self.current_user.prepaid_dinners_quantity:
+                # reduce prepaid dinners quantity (col 13) by the number of dinners paid for.
+                # if no more dinners remain, clear the value
+                prepaid_dinners_value = self.remaining_prepaid_dinners_count if self.remaining_prepaid_dinners_count else ""
+                values.append([13, prepaid_dinners_value])
+
+            if self.is_closing_account:
+                # if closing their account make this no longer an active tab (col 12)
+                values.append([12, False])
+                # updating the SQL row directly immediately removes the user from the user list on the welcome page.
+                user_model.active_tab = False
+                session.commit()
+
+            if not len(values):
+                return
+            
+            cells = []
+
+            for col_num, value in values:
+                cells.append(Cell(row=user_sheet_row_number, col=col_num, value=value))
+                
+            try:
+                user_sheet.update_cells(cells, value_input_option="USER_ENTERED")
+            
+            except Exception as e:
+                return rx.toast.error(f"Error updating cells: {e}")
+
+            
+    @rx.event
     def pay_current_tab(self):
         if not order_sheet:
             return rx.error("No backend connected")
@@ -503,16 +553,6 @@ class State(rx.State):
 
         except Exception as e:
             return rx.toast.error(f"Error updating cells: {e}")
-        
-        for index, user in enumerate(self.users):
-            if user.nick_name != self.current_user.nick_name:
-                continue
-
-            try:
-                user_sheet.update_cell(index + 2, 13, "")
-            except Exception as e:
-                return rx.toast.error(f"Error updating cells: {e}")
-            break
 
         return [
             rx.toast.success("Tab paid successfully!"),
@@ -610,7 +650,7 @@ class State(rx.State):
                 return State.order_item
             
             # if no item has been ordered then it must be the entire tab.
-            return State.pay_current_tab
+            return [State.pay_current_tab, State.close_guest_account]
 
     def open_item_dialog(self, item_name: str):
         self.temp_quantity = 1
@@ -633,10 +673,10 @@ class State(rx.State):
         self.is_stripe_session_paid = False
         self.is_stripe_dialog_active = False
         self.ordered_item = ""
+        self.is_closing_account = None
         yield State.reset_order_request_id
-        if [temp_ordered_item == "dinner" or temp_ordered_item == "breakfast"] and temp_is_stripe_session_paid:
+        if (temp_ordered_item == "dinner" or temp_ordered_item == "breakfast") and temp_is_stripe_session_paid:
             return rx.redirect("/user")
-
 
     # -----------------------------------
 
