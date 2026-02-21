@@ -127,6 +127,7 @@ class State(rx.State):
         self.dinner_signup_dietary_preference = self.current_user.diet if self.current_user else ""
         self.dinner_signup_allergies = self.current_user.allergies if self.current_user else ""
 
+    @rx.event
     def clear_temp_state_values(self):
         self.is_item_button_dialog_active = False
         self.dinner_signup_first_name = ""
