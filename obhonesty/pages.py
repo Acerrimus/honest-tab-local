@@ -1004,9 +1004,11 @@ def show_signup(meal: Meal_Model):
             rx.table.cell(rx.cond(meal.volunteer, "yes", ""))
         ),
         rx.table.cell(
-            rx.checkbox(
-                checked=meal.served,
-                on_change=lambda val: State.set_served(meal.meal_id, val, meal.meal_type)
+            rx.button(
+                rx.text(rx.cond(meal.served, "✅", "✖️"), size="8"),
+                on_click=lambda: State.set_served(meal.meal_id, ~meal.served, meal.meal_type),
+                color_scheme=rx.cond(meal.served, "green", "red"),
+                size="4"
             )
         ),
         key=meal.meal_id,
