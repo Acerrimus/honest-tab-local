@@ -297,7 +297,8 @@ def item_button(item: Item) -> rx.Component:
                       rx.input(
                           name="item_name",
                           type="hidden",
-                          value=item.name
+                          value=item.name,
+                          display="none"
                       ),
                       rx.input(
                           placeholder="Quantity",
