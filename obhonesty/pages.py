@@ -224,25 +224,35 @@ def stripe_payment_dialog(name, amount) -> rx.Component:
                 ~State.is_stripe_session_paid,
                 rx.text("Having issues paying? Please close and contact reception.", size=default_text_size),
             ),
-            rx.cond(            
-                ~State.is_stripe_session_paid,
-                rx.button("Back", on_click=State.close_item_dialog)
-            ),
             rx.cond(
-                # if paying the tab the close button should immediately rediret
-                State.is_stripe_session_paid & State.ordered_item == "",
-                rx.button(
-                    "Close",
-                    on_click=rx.redirect(
-                        rx.cond(
-                            State.is_closing_account,
-                            "/",
-                            "/user"
-                        )
-                    )
+                State.show_stripe_connection_failure_message,
+                rx.vstack(
+                    rx.text("There are some issues with the internet connection. Please see reception to complete payment or click back.", size=default_text_size, weight="bold"),
+                    rx.text("Have you already paid? Show reception your payment confirmation and press close to exit back to the menu.", size=default_text_size, weight="bold")
+                )
+            ),
+            rx.hstack(
+                rx.cond(            
+                ~State.is_stripe_session_paid,
+                rx.button("Back", on_click=State.close_item_dialog, size=default_button_size)
                 ),
-                rx.dialog.close(
-                    rx.button("Close", on_click=State.close_item_dialog)
+                rx.cond(
+                    # if paying the tab the close button should immediately rediret
+                    State.is_stripe_session_paid & State.ordered_item == "",
+                    rx.button(
+                        "Close",
+                        on_click=rx.redirect(
+                            rx.cond(
+                                State.is_closing_account,
+                                "/",
+                                "/user"
+                            )
+                        ),
+                        size=default_button_size
+                    ),
+                    rx.dialog.close(
+                        rx.button("Close", on_click=State.close_item_dialog, size=default_button_size)
+                    )
                 )
             )
             
@@ -802,7 +812,7 @@ def breakfast_signup_page() -> rx.Component:
 
 def user_info_page() -> rx.Component:
     is_user_debt_0 = State.get_user_debt==0
-    
+
     def show_row(order: Order):
         return rx.table.row(
             rx.table.cell(order.time),

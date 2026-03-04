@@ -7,7 +7,7 @@ import reflex as rx
 import stripe
 
 from sqlalchemy import update, select
-from obhonesty.aux import short_uid, str_cmp, generate_receiver_from_names
+from obhonesty.aux import short_uid, str_cmp, generate_receiver_from_names, check_internet_connection
 from obhonesty.constants import Diet, true_values, DATETIME_FORMAT
 from obhonesty.user import User
 from obhonesty.item import Item
@@ -39,6 +39,7 @@ class State(rx.State):
     is_closing_account: Optional[bool] = None
     is_email_login_incorrect = False
     late_dinner_user_nick_name: Optional[str] = None
+    show_stripe_connection_failure_message = False
     
     # --- Payment State Variables ---
     current_stripe_session_id: str = ""
@@ -147,6 +148,7 @@ class State(rx.State):
         self.order_request_id = ""
         self.current_order_request_id = ""
         self.is_closing_account = None
+        self.show_stripe_connection_failure_message = False
 
     @rx.event(background=True)
     async def set_served(self, meal_id: str, value: bool, meal_type: Literal["breakfast", "dinner"]):
@@ -656,18 +658,30 @@ class State(rx.State):
     @rx.event(background=True)
     async def check_stripe_payment_status(self):
         """Periodically checks if payment was successful"""
+        stripe_error_message = ""
+        
         while True:
             if self.current_stripe_session_id == "" or self.is_stripe_session_paid:
                 return
             
             result = False
-            
+
             try:
+                check_internet_connection()
                 session = stripe.checkout.Session.retrieve(self.current_stripe_session_id)
                 result = session.payment_status == "paid"
-                
+                stripe_error_message = ""
+
+                async with self:
+                    self.show_stripe_connection_failure_message = False
+
             except Exception as e:
-                print(f"Stripe Error: {e}")
+                if stripe_error_message != str(e):
+                    stripe_error_message = str(e)
+                    print(f"Stripe Error: {stripe_error_message} - {datetime.now()}", flush=True)
+
+                async with self:
+                    self.show_stripe_connection_failure_message = True
 
             if not result:
                 await asyncio.sleep(1)
@@ -710,6 +724,7 @@ class State(rx.State):
         self.is_stripe_dialog_active = False
         self.ordered_item = ""
         self.is_closing_account = None
+        self.show_stripe_connection_failure_message = False
         yield State.reset_order_request_id
         if (temp_ordered_item == "dinner" or temp_ordered_item == "breakfast") and temp_is_stripe_session_paid:
             return rx.redirect("/user")
