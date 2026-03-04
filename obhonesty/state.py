@@ -40,6 +40,7 @@ class State(rx.State):
     is_email_login_incorrect = False
     late_dinner_user_nick_name: Optional[str] = None
     show_stripe_connection_failure_message = False
+    has_stripe_qr_generation_failed = False
     
     # --- Payment State Variables ---
     current_stripe_session_id: str = ""
@@ -149,6 +150,7 @@ class State(rx.State):
         self.current_order_request_id = ""
         self.is_closing_account = None
         self.show_stripe_connection_failure_message = False
+        self.has_stripe_qr_generation_failed = False
 
     @rx.event(background=True)
     async def set_served(self, meal_id: str, value: bool, meal_type: Literal["breakfast", "dinner"]):
@@ -646,11 +648,12 @@ class State(rx.State):
                 self.payment_qr_code = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={quote(session.url)}"
 
         except Exception as e:
-            print(f"Stripe Error: {e}")
+            print(f"Stripe Error: {e}", flush=True)
+
             async with self:
-                # Fallback for testing if no API key is set
-                qr_data = f"Stripe Config Missing. Pay €{total_amount:.2f} for {item_name}"
-                self.payment_qr_code = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={qr_data}"
+                self.has_stripe_qr_generation_failed = True
+
+            return
 
         if self.current_stripe_session_id != "":
             return State.check_stripe_payment_status
@@ -725,6 +728,7 @@ class State(rx.State):
         self.ordered_item = ""
         self.is_closing_account = None
         self.show_stripe_connection_failure_message = False
+        self.has_stripe_qr_generation_failed = False
         yield State.reset_order_request_id
         if (temp_ordered_item == "dinner" or temp_ordered_item == "breakfast") and temp_is_stripe_session_paid:
             return rx.redirect("/user")

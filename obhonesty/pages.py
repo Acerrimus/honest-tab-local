@@ -188,78 +188,91 @@ def payment_dialog() -> rx.Component:
     )
 
 def stripe_payment_dialog(name, amount) -> rx.Component:
-    return rx.dialog.content(
-        rx.dialog.title(f"Pay for {name}"),
-        rx.center(
+    close_dialog_button = rx.dialog.close(
+        rx.button("Close", on_click=State.close_item_dialog, size=default_button_size)
+    )
+    
+    return rx.cond(
+        State.has_stripe_qr_generation_failed,
+        rx.dialog.content(
             rx.vstack(
-                rx.cond(
-                  State.is_stripe_session_paid,
-                  rx.vstack(
-                      rx.text("Paid! Thank you."),
-                      rx.cond(
-                          State.current_user.current_guest & State.is_closing_account,
-                          rx.text("Please see reception to complete your checkout.", weight="bold")
-                      ),
-                      rx.text("Press close below to finish.")
-                  ),
-                  rx.vstack(
-                      rx.cond(
-                          State.payment_qr_code != "",
-                          rx.image(
-                              src=State.payment_qr_code, 
-                              width="250px", 
-                              height="250px",
-                              border="1px solid #ddd"
-                          ),
-                          rx.spinner(size="3"),
-                      ),
-                      rx.text(f"Scan to pay via Stripe"),
-                      rx.text("Total: €", two_decimal_points(amount), weight="bold"),
-                      spacing="4"
-                  ),
-                ),
-            rx.cond(
-                ~State.is_stripe_session_paid,
-                rx.text("Having issues paying? Please close and contact reception.", size=default_text_size),
+                rx.text("There are some issues with the internet connection. Please see reception to complete payment.", size=default_text_size, weight="bold"),
+                close_dialog_button
             ),
-            rx.cond(
-                State.show_stripe_connection_failure_message,
+            on_interact_outside=rx.prevent_default,
+            on_escape_key_down=rx.prevent_default,
+        ),
+        rx.dialog.content(
+            rx.dialog.title(f"Pay for {name}"),
+            rx.center(
                 rx.vstack(
-                    rx.text("There are some issues with the internet connection. Please see reception to complete payment or click back.", size=default_text_size, weight="bold"),
-                    rx.text("Have you already paid? Show reception your payment confirmation and press close to exit back to the menu.", size=default_text_size, weight="bold")
-                )
-            ),
-            rx.hstack(
-                rx.cond(            
-                ~State.is_stripe_session_paid,
-                rx.button("Back", on_click=State.close_item_dialog, size=default_button_size)
+                    rx.cond(
+                      State.is_stripe_session_paid,
+                      rx.vstack(
+                          rx.text("Paid! Thank you."),
+                          rx.cond(
+                              State.current_user.current_guest & State.is_closing_account,
+                              rx.text("Please see reception to complete your checkout.", weight="bold")
+                          ),
+                          rx.text("Press close below to finish.")
+                      ),
+                      rx.vstack(
+                          rx.cond(
+                              State.payment_qr_code != "",
+                              rx.image(
+                                  src=State.payment_qr_code, 
+                                  width="250px", 
+                                  height="250px",
+                                  border="1px solid #ddd"
+                              ),
+                              rx.spinner(size="3"),
+                          ),
+                          rx.text(f"Scan to pay via Stripe"),
+                          rx.text("Total: €", two_decimal_points(amount), weight="bold"),
+                          spacing="4"
+                      ),
+                    ),
+                rx.cond(
+                    ~State.is_stripe_session_paid,
+                    rx.text("Having issues paying? Please close and contact reception.", size=default_text_size),
                 ),
                 rx.cond(
-                    # if paying the tab the close button should immediately rediret
-                    State.is_stripe_session_paid & State.ordered_item == "",
-                    rx.button(
-                        "Close",
-                        on_click=rx.redirect(
-                            rx.cond(
-                                State.is_closing_account,
-                                "/",
-                                "/user"
-                            )
-                        ),
-                        size=default_button_size
+                    State.show_stripe_connection_failure_message,
+                    rx.vstack(
+                        rx.text("There are some issues with the internet connection. Please see reception to complete payment or click back.", size=default_text_size, weight="bold"),
+                        rx.text("Have you already paid? Show reception your payment confirmation and press close to exit back to the menu.", size=default_text_size, weight="bold")
+                    )
+                ),
+                rx.hstack(
+                    rx.cond(            
+                    ~State.is_stripe_session_paid,
+                    rx.button("Back", on_click=State.close_item_dialog, size=default_button_size)
                     ),
-                    rx.dialog.close(
-                        rx.button("Close", on_click=State.close_item_dialog, size=default_button_size)
+                    rx.cond(
+                        # if paying the tab the close button should immediately rediret
+                        State.is_stripe_session_paid & State.ordered_item == "",
+                        rx.button(
+                            "Close",
+                            on_click=rx.redirect(
+                                rx.cond(
+                                    State.is_closing_account,
+                                    "/",
+                                    "/user"
+                                )
+                            ),
+                            size=default_button_size
+                        ),
+                        close_dialog_button
                     )
                 )
-            )
-            
-        ),
-        justify="end",
-        margin_top="20px"
-        ),
-        on_interact_outside=rx.prevent_default,
-        on_escape_key_down=rx.prevent_default,
+                
+            ),
+            justify="end",
+            margin_top="20px"
+            ),
+            on_interact_outside=rx.prevent_default,
+            on_escape_key_down=rx.prevent_default,
+        )
     )
 
 def item_button(item: Item) -> rx.Component:
