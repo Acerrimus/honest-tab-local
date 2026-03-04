@@ -522,7 +522,7 @@ def user_signup_page() -> rx.Component:
                         rx.text("Dietary preferences", weight="medium"),
                         rx.select(
                             [str(x) for x in Diet],
-                            default_value=Diet.VEGAN,
+                            placeholder="Select a dietary preference",
                             name="diet",
                             required=True
                         ),
