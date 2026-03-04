@@ -20,35 +20,43 @@ def user_button(user: User) -> rx.Component:
         ),
         rx.dialog.content(
             rx.form(
-                rx.dialog.title(f"{user.nick_name} - Log in to your account"),
-                rx.text("Please enter the first five characters of your email address to login to your account.", weight="bold"),
-                rx.hstack(rx.text("This includes symbols such as "), rx.text("@", weight="bold"), rx.text(" and "), rx.text(".", weight="bold")),
-                rx.hstack(rx.text("Eg. john@smith.com = "), rx.text("john@", weight="bold")),
-                rx.text("If your email address is five characters or less, please enter the full email address."),
-                rx.input(
-                    name="user_nick_name",
-                    type="hidden",
-                    display="none",
-                    value=user.nick_name
+                rx.flex(
+                    rx.dialog.title(f"{user.nick_name} - Log in to your account"),
+                    rx.box(
+                        rx.text("Please enter the first five characters of your email address to login to your account.", weight="bold"),
+                        rx.hstack(rx.text("This includes symbols such as "), rx.text("@", weight="bold"), rx.text(" and "), rx.text(".", weight="bold")),
+                        rx.hstack(rx.text("Eg. john@smith.com = "), rx.text("john@", weight="bold")),
+                        rx.text("If your email address is five characters or less, please enter the full email address."),
+                    ),
+                    rx.box(
+                        rx.input(
+                            name="user_nick_name",
+                            type="hidden",
+                            display="none",
+                            value=user.nick_name
+                        ),
+                        rx.input(
+                            placeholder="Enter the first five characters of your email here",
+                            type="password",
+                            name="email_first_five_chars",
+                            max_length=5,
+                            required=True
+                        ),
+                        rx.cond(
+                            State.is_email_login_incorrect,
+                            rx.text("This does not match the first five characters of your email, please try again.", color=ERROR_MESSAGE_COLOUR)
+                        ),
+                        rx.hstack(
+                            rx.button("Submit", type="submit"),
+                            rx.dialog.close(
+                                rx.button("Close")
+                            )
+                        )
+                    ),
+                    rx.text("Forgotten your email? See reception for help."),
+                    direction="column",
+                    spacing="3"
                 ),
-                rx.input(
-                    placeholder="Enter the first five characters of your email here",
-                    type="password",
-                    name="email_first_five_chars",
-                    max_length=5,
-                    required=True
-                ),
-                rx.cond(
-                    State.is_email_login_incorrect,
-                    rx.text("This does not match the first five characters of your email, please try again.", color=ERROR_MESSAGE_COLOUR)
-                ),
-                rx.hstack(
-                    rx.button("Submit", type="submit"),
-                    rx.dialog.close(
-                        rx.button("Close")
-                    )
-                ),
-                rx.text("Forgotten your email? See reception for help."),
                 on_submit=State.handle_user_login_form_submit
             ),
         ),
