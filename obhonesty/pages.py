@@ -698,7 +698,7 @@ def breakfast_signup_page() -> rx.Component:
                 ),
                 rx.text("Breakfast item *"),
                 rx.select.root(
-                    rx.select.trigger(),
+                    rx.select.trigger(placeholder="Select a breakfast item"),
                     rx.select.content(
                         rx.foreach(
                             [str(x) for x in BreakfastMenuItem],
