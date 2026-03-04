@@ -41,6 +41,7 @@ class State(rx.State):
     late_dinner_user_nick_name: Optional[str] = None
     show_stripe_connection_failure_message = False
     has_stripe_qr_generation_failed = False
+    should_late_dinner_signup_form_reload = False
     
     # --- Payment State Variables ---
     current_stripe_session_id: str = ""
@@ -435,6 +436,9 @@ class State(rx.State):
         
         return State.order_dinner
     
+    @rx.event
+    def handle_add_another_press_for_late_dinner_signup(self):
+        self.should_late_dinner_signup_form_reload = True
     
     @rx.event
     def order_dinner_late(self, form_data: dict):
@@ -466,7 +470,8 @@ class State(rx.State):
             )
             session.commit()
             
-        return rx.redirect("/admin/dinner")
+        yield rx.redirect("/admin/dinner") if not self.should_late_dinner_signup_form_reload else rx.redirect("/admin/late")
+        self.should_late_dinner_signup_form_reload = False
 
     @rx.var(cache=False)
     def get_breakfast_price(self) -> float:

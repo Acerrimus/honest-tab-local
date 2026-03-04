@@ -734,6 +734,13 @@ def late_dinner_signup_page() -> rx.Component:
                             disabled=~is_late_dinner_user_selected
                         ),
                         rx.button(
+                            rx.text("Register and add another", size=default_button_text_size),
+                            type="submit",
+                            size=default_button_size,
+                            disabled=~is_late_dinner_user_selected,
+                            on_click=State.handle_add_another_press_for_late_dinner_signup
+                        ),
+                        rx.button(
                             rx.text("Cancel", size=default_button_text_size),
                             on_click=[State.reset_late_dinner_user_nick_name, rx.redirect("/admin/dinner")],
                             size=default_button_size
