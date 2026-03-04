@@ -38,6 +38,7 @@ class State(rx.State):
     ordered_item: str = ""
     is_closing_account: Optional[bool] = None
     is_email_login_incorrect = False
+    late_dinner_user_nick_name: Optional[str] = None
     
     # --- Payment State Variables ---
     current_stripe_session_id: str = ""
@@ -167,6 +168,14 @@ class State(rx.State):
 
     def set_dinner_as_ordered_item(self):
         self.ordered_item = "dinner"
+
+    @rx.event
+    def set_late_dinner_user_nick_name(self, nick_name: str):
+        self.late_dinner_user_nick_name = nick_name
+
+    @rx.event
+    def reset_late_dinner_user_nick_name(self):
+        self.late_dinner_user_nick_name = None
 
     @rx.event
     def cancel_timeout(self):

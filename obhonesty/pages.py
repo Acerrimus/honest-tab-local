@@ -635,6 +635,9 @@ def dinner_signup_page() -> rx.Component:
     )
 
 def late_dinner_signup_page() -> rx.Component:
+    is_late_dinner_user_selected = State.late_dinner_user_nick_name != None
+    user_selection_button_colour_scheme = "green"
+    
     return rx.container(rx.center(
         rx.vstack(
             rx.form(
@@ -642,8 +645,7 @@ def late_dinner_signup_page() -> rx.Component:
                     rx.heading("Late dinner signup", size=default_heading_size),
                     rx.text("Full name of dinner guest", weight="bold"),
                     rx.input(placeholder="Full name", name="full_name", required=True),
-                    rx.text("User paying for this dinner sign-up", weight="bold"),
-                    rx.select(State.get_all_nick_names, required=True, name="nick_name"),
+                    rx.input(type="hidden", display="none", value=State.late_dinner_user_nick_name, name="nick_name"),
                     rx.text("Dietary preferences", weight="bold"),
                     rx.select(
                         [str(x) for x in Diet],
@@ -654,18 +656,66 @@ def late_dinner_signup_page() -> rx.Component:
                     rx.input(
                         name="allergies"
                     ),
+                    rx.hstack(
+                        rx.cond(                            
+                            is_late_dinner_user_selected,
+                            rx.hstack(
+                                rx.text("User to pay:", size="5"),
+                                rx.text(State.late_dinner_user_nick_name, weight="bold", size="5"),
+                            )
+                        ),
+                        rx.dialog.root(
+                            rx.dialog.trigger(
+                                rx.button(
+                                    rx.cond(
+                                        is_late_dinner_user_selected,
+                                        "Select another user",
+                                        "Select a user to pay for this dinner sign-up"
+                                    ),
+                                    color_scheme=user_selection_button_colour_scheme,
+                                    size=default_button_size
+                                )
+                            ),
+                            rx.dialog.content(
+                                rx.dialog.title("Select a user to pay for this dinner sign-up"),
+                                rx.scroll_area(
+                                    rx.flex(
+                                        rx.foreach(
+                                            State.users,
+                                            lambda user: rx.dialog.close(
+                                                rx.button(
+                                                    rx.text(user.nick_name, size=default_button_text_size),
+                                                    size=default_button_size,
+                                                    on_click=lambda: State.set_late_dinner_user_nick_name(user.nick_name)
+                                                )
+                                            )
+                                        ),
+                                        padding="8px",
+                                        spacing="4",
+                                        style={"width": "max"},
+                                        wrap="wrap"
+                                    ),
+                                    type="always",
+                                    scrollbars="vertical",
+                                    style={"height": "80vh"}
+                                )
+                            )
+                        ),
+                        align="center"
+                    ),
                     rx.button(
                         rx.text("Register", size=default_button_text_size),
                         type="submit",
-                        size=default_button_size
+                        size=default_button_size,
+                        disabled=~is_late_dinner_user_selected
                     )
                 ),
-                on_submit=State.order_dinner_late,
+                on_submit=[State.order_dinner_late, State.reset_late_dinner_user_nick_name],
                 reset_on_submit=True
             ),
             rx.button(
                 rx.text("Cancel", size=default_button_text_size),
-                on_click=rx.redirect("/admin/dinner"),
+                on_click=[State.reset_late_dinner_user_nick_name, rx.redirect("/admin/dinner")],
                 size=default_button_size
             )
         )

@@ -24,7 +24,7 @@ app.add_page(admin, route="/admin", on_load=[State.clear_temp_state_values, Stat
 app.add_page(admin_dinner, route="/admin/dinner", on_load=State.reload_admin_dinner_data)
 app.add_page(admin_breakfast, route="/admin/breakfast", on_load=State.reload_admin_dinner_data)
 app.add_page(admin_user_page, route="/admin/user", on_load=State.reload_sheet_data)
-app.add_page(late_dinner_signup_page, route="/admin/late", on_load=State.reload_sheet_data)
+app.add_page(late_dinner_signup_page, route="/admin/late", on_load=[State.reset_late_dinner_user_nick_name, State.reload_sheet_data])
 
 def get_records(sheet, headers: list[str] = [], add_synced: bool = False):
     check_internet_connection()
