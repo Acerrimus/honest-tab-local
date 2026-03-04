@@ -6,6 +6,7 @@ default_button_text_size = "4"
 default_heading_size = "7"
 default_text_size = "4"
 default_button_size = "4"
+ERROR_MESSAGE_COLOUR = "var(--red-11)"
 
 DATETIME_FORMAT = "%d/%m/%Y %H:%M:%S"
 

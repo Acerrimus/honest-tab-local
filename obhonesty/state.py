@@ -3,11 +3,10 @@ import asyncio
 from typing import Any, Dict, List, Optional, Literal
 from urllib.parse import quote
 
-
 import reflex as rx
 import stripe
 
-from sqlalchemy import update
+from sqlalchemy import update, select
 from obhonesty.aux import short_uid, str_cmp, generate_receiver_from_names
 from obhonesty.constants import Diet, true_values, DATETIME_FORMAT
 from obhonesty.user import User
@@ -38,6 +37,7 @@ class State(rx.State):
     is_item_button_dialog_active: bool = False
     ordered_item: str = ""
     is_closing_account: Optional[bool] = None
+    is_email_login_incorrect = False
     
     # --- Payment State Variables ---
     current_stripe_session_id: str = ""
@@ -183,30 +183,30 @@ class State(rx.State):
     @rx.event(background=True)
     async def reload_sheet_data(self):
         with rx.session() as session:
-              users = [User.from_dict(row.model_dump()) for row in session.exec(User_Model.select_users_with_an_active_tab()).scalars().all()]
-              todays_breakfast_meals = session.execute(Meal_Model.select_todays_breakfast_meals()).scalars().all()
-              todays_dinner_meals = session.execute(Meal_Model.select_todays_dinner_meals()).scalars().all()
-              items = {}
+            users = [User.from_dict(row.model_dump()) for row in session.exec(User_Model.select_users_with_an_active_tab()).scalars().all()]
+            todays_breakfast_meals = session.execute(Meal_Model.select_todays_breakfast_meals()).scalars().all()
+            todays_dinner_meals = session.execute(Meal_Model.select_todays_dinner_meals()).scalars().all()
+            items = {}
 
-              for row in session.exec(Item_Model.select()).all():
-                  if row.name == "":
-                    continue
+            for row in session.exec(Item_Model.select()).all():
+                if row.name == "":
+                  continue
 
-                  items[row.name] = Item.from_dict(row.model_dump())
+                items[row.name] = Item.from_dict(row.model_dump())
 
-              orders = [Order.from_dict(row.model_dump()) for row in session.exec(Order_Model.select()).all()]
-              admin_data = {}
+            orders = [Order.from_dict(row.model_dump()) for row in session.exec(Order_Model.select()).all()]
+            admin_data = {}
 
-              for row in session.exec(Admin_Model.select()).all():
-                  admin_data[row.key] = row.value if "deadline" in row.key else float(row.value)
+            for row in session.exec(Admin_Model.select()).all():
+                admin_data[row.key] = row.value if "deadline" in row.key else float(row.value)
 
         async with self:
-              self.items = items
-              self.orders = orders
-              self.users = users
-              self.admin_data = admin_data
-              self.todays_dinner_meals = todays_dinner_meals
-              self.todays_breakfast_meals = todays_breakfast_meals
+            self.items = items
+            self.orders = orders
+            self.users = users
+            self.admin_data = admin_data
+            self.todays_dinner_meals = todays_dinner_meals
+            self.todays_breakfast_meals = todays_breakfast_meals
         
     @rx.event(background=True)
     async def reload_admin_dinner_data(self):
@@ -215,9 +215,35 @@ class State(rx.State):
             await asyncio.sleep(10)
 
     @rx.event
-    def redirect_to_user_page(self, user: User):
-        self.current_user = user
+    def handle_user_login_form_submit(self, form_data):
+        user: Optional[User_Model] = None
+        error_message: Optional[str] = None
+
+        try:
+            user = rx.session().exec(
+                select(User_Model).where(User_Model.nick_name == form_data["user_nick_name"])
+            ).scalar()
+
+        except:
+            error_message = "There has been an error with your account. Please see reception."
+        
+        if not user:
+            error_message = "Your account could not be found. Please see reception."
+
+        if error_message:
+            return rx.toast.error(error_message)
+
+        if str(form_data["email_first_five_chars"]) != user.email[:5]:
+            self.is_email_login_incorrect = True
+            return
+        
+        self.current_user = User.from_dict(user.model_dump())
+        self.is_email_login_incorrect = False
         return rx.redirect("/user")
+
+    @rx.event
+    def handle_user_login_dialog_open_change(self):
+        self.is_email_login_incorrect = False
 
     @rx.event
     def redirect_no_user(self):
