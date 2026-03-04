@@ -801,6 +801,8 @@ def breakfast_signup_page() -> rx.Component:
     )
 
 def user_info_page() -> rx.Component:
+    is_user_debt_0 = State.get_user_debt==0
+    
     def show_row(order: Order):
         return rx.table.row(
             rx.table.cell(order.time),
@@ -855,6 +857,7 @@ def user_info_page() -> rx.Component:
                         on_click=lambda: State.generate_item_payment_qr("tab", State.get_user_debt),
                         size=default_button_size,
                         color_scheme="yellow",
+                        disabled=is_user_debt_0
                     )
                 ),
                 rx.cond(
@@ -890,9 +893,18 @@ def user_info_page() -> rx.Component:
             ),
             rx.text(
                 f"Pay your tab securely via Stripe. Please review your registrations below before paying.",
-                size=default_text_size
+                size=default_text_size,
+                opacity=rx.cond(
+                    is_user_debt_0,
+                    0.3,
+                    1
+                )
             ),
             align="center"
+        ),
+        rx.cond(
+            is_user_debt_0,
+            rx.text("You have no orders to pay for! Please see reception if you wish to check out.", size=default_text_size)
         ),
         rx.text("Registrations:", size=default_text_size, weight="bold"),
         rx.scroll_area(
