@@ -1,5 +1,3 @@
-from typing import Callable
-
 import reflex as rx
 
 from obhonesty.aux import two_decimal_points
