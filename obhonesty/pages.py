@@ -329,7 +329,7 @@ def user_page() -> rx.Component:
                     rx.button(
                         rx.icon("list"),
                         rx.text("View orders", size=default_button_text_size),
-                        on_click=rx.redirect("/login"),
+                        on_click=rx.redirect("/info"),
                         color_scheme="green",
                         size=default_button_size
                     ),
@@ -376,7 +376,7 @@ def user_page() -> rx.Component:
                     rx.button(
                         rx.icon("euro"),
                         rx.text("Pay tab", size=default_button_text_size),
-                        on_click=rx.redirect("/login"),
+                        on_click=rx.redirect("/info"),
                         size=default_button_size,
                         color_scheme="yellow"
                     ),
