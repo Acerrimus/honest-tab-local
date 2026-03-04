@@ -704,20 +704,22 @@ def late_dinner_signup_page() -> rx.Component:
                         ),
                         align="center"
                     ),
-                    rx.button(
-                        rx.text("Register", size=default_button_text_size),
-                        type="submit",
-                        size=default_button_size,
-                        disabled=~is_late_dinner_user_selected
+                    rx.hstack(
+                        rx.button(
+                            rx.text("Register", size=default_button_text_size),
+                            type="submit",
+                            size=default_button_size,
+                            disabled=~is_late_dinner_user_selected
+                        ),
+                        rx.button(
+                            rx.text("Cancel", size=default_button_text_size),
+                            on_click=[State.reset_late_dinner_user_nick_name, rx.redirect("/admin/dinner")],
+                            size=default_button_size
+                        )
                     )
                 ),
                 on_submit=[State.order_dinner_late, State.reset_late_dinner_user_nick_name],
                 reset_on_submit=True
-            ),
-            rx.button(
-                rx.text("Cancel", size=default_button_text_size),
-                on_click=[State.reset_late_dinner_user_nick_name, rx.redirect("/admin/dinner")],
-                size=default_button_size
             )
         )
     ))
