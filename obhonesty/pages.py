@@ -637,7 +637,7 @@ def dinner_signup_page() -> rx.Component:
 def late_dinner_signup_page() -> rx.Component:
     is_late_dinner_user_selected = State.late_dinner_user_nick_name != None
     user_selection_button_colour_scheme = "green"
-    
+
     return rx.container(rx.center(
         rx.vstack(
             rx.form(
@@ -649,8 +649,9 @@ def late_dinner_signup_page() -> rx.Component:
                     rx.text("Dietary preferences", weight="bold"),
                     rx.select(
                         [str(x) for x in Diet],
-                        default_value=str(Diet.VEGAN),
-                        name="diet"
+                        placeholder="Select a dietary preference",
+                        name="diet",
+                        required=True
                     ),
                     rx.text("Allergies", weight="bold"),
                     rx.input(
