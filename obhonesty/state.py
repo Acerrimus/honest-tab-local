@@ -42,6 +42,30 @@ class State(rx.State):
     show_stripe_connection_failure_message = False
     has_stripe_qr_generation_failed = False
     should_late_dinner_signup_form_reload = False
+
+    # --- Meal Counts ---
+
+    breakfast_count: int = 0
+    breakfast_count_served: int = 0
+
+    dinner_count: int = 0
+    dinner_count_served: int = 0
+
+    dinner_count_vegan: int = 0
+    dinner_count_vegetarian: int = 0
+    dinner_count_meat: int = 0
+
+    dinner_count_guests: int = 0
+    dinner_count_guests_served: int = 0
+    dinner_count_guests_vegan: int = 0
+    dinner_count_guests_vegetarian: int = 0
+    dinner_count_guests_meat: int = 0
+
+    dinner_count_volunteers: int = 0
+    dinner_count_volunteers_served: int = 0
+    dinner_count_volunteers_vegan: int = 0
+    dinner_count_volunteers_vegetarian: int = 0
+    dinner_count_volunteers_meat: int = 0
     
     # --- Payment State Variables ---
     current_stripe_session_id: str = ""
@@ -221,11 +245,47 @@ class State(rx.State):
             self.admin_data = admin_data
             self.todays_dinner_meals = todays_dinner_meals
             self.todays_breakfast_meals = todays_breakfast_meals
+
+            if self.router.page.path in ["/admin/breakfast", "/admin/dinner"]:
+                return State.update_meal_totals
         
+    @rx.event
+    def update_meal_totals(self):
+        meal_totals = Meal_Model.get_todays_meal_counts()
+        self.breakfast_count = meal_totals["breakfast"]["total"]
+        self.breakfast_count_served = meal_totals["breakfast"]["served"]
+
+        self.dinner_count_guests_served = meal_totals["dinner"]["guest"]["served"]
+        self.dinner_count_guests_vegan = meal_totals["dinner"]["guest"]["vegan"]
+        self.dinner_count_guests_vegetarian = meal_totals["dinner"]["guest"]["vegetarian"]
+        self.dinner_count_guests_meat = meal_totals["dinner"]["guest"]["meat"]
+        self.dinner_count_guests = (
+            self.dinner_count_guests_vegan
+            + self.dinner_count_guests_vegetarian
+            + self.dinner_count_guests_meat
+        )
+
+        self.dinner_count_volunteers_served = meal_totals["dinner"]["volunteer"]["served"]
+        self.dinner_count_volunteers_vegan = meal_totals["dinner"]["volunteer"]["vegan"]
+        self.dinner_count_volunteers_vegetarian = meal_totals["dinner"]["volunteer"]["vegetarian"]
+        self.dinner_count_volunteers_meat = meal_totals["dinner"]["volunteer"]["meat"]
+        self.dinner_count_volunteers = (
+            self.dinner_count_volunteers_vegan
+            + self.dinner_count_volunteers_vegetarian
+            + self.dinner_count_volunteers_meat
+        )
+
+        self.dinner_count = self.dinner_count_volunteers + self.dinner_count_guests
+        self.dinner_count_served = self.dinner_count_volunteers_served + self.dinner_count_guests_served
+
+        self.dinner_count_volunteers_vegan + self.dinner_count_guests_vegan
+        self.dinner_count_vegetarian = self.dinner_count_volunteers_vegetarian + self.dinner_count_guests_vegetarian
+        self.dinner_count_meat = self.dinner_count_volunteers_meat + self.dinner_count_guests_meat  
+    
     @rx.event(background=True)
     async def reload_admin_dinner_data(self):
         while self.router.page.path in ["/admin/breakfast", "/admin/dinner"]:
-            yield State.reload_sheet_data
+            yield State.reload_sheet_data#, State.update_meal_totals]
             await asyncio.sleep(10)
 
     @rx.event
@@ -862,108 +922,6 @@ class State(rx.State):
         signups.sort(key=lambda x: x.diet)
         signups.sort(key=lambda x: x.comment)
         return signups
-
-
-# ====== GET TOTAL DINNER COUNTS ======
-
-    @rx.var(cache=False)
-    def dinner_count(self) -> int:
-        return len(self.dinner_signups)
-
-    @rx.var(cache=False)
-    def dinner_count_vegan(self) -> int:
-        count = 0
-        for order in self.dinner_signups:
-            if str_cmp(order.diet, str(Diet.VEGAN)):
-                count += 1
-        return count
-
-    @rx.var(cache=False)
-    def dinner_count_vegetarian(self) -> int:
-        count = 0
-        for order in self.dinner_signups:
-            if str_cmp(order.diet, str(Diet.VEGETARIAN)):
-                count += 1
-        return count
-
-    @rx.var(cache=False)
-    def dinner_count_meat(self) -> int:
-        count = 0
-        for order in self.dinner_signups:
-            if str_cmp(order.diet, str(Diet.MEAT)):
-                count += 1
-        return count
-    
-
-# ====== GET VOLUNTEERS DINNER COUNTS ======
-
-    def _get_served_count(
-            self,
-            meal_state: list[Meal_Model],
-            user_type: Literal["volunteer", "guest", None] = None
-            ) -> int:
-        served_count = 0
-
-        for meal in meal_state:
-            if not meal.served or (user_type == "volunteer" and not meal.volunteer) or (user_type != "volunteer" and meal.volunteer):
-                continue
-
-            served_count += 1
-
-        return served_count
-  
-    @rx.var(cache=False)
-    def total_breakfast_meals_served_count(self) -> int:
-        return self._get_served_count(self.todays_breakfast_meals)
-      
-    @rx.var(cache=False)
-    def remaining_breakfast_meals_count(self) -> int:
-        return len(self.todays_breakfast_meals) - self._get_served_count(self.todays_breakfast_meals)
-  
-    @rx.var(cache=False)
-    def total_dinner_meals_served_count(self) -> int:
-        return self._get_served_count(self.todays_dinner_meals)
-    
-    @rx.var(cache=False)
-    def guest_dinner_meals_served_count(self) -> int:
-        return self._get_served_count(self.todays_dinner_meals, "guest")
-    
-    @rx.var(cache=False)
-    def volunteer_dinner_meals_served_count(self) -> int:
-        return self._get_served_count(self.todays_dinner_meals, "volunteer")
-
-    @rx.var(cache=False)
-    def dinner_count_volunteers(self) -> int:
-        count = 0
-        for order in self.dinner_signups:
-            if str_cmp(order.item, str("Dinner sign-up (volunteer)")):
-                count += 1
-        return count
-    
-    @rx.var(cache=False)
-    def dinner_count_vegan_volunteers(self) -> int:
-        count = 0
-        for order in self.dinner_signups:
-            if str_cmp(order.diet, str(Diet.VEGAN)) and str_cmp(order.item, str("Dinner sign-up (volunteer)")):
-                count += 1
-        return count
-
-    @rx.var(cache=False)
-    def dinner_count_vegetarian_volunteers(self) -> int:
-        count = 0
-        for order in self.dinner_signups:
-            if str_cmp(order.diet, str(Diet.VEGETARIAN)) and str_cmp(order.item, str("Dinner sign-up (volunteer)")):
-                count += 1
-        return count
-
-    @rx.var(cache=False)
-    def dinner_count_meat_volunteers(self) -> int:
-        count = 0
-        for order in self.dinner_signups:
-            if str_cmp(order.diet, str(Diet.MEAT)) and str_cmp(order.item, str("Dinner sign-up (volunteer)")):
-                count += 1
-        return count
-
 
     @rx.var(cache=False)
     def get_user_debt(self) -> float:
