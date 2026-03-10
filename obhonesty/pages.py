@@ -320,7 +320,7 @@ def item_button(item: Item) -> rx.Component:
                           type="button",
                           # Pass specific item details to backend
                           loading=State.is_order_request_loading,
-                          on_click=[State.set_order_request_id, lambda: State.show_stripe_item_payment_dialog(item.name, item.price * State.temp_quantity)]
+                          on_click=[State.set_order_request_id, lambda: State.show_stripe_item_payment_dialog(item.name, item.price)]
                       ),
                       rx.dialog.close(
                           rx.button("Register (Tab)", size=default_button_size, on_click=[State.order_item, State.close_item_dialog])

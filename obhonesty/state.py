@@ -667,6 +667,16 @@ class State(rx.State):
     # --- Payment Logic Handlers ---
     @rx.event(background=True)
     async def generate_item_payment_qr(self, item_name: str= "", unit_price: float=0):
+        def generate_line_item(name:str , unit_amount: int, quantity: int):
+            return {
+                'price_data': {
+                    'currency': 'eur',
+                    'product_data': { 'name': name },
+                    'unit_amount': unit_amount,
+                },
+                'quantity': quantity,
+            }
+        
         async with self:
             self.is_stripe_session_paid = False
             self.payment_qr_code = "" 
@@ -682,16 +692,7 @@ class State(rx.State):
                     name += " (Prepaid)"
                     unit_amount = 0
                     
-                line_items.append({
-                    'price_data': {
-                        'currency': 'eur',
-                        'product_data': {
-                            'name': name,
-                        },
-                        'unit_amount': unit_amount,
-                    },
-                    'quantity': int(order.quantity),
-                })
+                line_items.append(generate_line_item(name, unit_amount, int(order.quantity)))
 
         else:
             quantity = self.temp_quantity if self.temp_quantity > 0 and self.ordered_item not in ["breakfast", "dinner"] else 1.0
@@ -703,19 +704,8 @@ class State(rx.State):
             if self.ordered_item == "dinner":
                 item_name = "dinner"
                 unit_price = self.admin_data['dinner_price']
-
-            # Calculate total for this specific transaction
             
-            line_items.append({
-                    'price_data': {
-                        'currency': 'eur',
-                        'product_data': {
-                            'name': f"{quantity}x {item_name} (Self-Service)",
-                        },
-                        'unit_amount': int((unit_price * quantity) * 100)
-                    },
-                    'quantity': int(quantity)
-                })
+            line_items.append(generate_line_item(item_name, int(unit_price * 100), int(quantity)))
             
         # 1. Create Stripe Checkout Session
         try:
