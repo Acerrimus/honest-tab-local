@@ -667,7 +667,6 @@ class State(rx.State):
     # --- Payment Logic Handlers ---
     @rx.event(background=True)
     async def generate_item_payment_qr(self, item_name: str= "", unit_price: float=0):
-        """Generates a Stripe QR for a specific item * quantity"""
         async with self:
             self.is_stripe_session_paid = False
             self.payment_qr_code = "" 
