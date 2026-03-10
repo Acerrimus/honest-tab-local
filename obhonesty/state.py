@@ -672,36 +672,58 @@ class State(rx.State):
             self.is_stripe_session_paid = False
             self.payment_qr_code = "" 
         
-        if self.ordered_item == "breakfast":
-            item_name = self.breakfast_signup_item
-            unit_price = self.get_breakfast_price
+        line_items = []
 
-        if self.ordered_item == "dinner":
-            item_name = "dinner"
-            unit_price = self.admin_data['dinner_price']
+        if item_name == "tab":
+            for order in self.current_user_orders:
+                name = order.item
+                unit_amount = int(order.price * 100)
 
-        # Calculate total for this specific transaction
-        quantity = self.temp_quantity if self.temp_quantity > 0 else 1.0
-        total_amount = unit_price * quantity
-        
-        # Stripe expects amounts in cents (integers)
-        amount_in_cents = int(total_amount * 100)
+                if order.order_id in self.prepaid_dinner_ids:
+                    name += " (Prepaid)"
+                    unit_amount = 0
+                    
+                line_items.append({
+                    'price_data': {
+                        'currency': 'eur',
+                        'product_data': {
+                            'name': name,
+                        },
+                        'unit_amount': unit_amount,
+                    },
+                    'quantity': int(order.quantity),
+                })
 
+        else:
+            quantity = self.temp_quantity if self.temp_quantity > 0 and self.ordered_item not in ["breakfast", "dinner"] else 1.0
+            
+            if self.ordered_item == "breakfast":
+                item_name = self.breakfast_signup_item
+                unit_price = self.get_breakfast_price
+
+            if self.ordered_item == "dinner":
+                item_name = "dinner"
+                unit_price = self.admin_data['dinner_price']
+
+            # Calculate total for this specific transaction
+            
+            line_items.append({
+                    'price_data': {
+                        'currency': 'eur',
+                        'product_data': {
+                            'name': f"{quantity}x {item_name} (Self-Service)",
+                        },
+                        'unit_amount': int((unit_price * quantity) * 100)
+                    },
+                    'quantity': int(quantity)
+                })
+            
         # 1. Create Stripe Checkout Session
         try:
             # This creates a payment page hosted by Stripe
             session = stripe.checkout.Session.create(
                 payment_method_types=['card'],
-                line_items=[{
-                    'price_data': {
-                        'currency': 'eur',
-                        'product_data': {
-                            'name': "Honesty bar tab" if item_name == "tab" else f"{quantity}x {item_name} (Self-Service)",
-                        },
-                        'unit_amount': amount_in_cents, # Total amount for the line
-                    },
-                    'quantity': 1, # We calculated total already, so line quantity is 1
-                }],
+                line_items=line_items,
                 mode='payment',
                 success_url='https://example.com/success', # Replace with your app URL
                 cancel_url='https://example.com/cancel',
