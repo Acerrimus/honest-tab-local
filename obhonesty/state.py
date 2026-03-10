@@ -343,7 +343,7 @@ class State(rx.State):
                     user_nick_name=self.current_user.nick_name,
                     time=now,
                     item=item.name,
-                    quantity=1,
+                    quantity=quantity,
                     price=item.price,
                     total=quantity * item.price,
                     receiver="",
