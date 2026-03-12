@@ -2,8 +2,7 @@ from pathlib import Path
 
 import gspread
 
-GSPREAD_SERVICE_ACCOUNT_CREDENTIALS_PATH = \
-	Path(".credentials/service_account.json")
+GSPREAD_SERVICE_ACCOUNT_CREDENTIALS_PATH = Path(".credentials/service_account.json")
 
 gclient = gspread.service_account(GSPREAD_SERVICE_ACCOUNT_CREDENTIALS_PATH)
 spreadsheet = gclient.open("Test - OBHonestyData")

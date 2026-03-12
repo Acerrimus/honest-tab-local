@@ -8,12 +8,13 @@ from obhonesty.state import State
 from obhonesty.user import User
 from obhonesty.models import Meal as Meal_Model
 
+
 def user_button(user: User) -> rx.Component:
     return rx.dialog.root(
         rx.dialog.trigger(
             rx.button(
                 rx.text(user.nick_name, size=default_button_text_size),
-                size=default_button_size
+                size=default_button_size,
             )
         ),
         rx.dialog.content(
@@ -21,69 +22,87 @@ def user_button(user: User) -> rx.Component:
                 rx.flex(
                     rx.dialog.title(f"{user.nick_name} - Log in to your account"),
                     rx.box(
-                        rx.text("Please enter the first five characters of your email address to login to your account.", weight="bold"),
-                        rx.hstack(rx.text("This includes symbols such as "), rx.text("@", weight="bold"), rx.text(" and "), rx.text(".", weight="bold")),
-                        rx.hstack(rx.text("Eg. john@smith.com = "), rx.text("john@", weight="bold")),
-                        rx.text("If your email address is five characters or less, please enter the full email address."),
+                        rx.text(
+                            "Please enter the first five characters of your email address to login to your account.",
+                            weight="bold",
+                        ),
+                        rx.hstack(
+                            rx.text("This includes symbols such as "),
+                            rx.text("@", weight="bold"),
+                            rx.text(" and "),
+                            rx.text(".", weight="bold"),
+                        ),
+                        rx.hstack(
+                            rx.text("Eg. john@smith.com = "),
+                            rx.text("john@", weight="bold"),
+                        ),
+                        rx.text(
+                            "If your email address is five characters or less, please enter the full email address."
+                        ),
                     ),
                     rx.box(
                         rx.input(
                             name="user_nick_name",
                             type="hidden",
                             display="none",
-                            value=user.nick_name
+                            value=user.nick_name,
                         ),
                         rx.input(
                             placeholder="Enter the first five characters of your email here",
                             type="password",
                             name="email_first_five_chars",
                             max_length=5,
-                            required=True
+                            required=True,
                         ),
                         rx.cond(
                             State.is_email_login_incorrect,
-                            rx.text("This does not match the first five characters of your email, please try again.", color=ERROR_MESSAGE_COLOUR)
+                            rx.text(
+                                "This does not match the first five characters of your email, please try again.",
+                                color=ERROR_MESSAGE_COLOUR,
+                            ),
                         ),
                         rx.hstack(
                             rx.button("Submit", type="submit"),
-                            rx.dialog.close(
-                                rx.button("Close")
-                            )
-                        )
+                            rx.dialog.close(rx.button("Close")),
+                        ),
                     ),
                     rx.text("Forgotten your email? See reception for help."),
                     direction="column",
-                    spacing="3"
+                    spacing="3",
                 ),
-                on_submit=State.handle_user_login_form_submit
+                on_submit=State.handle_user_login_form_submit,
             ),
         ),
-        on_open_change=State.handle_user_login_dialog_open_change
+        on_open_change=State.handle_user_login_dialog_open_change,
     )
+
 
 def index() -> rx.Component:
     return rx.container(
         rx.center(
             rx.vstack(
                 rx.hstack(
-                    rx.text("Welcome to the", size='3'),
-                    justify="center", width="100%",
+                    rx.text("Welcome to the", size="3"),
+                    justify="center",
+                    width="100%",
                 ),
                 rx.hstack(
                     rx.heading(
-                        "Olive Branch honest self-service",
-                        size=default_heading_size
+                        "Olive Branch honest self-service", size=default_heading_size
                     ),
-                    justify="center", width="100%"
+                    justify="center",
+                    width="100%",
                 ),
                 rx.hstack(
                     rx.text("New here?", size="3"),
                     rx.button(
                         rx.icon("user-plus"),
-                        rx.text("Sign up for self-service", size=default_button_text_size),
+                        rx.text(
+                            "Sign up for self-service", size=default_button_text_size
+                        ),
                         color_scheme="green",
                         on_click=rx.redirect("/signup"),
-                        size="3"
+                        size="3",
                     ),
                     align="center",
                     justify="center",
@@ -95,40 +114,41 @@ def index() -> rx.Component:
                         padding="8px",
                         spacing="4",
                         style={"width": "max"},
-                        wrap="wrap"
+                        wrap="wrap",
                     ),
                     type="always",
                     scrollbars="vertical",
-                    style={"height": "80vh"}
-                )
+                    style={"height": "80vh"},
+                ),
             ),
-            align="center"
+            align="center",
         )
     )
 
 
 def logout_button() -> rx.Component:
-    return rx.button(
-        rx.icon("door-open"),
-        rx.text("Log out", size=default_button_text_size),
-        color_scheme="red",
-        on_click=rx.redirect("/"),
-        size=default_button_size
-    ),
+    return (
+        rx.button(
+            rx.icon("door-open"),
+            rx.text("Log out", size=default_button_text_size),
+            color_scheme="red",
+            on_click=rx.redirect("/"),
+            size=default_button_size,
+        ),
+    )
 
 
 def error_page() -> rx.Component:
     return rx.vstack(
         rx.text(
-            "An error occurred, please press the button below.",
-            size=default_text_size
+            "An error occurred, please press the button below.", size=default_text_size
         ),
         rx.button(
             rx.icon("door-open"),
             "Return",
             on_click=rx.redirect("/"),
-            size=default_button_size
-        )
+            size=default_button_size,
+        ),
     )
 
 
@@ -140,17 +160,18 @@ def payment_dialog() -> rx.Component:
                 rx.icon("credit-card"),
                 rx.text("Pay Now", size=default_button_text_size),
                 color_scheme="green",
-                size='2', # Matches size in item_button
-                type="button", # Prevents form submission
+                size="2",  # Matches size in item_button
+                type="button",  # Prevents form submission
                 # Only generate the QR when they actually open the dialog
-                on_click=State.generate_payment_qr 
+                on_click=State.generate_payment_qr,
             )
         ),
         # The Modal Content
         rx.dialog.content(
             rx.dialog.title("Scan to Pay"),
-            rx.dialog.description("Use your phone camera to scan and pay via Bizum, Apple Pay, or Card."),
-            
+            rx.dialog.description(
+                "Use your phone camera to scan and pay via Bizum, Apple Pay, or Card."
+            ),
             rx.center(
                 rx.vstack(
                     # Show spinner while talking to Stripe (or generating fake QR)
@@ -162,42 +183,49 @@ def payment_dialog() -> rx.Component:
                     rx.cond(
                         State.payment_qr_code != "",
                         rx.image(
-                            src=State.payment_qr_code, 
-                            width="250px", 
+                            src=State.payment_qr_code,
+                            width="250px",
                             height="250px",
-                            border="1px solid #ddd"
+                            border="1px solid #ddd",
                         ),
                     ),
-                    rx.text(f"Total Due: €{two_decimal_points(State.get_user_debt)}", weight="bold"),
-                    spacing="4"
+                    rx.text(
+                        f"Total Due: €{two_decimal_points(State.get_user_debt)}",
+                        weight="bold",
+                    ),
+                    spacing="4",
                 )
             ),
-            
             rx.flex(
                 rx.dialog.close(
                     rx.button(
-                        "Done / Close", 
+                        "Done / Close",
                         on_click=State.close_payment_dialog,
-                        size=default_button_size
+                        size=default_button_size,
                     )
                 ),
                 justify="end",
-                margin_top="20px"
+                margin_top="20px",
             ),
         ),
     )
+
 
 def stripe_payment_dialog(name, amount) -> rx.Component:
     close_dialog_button = rx.dialog.close(
         rx.button("Close", on_click=State.close_item_dialog, size=default_button_size)
     )
-    
+
     return rx.cond(
         State.has_stripe_qr_generation_failed,
         rx.dialog.content(
             rx.vstack(
-                rx.text("There are some issues with the internet connection. Please see reception to complete payment.", size=default_text_size, weight="bold"),
-                close_dialog_button
+                rx.text(
+                    "There are some issues with the internet connection. Please see reception to complete payment.",
+                    size=default_text_size,
+                    weight="bold",
+                ),
+                close_dialog_button,
             ),
             on_interact_outside=rx.prevent_default,
             on_escape_key_down=rx.prevent_default,
@@ -207,283 +235,336 @@ def stripe_payment_dialog(name, amount) -> rx.Component:
             rx.center(
                 rx.vstack(
                     rx.cond(
-                      State.is_stripe_session_paid,
-                      rx.vstack(
-                          rx.text("Paid! Thank you."),
-                          rx.cond(
-                              State.current_user.current_guest & State.is_closing_account,
-                              rx.text("Please see reception to complete your checkout.", weight="bold")
-                          ),
-                          rx.text("Press close below to finish.")
-                      ),
-                      rx.vstack(
-                          rx.cond(
-                              State.payment_qr_code != "",
-                              rx.image(
-                                  src=State.payment_qr_code, 
-                                  width="250px", 
-                                  height="250px",
-                                  border="1px solid #ddd"
-                              ),
-                              rx.spinner(size="3"),
-                          ),
-                          rx.text(f"Scan to pay via Stripe"),
-                          rx.text("Total: €", two_decimal_points(amount), weight="bold"),
-                          spacing="4"
-                      ),
-                    ),
-                rx.cond(
-                    ~State.is_stripe_session_paid,
-                    rx.text("Having issues paying? Please close and contact reception.", size=default_text_size),
-                ),
-                rx.cond(
-                    State.show_stripe_connection_failure_message,
-                    rx.vstack(
-                        rx.text("There are some issues with the internet connection. Please see reception to complete payment or click back.", size=default_text_size, weight="bold"),
-                        rx.text("Have you already paid? Show reception your payment confirmation and press close to exit back to the menu.", size=default_text_size, weight="bold")
-                    )
-                ),
-                rx.hstack(
-                    rx.cond(            
-                    ~State.is_stripe_session_paid,
-                    rx.button("Back", on_click=State.close_item_dialog, size=default_button_size)
+                        State.is_stripe_session_paid,
+                        rx.vstack(
+                            rx.text("Paid! Thank you."),
+                            rx.cond(
+                                State.current_user.current_guest
+                                & State.is_closing_account,
+                                rx.text(
+                                    "Please see reception to complete your checkout.",
+                                    weight="bold",
+                                ),
+                            ),
+                            rx.text("Press close below to finish."),
+                        ),
+                        rx.vstack(
+                            rx.cond(
+                                State.payment_qr_code != "",
+                                rx.image(
+                                    src=State.payment_qr_code,
+                                    width="250px",
+                                    height="250px",
+                                    border="1px solid #ddd",
+                                ),
+                                rx.spinner(size="3"),
+                            ),
+                            rx.text(f"Scan to pay via Stripe"),
+                            rx.text(
+                                "Total: €", two_decimal_points(amount), weight="bold"
+                            ),
+                            spacing="4",
+                        ),
                     ),
                     rx.cond(
-                        # if paying the tab the close button should immediately rediret
-                        State.is_stripe_session_paid & State.ordered_item == "",
-                        rx.button(
-                            "Close",
-                            on_click=rx.redirect(
-                                rx.cond(
-                                    State.is_closing_account,
-                                    "/",
-                                    "/user"
-                                )
-                            ),
-                            size=default_button_size
+                        ~State.is_stripe_session_paid,
+                        rx.text(
+                            "Having issues paying? Please close and contact reception.",
+                            size=default_text_size,
                         ),
-                        close_dialog_button
-                    )
-                )
-                
-            ),
-            justify="end",
-            margin_top="20px"
+                    ),
+                    rx.cond(
+                        State.show_stripe_connection_failure_message,
+                        rx.vstack(
+                            rx.text(
+                                "There are some issues with the internet connection. Please see reception to complete payment or click back.",
+                                size=default_text_size,
+                                weight="bold",
+                            ),
+                            rx.text(
+                                "Have you already paid? Show reception your payment confirmation and press close to exit back to the menu.",
+                                size=default_text_size,
+                                weight="bold",
+                            ),
+                        ),
+                    ),
+                    rx.hstack(
+                        rx.cond(
+                            ~State.is_stripe_session_paid,
+                            rx.button(
+                                "Back",
+                                on_click=State.close_item_dialog,
+                                size=default_button_size,
+                            ),
+                        ),
+                        rx.cond(
+                            # if paying the tab the close button should immediately rediret
+                            State.is_stripe_session_paid & State.ordered_item == "",
+                            rx.button(
+                                "Close",
+                                on_click=rx.redirect(
+                                    rx.cond(State.is_closing_account, "/", "/user")
+                                ),
+                                size=default_button_size,
+                            ),
+                            close_dialog_button,
+                        ),
+                    ),
+                ),
+                justify="end",
+                margin_top="20px",
             ),
             on_interact_outside=rx.prevent_default,
             on_escape_key_down=rx.prevent_default,
+        ),
+    )
+
+
+def item_button(item: Item) -> rx.Component:
+    title: str = f"{item.name} (€{two_decimal_points(item.price)})"
+    return rx.dialog.root(
+        rx.dialog.trigger(
+            rx.button(
+                rx.text(title, size=default_button_text_size),
+                color_scheme="blue",
+                size=default_button_size,
+                # Reset temp quantity to 1 every time we open a fresh dialog
+                on_click=lambda: State.open_item_dialog(item.name),
+            )
+        ),
+        rx.cond(
+            State.is_stripe_dialog_active,
+            stripe_payment_dialog(item.name, item.price * State.temp_quantity),
+            rx.dialog.content(
+                rx.dialog.title(title),
+                rx.dialog.description(item.description),
+                rx.vstack(
+                    rx.form(
+                        rx.flex(
+                            rx.input(
+                                name="item_name",
+                                type="hidden",
+                                value=item.name,
+                                display="none",
+                            ),
+                            rx.input(
+                                placeholder="Quantity",
+                                name="quantity",
+                                default_value="1",
+                                type="number",
+                                # --- Track input in real-time ---
+                                on_change=State.set_temp_quantity,
+                            ),
+                        ),
+                        rx.text(
+                            "Total: €", State.temp_quantity * item.price, weight="bold"
+                        ),
+                        rx.flex(
+                            # We use the payment_dialog logic but trigger it differently
+                            rx.button(
+                                rx.icon("credit-card"),
+                                rx.text("Pay Now", size=default_button_text_size),
+                                color_scheme="green",
+                                size="2",
+                                type="button",
+                                # Pass specific item details to backend
+                                loading=State.is_order_request_loading,
+                                on_click=[
+                                    State.set_order_request_id,
+                                    lambda: State.show_stripe_item_payment_dialog(
+                                        item.name, item.price
+                                    ),
+                                ],
+                            ),
+                            rx.dialog.close(
+                                rx.button(
+                                    "Register (Tab)",
+                                    size=default_button_size,
+                                    on_click=[
+                                        State.order_item,
+                                        State.close_item_dialog,
+                                    ],
+                                )
+                            ),
+                            rx.dialog.close(
+                                rx.button(f"Cancel", on_click=State.close_item_dialog)
+                            ),
+                            spacing="3",
+                            justify="end",
+                            margin_top="10px",
+                        ),
+                    ),
+                    spacing="3",
+                ),
+            ),
+        ),
+    )
+
+
+def user_page() -> rx.Component:
+    return rx.container(
+        rx.center(
+            rx.cond(
+                State.no_user,
+                error_page(),
+                rx.vstack(
+                    rx.heading(
+                        f"Hello {State.current_user.nick_name}",
+                        size=default_heading_size,
+                    ),
+                    rx.hstack(
+                        rx.button(
+                            rx.icon("list"),
+                            rx.text("View orders", size=default_button_text_size),
+                            on_click=rx.redirect("/info"),
+                            color_scheme="green",
+                            size=default_button_size,
+                        ),
+                        logout_button(),
+                        rx.text(
+                            "(please log out when you're done)", size=default_text_size
+                        ),
+                        align="center",
+                    ),
+                    rx.hstack(
+                        rx.button(
+                            rx.icon("egg-fried"),
+                            rx.text(
+                                "Sign up for breakfast / packed lunch",
+                                size=default_button_text_size,
+                            ),
+                            on_click=rx.redirect("/breakfast"),
+                            size=default_button_size,
+                            disabled=~State.breakfast_signup_available,
+                        ),
+                        rx.text(
+                            f"(last sign-up at {State.admin_data['breakfast_signup_deadline']})",
+                            size=default_text_size,
+                        ),
+                        align="center",
+                    ),
+                    rx.hstack(
+                        rx.button(
+                            rx.icon("utensils"),
+                            rx.text(
+                                "Sign up for dinner", size=default_button_text_size
+                            ),
+                            on_click=rx.redirect("/dinner"),
+                            size=default_button_size,
+                            disabled=~State.dinner_signup_available,
+                        ),
+                        rx.text(
+                            f"(last sign-up at {State.admin_data['dinner_signup_deadline']}, "
+                            f"for late sign-ups, please ask the kitchen staff)",
+                            size=default_text_size,
+                        ),
+                        align="center",
+                    ),
+                    rx.hstack(
+                        rx.button(
+                            rx.icon("euro"),
+                            rx.text("Pay tab", size=default_button_text_size),
+                            on_click=rx.redirect("/info"),
+                            size=default_button_size,
+                            color_scheme="yellow",
+                        ),
+                        rx.text(
+                            f"Pay your tab securely via Stripe.", size=default_text_size
+                        ),
+                        align="center",
+                    ),
+                    rx.text("Register an item", weight="bold", size=default_text_size),
+                    rx.scroll_area(
+                        rx.flex(
+                            rx.foreach(State.items.values(), item_button),
+                            padding="8px",
+                            spacing="4",
+                            style={"width": "max"},
+                            wrap="wrap",
+                        ),
+                        type="always",
+                        scrollbars="vertical",
+                        style={"height": "60vh"},
+                    ),
+                    rx.hstack(
+                        rx.text(
+                            "Didn't find the item? No problem, just",
+                            size=default_text_size,
+                        ),
+                        rx.button(
+                            rx.icon("circle-plus"),
+                            rx.text("Register manually", size=default_button_text_size),
+                            color_scheme="sky",
+                            on_click=rx.redirect("/custom_item"),
+                            size=default_button_size,
+                        ),
+                        align="center",
+                    ),
+                ),
+            )
         )
     )
 
-def item_button(item: Item) -> rx.Component:
-  title: str = f"{item.name} (€{two_decimal_points(item.price)})"
-  return rx.dialog.root(
-      rx.dialog.trigger(rx.button(
-          rx.text(title, size=default_button_text_size),
-          color_scheme="blue",
-          size=default_button_size,
-          # Reset temp quantity to 1 every time we open a fresh dialog
-          on_click=lambda: State.open_item_dialog(item.name)
-      )),
-      rx.cond(
-          State.is_stripe_dialog_active,
-          stripe_payment_dialog(item.name, item.price * State.temp_quantity),
-      rx.dialog.content(
-          rx.dialog.title(title),
-          rx.dialog.description(item.description),
-          rx.vstack(
-              rx.form(
-                  rx.flex(
-                      rx.input(
-                          name="item_name",
-                          type="hidden",
-                          value=item.name,
-                          display="none"
-                      ),
-                      rx.input(
-                          placeholder="Quantity",
-                          name="quantity",
-                          default_value='1',
-                          type="number",
-                          # --- Track input in real-time ---
-                          on_change=State.set_temp_quantity 
-                      )
-                  ),
-                  rx.text("Total: €", State.temp_quantity * item.price, weight="bold"),
-                  rx.flex(
-                      # We use the payment_dialog logic but trigger it differently
-                      rx.button(
-                          rx.icon("credit-card"),
-                          rx.text("Pay Now", size=default_button_text_size),
-                          color_scheme="green",
-                          size='2',
-                          type="button",
-                          # Pass specific item details to backend
-                          loading=State.is_order_request_loading,
-                          on_click=[State.set_order_request_id, lambda: State.show_stripe_item_payment_dialog(item.name, item.price)]
-                      ),
-                      rx.dialog.close(
-                          rx.button("Register (Tab)", size=default_button_size, on_click=[State.order_item, State.close_item_dialog])
-                      ),
-                      rx.dialog.close(
-                          rx.button(f"Cancel", on_click=State.close_item_dialog)
-                      ),
-                      spacing="3",
-                      justify="end",
-                      margin_top="10px"
-                  ),
-              ), 
-              spacing="3"
-          ),
-      )),
-      )
-
-def user_page() -> rx.Component:
-  return rx.container(rx.center(
-        rx.cond(
-            State.no_user,
-            error_page(),
-            rx.vstack(
-                rx.heading(
-                    f"Hello {State.current_user.nick_name}", size=default_heading_size
-                ),
-                rx.hstack(
-                    rx.button(
-                        rx.icon("list"),
-                        rx.text("View orders", size=default_button_text_size),
-                        on_click=rx.redirect("/info"),
-                        color_scheme="green",
-                        size=default_button_size
-                    ),
-                    logout_button(),
-                    rx.text(
-                        "(please log out when you're done)",
-                        size=default_text_size
-                    ),
-                    align="center"
-                ),
-                rx.hstack(
-                    rx.button(
-                        rx.icon("egg-fried"),
-                        rx.text(
-                            "Sign up for breakfast / packed lunch",
-                            size=default_button_text_size
-                        ),
-                        on_click=rx.redirect("/breakfast"),
-                        size=default_button_size,
-                        disabled=~State.breakfast_signup_available,
-                    ),
-                    rx.text(
-                        f"(last sign-up at {State.admin_data['breakfast_signup_deadline']})",
-                        size=default_text_size
-                    ),
-                    align="center"
-                ),
-                rx.hstack(
-                    rx.button(
-                        rx.icon("utensils"),
-                        rx.text("Sign up for dinner", size=default_button_text_size),
-                        on_click=rx.redirect("/dinner"),
-                        size=default_button_size,
-                        disabled=~State.dinner_signup_available
-                    ),
-                    rx.text(
-                        f"(last sign-up at {State.admin_data['dinner_signup_deadline']}, "
-                        f"for late sign-ups, please ask the kitchen staff)",
-                        size=default_text_size
-                    ),
-                    align="center"
-                ),
-                rx.hstack(
-                    rx.button(
-                        rx.icon("euro"),
-                        rx.text("Pay tab", size=default_button_text_size),
-                        on_click=rx.redirect("/info"),
-                        size=default_button_size,
-                        color_scheme="yellow"
-                    ),
-                    rx.text(
-                        f"Pay your tab securely via Stripe.",
-                        size=default_text_size
-                    ),
-                    align="center"
-                ),
-                rx.text("Register an item", weight="bold", size=default_text_size), 
-                rx.scroll_area(
-                    rx.flex(
-                        rx.foreach(State.items.values(), item_button),
-                        padding="8px",
-                        spacing="4",
-                        style={"width": "max"},
-                        wrap="wrap"
-                    ),
-                    type="always",
-                    scrollbars="vertical",
-                    style={"height": "60vh"}
-                ),
-                rx.hstack(
-                    rx.text("Didn't find the item? No problem, just", size=default_text_size),
-                    rx.button(
-                        rx.icon("circle-plus"),
-                        rx.text("Register manually", size=default_button_text_size),
-                        color_scheme="sky",
-                        on_click=rx.redirect("/custom_item"),
-                        size=default_button_size
-                    ),
-                    align="center"
-                )
-            )
-        )))
-
 
 def custom_item_page() -> rx.Component:
-    return rx.container(rx.center(rx.vstack(
-        rx.heading("Register custom item", size=default_heading_size),
-        rx.form(
+    return rx.container(
+        rx.center(
             rx.vstack(
-                rx.text("Name"),
-                rx.input(placeholder="What did you get?", name="custom_item_name"),
-                rx.text("Price"),
-                rx.form.field(
-                    rx.form.control(
+                rx.heading("Register custom item", size=default_heading_size),
+                rx.form(
+                    rx.vstack(
+                        rx.text("Name"),
                         rx.input(
-                            placeholder="E.g. 2.50 for (2.50€)",
-                            name="custom_item_price",
-                            on_change=State.set_custom_item_price
+                            placeholder="What did you get?", name="custom_item_name"
                         ),
-                        as_child=True
+                        rx.text("Price"),
+                        rx.form.field(
+                            rx.form.control(
+                                rx.input(
+                                    placeholder="E.g. 2.50 for (2.50€)",
+                                    name="custom_item_price",
+                                    on_change=State.set_custom_item_price,
+                                ),
+                                as_child=True,
+                            ),
+                            rx.form.message(
+                                "Please enter a valid price",
+                                match="valueMissing",
+                                force_match=State.invalid_custom_item_price,
+                                color=ERROR_MESSAGE_COLOUR,
+                            ),
+                        ),
+                        rx.text("Category"),
+                        rx.select(
+                            [str(x) for x in TaxCategory],
+                            default_value=TaxCategory.NON_ALCOHOLIC,
+                            name="tax_category",
+                            required=True,
+                        ),
+                        rx.text("Comment"),
+                        rx.input(
+                            placeholder="optional", name="custom_item_description"
+                        ),
+                        rx.button(
+                            rx.text("Register", size=default_button_text_size),
+                            type="submit",
+                            size=default_button_size,
+                        ),
                     ),
-                    rx.form.message(
-                        "Please enter a valid price",
-                        match="valueMissing",
-                        force_match=State.invalid_custom_item_price,
-                        color=ERROR_MESSAGE_COLOUR
-                    )
+                    on_submit=State.order_custom_item,
                 ),
-                rx.text("Category"),
-                rx.select(
-                    [str(x) for x in TaxCategory],
-                    default_value=TaxCategory.NON_ALCOHOLIC,
-                    name="tax_category",
-                    required=True
-                ),
-                rx.text("Comment"),
-                rx.input(placeholder="optional", name="custom_item_description"),
                 rx.button(
-                    rx.text("Register", size=default_button_text_size), type="submit",
-                    size=default_button_size
-                )
-            ),
-            on_submit=State.order_custom_item
-        ),
-        rx.button(
-            rx.text("Cancel", size=default_button_text_size),
-            on_click=rx.redirect("/user"),
-            size=default_button_size
+                    rx.text("Cancel", size=default_button_text_size),
+                    on_click=rx.redirect("/user"),
+                    size=default_button_size,
+                ),
+            )
         )
-    )))
+    )
+
 
 message_name_already_taken: str = "Already taken"
+
 
 def user_signup_page() -> rx.Component:
     return rx.container(
@@ -501,37 +582,37 @@ def user_signup_page() -> rx.Component:
                                     on_change=State.set_new_nick_name,
                                     name="nick_name",
                                     required=True,
-                                    width="200%"
+                                    width="200%",
                                 ),
-                                as_child=True
+                                as_child=True,
                             ),
                             rx.form.message(
                                 message_name_already_taken,
                                 match="valueMissing",
                                 force_match=State.invalid_new_user_name,
-                                color=ERROR_MESSAGE_COLOUR
-                            )
+                                color=ERROR_MESSAGE_COLOUR,
+                            ),
                         ),
                         rx.text("First name", weight="medium"),
                         rx.input(
                             placeholder="E.g. 'Robert' (required)",
                             name="first_name",
                             required=True,
-                            width="100%"
+                            width="100%",
                         ),
                         rx.text("Last name", weight="medium"),
                         rx.input(
                             placeholder="E.g. 'Robertson' (required)",
                             name="last_name",
                             required=True,
-                            width="100%"
+                            width="100%",
                         ),
                         rx.text("Phone number", weight="medium"),
                         rx.input(
                             placeholder="E.g. '+45 12345666' (required)",
                             name="phone_number",
                             required=True,
-                            width="100%"
+                            width="100%",
                         ),
                         rx.text("Email", weight="medium"),
                         rx.input(
@@ -539,45 +620,56 @@ def user_signup_page() -> rx.Component:
                             name="email",
                             required=True,
                             type="email",
-                            width="100%"
+                            width="100%",
                         ),
                         rx.text("Dietary preferences", weight="medium"),
                         rx.select(
                             [str(x) for x in Diet],
                             placeholder="Select a dietary preference",
                             name="diet",
-                            required=True
+                            required=True,
                         ),
                         rx.text("Allergies", weight="medium"),
                         rx.input(
                             placeholder="e.g. Peanuts, Shellfish (Anaphylaxis risk)",
                             name="allergies",
                             width="70%",
-                            border_color="tomato" 
+                            border_color="tomato",
                         ),
-                        rx.text("Are you currently staying at the Olive Branch?", weight="medium"),
-                        rx.radio(["Yes", "No"], name="current_guest", default_value="Yes", direction="row"),
+                        rx.text(
+                            "Are you currently staying at the Olive Branch?",
+                            weight="medium",
+                        ),
+                        rx.radio(
+                            ["Yes", "No"],
+                            name="current_guest",
+                            default_value="Yes",
+                            direction="row",
+                        ),
                         rx.text("If this changes please notify reception."),
                         rx.spacer(),
                         rx.button(
-                            rx.text("Submit", size=default_button_text_size), type="submit",
-                            size=default_button_size
-                        )
+                            rx.text("Submit", size=default_button_text_size),
+                            type="submit",
+                            size=default_button_size,
+                        ),
                     ),
                     on_submit=State.submit_signup,
-                    reset_on_submit=True
+                    reset_on_submit=True,
                 ),
                 rx.button(
                     rx.text("Cancel", size=default_button_text_size),
                     on_click=rx.redirect("/"),
                     size=default_button_size,
-                    color_scheme='red'
+                    color_scheme="red",
                 ),
             ),
         ),
     )
 
+
 def dinner_signup_page() -> rx.Component:
+    prepaid_dinners_plural = rx.cond(State.remaining_prepaid_dinners_count > 1, "s", "")
     return rx.container(
         rx.center(
             rx.vstack(
@@ -598,7 +690,7 @@ def dinner_signup_page() -> rx.Component:
                         name="first_name",
                         default_value=State.current_user.first_name,
                         required=True,
-                        on_change=State.set_dinner_signup_first_name
+                        on_change=State.set_dinner_signup_first_name,
                     ),
                     rx.text("Last name of dinner guest", weight="bold"),
                     rx.input(
@@ -606,7 +698,7 @@ def dinner_signup_page() -> rx.Component:
                         name="last_name",
                         default_value=State.current_user.last_name,
                         required=True,
-                        on_change=State.set_dinner_signup_last_name
+                        on_change=State.set_dinner_signup_last_name,
                     ),
                     rx.text("Dietary preferences", weight="bold"),
                     rx.select(
@@ -619,17 +711,23 @@ def dinner_signup_page() -> rx.Component:
                     rx.input(
                         default_value=State.current_user.allergies,
                         name="allergies",
-                        on_change=State.set_dinner_allergies
+                        on_change=State.set_dinner_allergies,
                     ),
                     rx.divider(),
                     rx.cond(
                         State.remaining_prepaid_dinners_count > 0,
-                        rx.text.strong(f"You currently have {State.remaining_prepaid_dinners_count} prepaid dinner{rx.cond(State.remaining_prepaid_dinners_count > 1, "s", "")} remaining.")),
+                        rx.text.strong(
+                            f"You currently have {State.remaining_prepaid_dinners_count} prepaid dinner{prepaid_dinners_plural} remaining."
+                        ),
+                    ),
                     rx.button(
                         rx.text("Register", size=default_button_text_size),
                         size=default_button_size,
-                        on_click=[State.set_order_request_id, lambda: State.sign_guest_up_for_dinner(False)],
-                        loading=State.is_order_request_loading
+                        on_click=[
+                            State.set_order_request_id,
+                            lambda: State.sign_guest_up_for_dinner(False),
+                        ],
+                        loading=State.is_order_request_loading,
                     ),
                     rx.button(
                         rx.icon("credit-card"),
@@ -638,120 +736,154 @@ def dinner_signup_page() -> rx.Component:
                         size=default_button_size,
                         type="button",
                         loading=State.is_order_request_loading,
-                        on_click=[State.set_order_request_id, lambda: State.sign_guest_up_for_dinner(True)]
-                    ),                 
+                        on_click=[
+                            State.set_order_request_id,
+                            lambda: State.sign_guest_up_for_dinner(True),
+                        ],
+                    ),
                     rx.dialog.root(
-                        stripe_payment_dialog("dinner", State.admin_data['dinner_price']),
-                        open=State.ordered_item == "dinner"
+                        stripe_payment_dialog(
+                            "dinner", State.admin_data["dinner_price"]
+                        ),
+                        open=State.ordered_item == "dinner",
                     ),
                     rx.button(
                         rx.text("Cancel", size=default_button_text_size),
                         on_click=rx.redirect("/user"),
                         size=default_button_size,
-                        color_scheme='red'
-                    )
+                        color_scheme="red",
+                    ),
                 ),
             )
         ),
         on_mount=State.set_dinner_signup_default_values,
     )
 
+
 def late_dinner_signup_page() -> rx.Component:
     is_late_dinner_user_selected = State.late_dinner_user_nick_name != None
     user_selection_button_colour_scheme = "green"
 
-    return rx.container(rx.center(
-        rx.vstack(
-            rx.form(
-                rx.vstack(
-                    rx.heading("Late dinner signup", size=default_heading_size),
-                    rx.text("Full name of dinner guest", weight="bold"),
-                    rx.input(placeholder="Full name", name="full_name", required=True),
-                    rx.input(type="hidden", display="none", value=State.late_dinner_user_nick_name, name="nick_name"),
-                    rx.text("Dietary preferences", weight="bold"),
-                    rx.select(
-                        [str(x) for x in Diet],
-                        placeholder="Select a dietary preference",
-                        name="diet",
-                        required=True
-                    ),
-                    rx.text("Allergies", weight="bold"),
-                    rx.input(
-                        name="allergies"
-                    ),
-                    rx.hstack(
-                        rx.cond(                            
-                            is_late_dinner_user_selected,
-                            rx.hstack(
-                                rx.text("User to pay:", size="5"),
-                                rx.text(State.late_dinner_user_nick_name, weight="bold", size="5"),
-                            )
+    return rx.container(
+        rx.center(
+            rx.vstack(
+                rx.form(
+                    rx.vstack(
+                        rx.heading("Late dinner signup", size=default_heading_size),
+                        rx.text("Full name of dinner guest", weight="bold"),
+                        rx.input(
+                            placeholder="Full name", name="full_name", required=True
                         ),
-                        rx.dialog.root(
-                            rx.dialog.trigger(
-                                rx.button(
-                                    rx.cond(
-                                        is_late_dinner_user_selected,
-                                        "Select another user",
+                        rx.input(
+                            type="hidden",
+                            display="none",
+                            value=State.late_dinner_user_nick_name,
+                            name="nick_name",
+                        ),
+                        rx.text("Dietary preferences", weight="bold"),
+                        rx.select(
+                            [str(x) for x in Diet],
+                            placeholder="Select a dietary preference",
+                            name="diet",
+                            required=True,
+                        ),
+                        rx.text("Allergies", weight="bold"),
+                        rx.input(name="allergies"),
+                        rx.hstack(
+                            rx.cond(
+                                is_late_dinner_user_selected,
+                                rx.hstack(
+                                    rx.text("User to pay:", size="5"),
+                                    rx.text(
+                                        State.late_dinner_user_nick_name,
+                                        weight="bold",
+                                        size="5",
+                                    ),
+                                ),
+                            ),
+                            rx.dialog.root(
+                                rx.dialog.trigger(
+                                    rx.button(
+                                        rx.cond(
+                                            is_late_dinner_user_selected,
+                                            "Select another user",
+                                            "Select a user to pay for this dinner sign-up",
+                                        ),
+                                        color_scheme=user_selection_button_colour_scheme,
+                                        size=default_button_size,
+                                    )
+                                ),
+                                rx.dialog.content(
+                                    rx.dialog.title(
                                         "Select a user to pay for this dinner sign-up"
                                     ),
-                                    color_scheme=user_selection_button_colour_scheme,
-                                    size=default_button_size
-                                )
-                            ),
-                            rx.dialog.content(
-                                rx.dialog.title("Select a user to pay for this dinner sign-up"),
-                                rx.scroll_area(
-                                    rx.flex(
-                                        rx.foreach(
-                                            State.users,
-                                            lambda user: rx.dialog.close(
-                                                rx.button(
-                                                    rx.text(user.nick_name, size=default_button_text_size),
-                                                    size=default_button_size,
-                                                    on_click=lambda: State.set_late_dinner_user_nick_name(user.nick_name)
-                                                )
-                                            )
+                                    rx.scroll_area(
+                                        rx.flex(
+                                            rx.foreach(
+                                                State.users,
+                                                lambda user: rx.dialog.close(
+                                                    rx.button(
+                                                        rx.text(
+                                                            user.nick_name,
+                                                            size=default_button_text_size,
+                                                        ),
+                                                        size=default_button_size,
+                                                        on_click=lambda: State.set_late_dinner_user_nick_name(
+                                                            user.nick_name
+                                                        ),
+                                                    )
+                                                ),
+                                            ),
+                                            padding="8px",
+                                            spacing="4",
+                                            style={"width": "max"},
+                                            wrap="wrap",
                                         ),
-                                        padding="8px",
-                                        spacing="4",
-                                        style={"width": "max"},
-                                        wrap="wrap"
+                                        type="always",
+                                        scrollbars="vertical",
+                                        style={"height": "80vh"},
                                     ),
-                                    type="always",
-                                    scrollbars="vertical",
-                                    style={"height": "80vh"}
-                                )
-                            )
+                                ),
+                            ),
+                            align="center",
                         ),
-                        align="center"
+                        rx.hstack(
+                            rx.button(
+                                rx.text("Register", size=default_button_text_size),
+                                type="submit",
+                                size=default_button_size,
+                                disabled=~is_late_dinner_user_selected,
+                            ),
+                            rx.button(
+                                rx.text(
+                                    "Register and add another",
+                                    size=default_button_text_size,
+                                ),
+                                type="submit",
+                                size=default_button_size,
+                                disabled=~is_late_dinner_user_selected,
+                                on_click=State.handle_add_another_press_for_late_dinner_signup,
+                            ),
+                            rx.button(
+                                rx.text("Cancel", size=default_button_text_size),
+                                on_click=[
+                                    State.reset_late_dinner_user_nick_name,
+                                    rx.redirect("/admin/dinner"),
+                                ],
+                                size=default_button_size,
+                            ),
+                        ),
                     ),
-                    rx.hstack(
-                        rx.button(
-                            rx.text("Register", size=default_button_text_size),
-                            type="submit",
-                            size=default_button_size,
-                            disabled=~is_late_dinner_user_selected
-                        ),
-                        rx.button(
-                            rx.text("Register and add another", size=default_button_text_size),
-                            type="submit",
-                            size=default_button_size,
-                            disabled=~is_late_dinner_user_selected,
-                            on_click=State.handle_add_another_press_for_late_dinner_signup
-                        ),
-                        rx.button(
-                            rx.text("Cancel", size=default_button_text_size),
-                            on_click=[State.reset_late_dinner_user_nick_name, rx.redirect("/admin/dinner")],
-                            size=default_button_size
-                        )
-                    )
-                ),
-                on_submit=[State.order_dinner_late, State.reset_late_dinner_user_nick_name],
-                reset_on_submit=True
+                    on_submit=[
+                        State.order_dinner_late,
+                        State.reset_late_dinner_user_nick_name,
+                    ],
+                    reset_on_submit=True,
+                )
             )
         )
-    ))
+    )
+
 
 def breakfast_signup_page() -> rx.Component:
     return rx.container(
@@ -769,14 +901,14 @@ def breakfast_signup_page() -> rx.Component:
                     placeholder="First name of breakfast guest",
                     default_value=State.current_user.first_name,
                     name="first_name",
-                    on_change=State.set_breakfast_signup_first_name
+                    on_change=State.set_breakfast_signup_first_name,
                 ),
                 rx.text("Last name of breakfast guest *"),
                 rx.input(
                     placeholder="Last name of breakfast guest",
                     default_value=State.current_user.last_name,
                     name="last_name",
-                    on_change=State.set_breakfast_signup_last_name
+                    on_change=State.set_breakfast_signup_last_name,
                 ),
                 rx.text("Breakfast item *"),
                 rx.select.root(
@@ -786,24 +918,27 @@ def breakfast_signup_page() -> rx.Component:
                             [str(x) for x in BreakfastMenuItem],
                             lambda item: rx.select.item(
                                 f"{item} ({State.admin_data[item + '_price']}€)",
-                                value=item
-                            )
+                                value=item,
+                            ),
                         )
                     ),
                     name="menu_item",
-                    on_change=State.set_breakfast_signup_item
+                    on_change=State.set_breakfast_signup_item,
                 ),
                 rx.text("Allergies"),
                 rx.input(
                     name="allergies",
                     default_value=State.current_user.allergies,
-                    on_change=State.set_breakfast_signup_allergies
+                    on_change=State.set_breakfast_signup_allergies,
                 ),
                 rx.button(
                     rx.text("Register", size=default_button_text_size),
                     size=default_button_size,
                     loading=State.is_order_request_loading,
-                    on_click=[State.set_order_request_id, lambda: State.sign_guest_up_for_breakfast(False)]
+                    on_click=[
+                        State.set_order_request_id,
+                        lambda: State.sign_guest_up_for_breakfast(False),
+                    ],
                 ),
                 rx.button(
                     rx.icon("credit-card"),
@@ -812,25 +947,28 @@ def breakfast_signup_page() -> rx.Component:
                     size=default_button_size,
                     type="button",
                     loading=State.is_order_request_loading,
-                    on_click=[State.set_order_request_id, lambda: State.sign_guest_up_for_breakfast(True)]
+                    on_click=[
+                        State.set_order_request_id,
+                        lambda: State.sign_guest_up_for_breakfast(True),
+                    ],
                 ),
                 rx.dialog.root(
-                  stripe_payment_dialog("breakfast", State.get_breakfast_price),
-                  open=State.ordered_item == "breakfast"
+                    stripe_payment_dialog("breakfast", State.get_breakfast_price),
+                    open=State.ordered_item == "breakfast",
                 ),
                 rx.button(
                     rx.text("Cancel", size=default_button_text_size),
                     on_click=rx.redirect("/user"),
-                    size=default_button_size
-                )
-
+                    size=default_button_size,
+                ),
             )
-    ),
-    on_mount=State.set_breakfast_signup_default_values
+        ),
+        on_mount=State.set_breakfast_signup_default_values,
     )
 
+
 def user_info_page() -> rx.Component:
-    is_user_debt_0 = State.get_user_debt==0
+    is_user_debt_0 = State.get_user_debt == 0
 
     def show_row(order: Order):
         return rx.table.row(
@@ -840,159 +978,196 @@ def user_info_page() -> rx.Component:
                 rx.cond(
                     State.prepaid_dinner_ids.contains(order.order_id),
                     rx.text.strong("Prepaid dinner"),
-                    f"{order.quantity}"
-                )
-            , align="right"),
-            rx.table.cell(
-                rx.cond(
-                    State.prepaid_dinner_ids.contains(order.order_id),
-                    "€0",
-                    f"€{two_decimal_points(order.price)}"
-                    ),
-            align="right"),
-            rx.table.cell(
-                rx.cond(
-                    State.prepaid_dinner_ids.contains(order.order_id),
-                    "€0",
-                    f"€{two_decimal_points(order.total)}"
-                    ),
-            align="right")
-        )
-    
-    return rx.container(rx.center(rx.vstack(
-        rx.heading(
-            f"Hello {State.current_user.nick_name}", size=default_heading_size
-        ),
-        rx.button(
-            rx.text(f"Back to orders and items", size=default_button_text_size),
-            on_click=rx.redirect("/user"),
-            color_scheme="red",
-            size=default_button_size
-        ),
-        rx.text(
-            "Note: new registrations may take a moment to show. "
-            "If you made a registration by mistake, please talk to the reception "
-            "and they will help correcting it.",
-            size=default_text_size
-        ),
-        rx.text(f"Total amount due: €{two_decimal_points(State.get_user_debt)} ",
-            size=default_text_size, weight="bold"),
-        rx.hstack(
-            rx.dialog.root(
-                rx.dialog.trigger(
-                    rx.button(
-                        rx.icon("euro"),
-                        rx.text("Pay tab", size=default_button_text_size, weight="bold"),
-                        on_click=lambda: State.generate_item_payment_qr("tab", State.get_user_debt),
-                        size=default_button_size,
-                        color_scheme="yellow",
-                        disabled=is_user_debt_0
-                    )
+                    f"{order.quantity}",
                 ),
+                align="right",
+            ),
+            rx.table.cell(
                 rx.cond(
-                    State.is_closing_account == None,
-                    rx.dialog.content(
-                        rx.form(
-                            rx.vstack(
+                    State.prepaid_dinner_ids.contains(order.order_id),
+                    "€0",
+                    f"€{two_decimal_points(order.price)}",
+                ),
+                align="right",
+            ),
+            rx.table.cell(
+                rx.cond(
+                    State.prepaid_dinner_ids.contains(order.order_id),
+                    "€0",
+                    f"€{two_decimal_points(order.total)}",
+                ),
+                align="right",
+            ),
+        )
+
+    return rx.container(
+        rx.center(
+            rx.vstack(
+                rx.heading(
+                    f"Hello {State.current_user.nick_name}", size=default_heading_size
+                ),
+                rx.button(
+                    rx.text(f"Back to orders and items", size=default_button_text_size),
+                    on_click=rx.redirect("/user"),
+                    color_scheme="red",
+                    size=default_button_size,
+                ),
+                rx.text(
+                    "Note: new registrations may take a moment to show. "
+                    "If you made a registration by mistake, please talk to the reception "
+                    "and they will help correcting it.",
+                    size=default_text_size,
+                ),
+                rx.text(
+                    f"Total amount due: €{two_decimal_points(State.get_user_debt)} ",
+                    size=default_text_size,
+                    weight="bold",
+                ),
+                rx.hstack(
+                    rx.dialog.root(
+                        rx.dialog.trigger(
+                            rx.button(
+                                rx.icon("euro"),
                                 rx.text(
-                                    rx.cond(
-                                        State.current_user.current_guest == True,
-                                        "Are you leaving the Olive Branch?",
-                                        "Are you closing your account?",
-                                    ),
-                                    weight="medium"
+                                    "Pay tab",
+                                    size=default_button_text_size,
+                                    weight="bold",
                                 ),
-                                rx.radio(["Yes", "No"], name="is_closing_account", default_value="Yes", direction="row"),
-                                rx.hstack(
-                                    rx.button(
-                                        rx.text("Submit", size=default_button_text_size),
-                                        type="submit",
-                                        size=default_button_size
+                                on_click=lambda: State.generate_item_payment_qr(
+                                    "tab", State.get_user_debt
+                                ),
+                                size=default_button_size,
+                                color_scheme="yellow",
+                                disabled=is_user_debt_0,
+                            )
+                        ),
+                        rx.cond(
+                            State.is_closing_account == None,
+                            rx.dialog.content(
+                                rx.form(
+                                    rx.vstack(
+                                        rx.text(
+                                            rx.cond(
+                                                State.current_user.current_guest
+                                                == True,
+                                                "Are you leaving the Olive Branch?",
+                                                "Are you closing your account?",
+                                            ),
+                                            weight="medium",
+                                        ),
+                                        rx.radio(
+                                            ["Yes", "No"],
+                                            name="is_closing_account",
+                                            default_value="Yes",
+                                            direction="row",
+                                        ),
+                                        rx.hstack(
+                                            rx.button(
+                                                rx.text(
+                                                    "Submit",
+                                                    size=default_button_text_size,
+                                                ),
+                                                type="submit",
+                                                size=default_button_size,
+                                            ),
+                                            rx.dialog.close(
+                                                rx.button(
+                                                    "Close", size=default_button_size
+                                                )
+                                            ),
+                                        ),
                                     ),
-                                    rx.dialog.close(
-                                        rx.button("Close", size=default_button_size)
-                                    )
+                                    on_submit=State.handle_checkout_choice,
                                 )
                             ),
-                            on_submit=State.handle_checkout_choice
-                        )
+                            stripe_payment_dialog("tab", State.get_user_debt),
+                        ),
                     ),
-                    stripe_payment_dialog("tab", State.get_user_debt)
-                )
-            ),
-            rx.text(
-                f"Pay your tab securely via Stripe. Please review your registrations below before paying.",
-                size=default_text_size,
-                opacity=rx.cond(
-                    is_user_debt_0,
-                    0.3,
-                    1
-                )
-            ),
-            align="center"
-        ),
-        rx.cond(
-            is_user_debt_0,
-            rx.text("You have no orders to pay for! Please see reception if you wish to check out.", size=default_text_size)
-        ),
-        rx.text("Registrations:", size=default_text_size, weight="bold"),
-        rx.scroll_area(
-            rx.table.root(
-                rx.table.header(
-                    rx.table.row(
-                        rx.table.column_header_cell("Time"),
-                        rx.table.column_header_cell("Item"),
-                        rx.table.column_header_cell("Quantity", align="right"),
-                        rx.table.column_header_cell("Unit Price", align="right"),
-                        rx.table.column_header_cell("Total", align="right")
-                    )
+                    rx.text(
+                        f"Pay your tab securely via Stripe. Please review your registrations below before paying.",
+                        size=default_text_size,
+                        opacity=rx.cond(is_user_debt_0, 0.3, 1),
+                    ),
+                    align="center",
                 ),
-                rx.table.body(
-                    rx.foreach(
-                        State.current_user_orders_in_reverse_chronological_order, show_row
-                    )
-                )
-            ),
-            scrollbars="vertical",
-            style={"height": "70vh"}
+                rx.cond(
+                    is_user_debt_0,
+                    rx.text(
+                        "You have no orders to pay for! Please see reception if you wish to check out.",
+                        size=default_text_size,
+                    ),
+                ),
+                rx.text("Registrations:", size=default_text_size, weight="bold"),
+                rx.scroll_area(
+                    rx.table.root(
+                        rx.table.header(
+                            rx.table.row(
+                                rx.table.column_header_cell("Time"),
+                                rx.table.column_header_cell("Item"),
+                                rx.table.column_header_cell("Quantity", align="right"),
+                                rx.table.column_header_cell(
+                                    "Unit Price", align="right"
+                                ),
+                                rx.table.column_header_cell("Total", align="right"),
+                            )
+                        ),
+                        rx.table.body(
+                            rx.foreach(
+                                State.current_user_orders_in_reverse_chronological_order,
+                                show_row,
+                            )
+                        ),
+                    ),
+                    scrollbars="vertical",
+                    style={"height": "70vh"},
+                ),
+            )
         )
-    )))
+    )
+
 
 def admin() -> rx.Component:
-    return rx.container(rx.center(
-        rx.vstack(
-            rx.heading(f"Admin", size=default_heading_size),
-            rx.button(
-                rx.text("Breakfast", size=default_button_text_size),
-                on_click=rx.redirect("/admin/breakfast"),
-                size=default_button_size	
-            ),
-            rx.button(
-                rx.text("Dinner", size=default_button_text_size),
-                on_click=rx.redirect("/admin/dinner"),
-                size=default_button_size
-            ),
-        ) 
-    ))
+    return rx.container(
+        rx.center(
+            rx.vstack(
+                rx.heading(f"Admin", size=default_heading_size),
+                rx.button(
+                    rx.text("Breakfast", size=default_button_text_size),
+                    on_click=rx.redirect("/admin/breakfast"),
+                    size=default_button_size,
+                ),
+                rx.button(
+                    rx.text("Dinner", size=default_button_text_size),
+                    on_click=rx.redirect("/admin/dinner"),
+                    size=default_button_size,
+                ),
+            )
+        )
+    )
+
 
 def admin_refresh_top_bar() -> rx.Component:
     return rx.flex(
         rx.button(
-            rx.icon("door-open"), rx.text("Go back", size=default_button_text_size),
-            on_click=rx.redirect("/admin"), color_scheme="red",
-            size=default_button_size
+            rx.icon("door-open"),
+            rx.text("Go back", size=default_button_text_size),
+            on_click=rx.redirect("/admin"),
+            color_scheme="red",
+            size=default_button_size,
         ),
         rx.button(
-            rx.icon("refresh-cw"), rx.text("Reload", size=default_button_text_size),
+            rx.icon("refresh-cw"),
+            rx.text("Reload", size=default_button_text_size),
             on_click=State.reload_sheet_data,
             color_scheme="green",
-            size=default_button_size
+            size=default_button_size,
         ),
-        spacing="2"
+        spacing="2",
     )
 
+
 def show_signup(meal: Meal_Model):
-    
+
     has_allergies = meal.allergies != ""
 
     return rx.table.row(
@@ -1001,125 +1176,147 @@ def show_signup(meal: Meal_Model):
         rx.table.cell(meal.allergies),
         rx.cond(
             meal.meal_type == "dinner",
-            rx.table.cell(rx.cond(meal.volunteer, "yes", ""))
+            rx.table.cell(rx.cond(meal.volunteer, "yes", "")),
         ),
         rx.table.cell(
             rx.button(
                 rx.text(rx.cond(meal.served, "✅", "✖️"), size="8"),
-                on_click=lambda: State.set_served(meal.meal_id, ~meal.served, meal.meal_type),
+                on_click=lambda: State.set_served(
+                    meal.meal_id, ~meal.served, meal.meal_type
+                ),
                 color_scheme=rx.cond(meal.served, "green", "red"),
-                size="4"
+                size="4",
             )
         ),
         key=meal.meal_id,
         bg=rx.cond(has_allergies, "#FC281D20", "transparent"),
     )
 
-def admin_dinner() -> rx.Component:
-    return rx.container(rx.center(
-        rx.vstack(
-            rx.heading("Dinner", size=default_heading_size), 
-            rx.hstack(
-                admin_refresh_top_bar(),
-                rx.button(
-                    rx.text("Late sign-up", size=default_button_text_size),
-                    on_click=rx.redirect("/admin/late"),
-                    size=default_button_size
-                ),
-                spacing="2"
-            ),
-            # Make the two columns share the available space evenly
-            rx.hstack(
-                rx.vstack(
-                    rx.text.strong(f"Total eating dinner: {State.dinner_count}"),
-                    rx.text.strong(f"Total served: {State.dinner_count_served}"),
-                    rx.text(f"Meat: {State.dinner_count_meat}"),
-                    rx.text(f"Vegetarian: {State.dinner_count_vegetarian}"),                  
-                    rx.text(f"Vegan: {State.dinner_count_vegan}"),
-                    flex="1"
-                ),
-                rx.vstack(
-                    rx.text.strong(f"Guests eating dinner: {State.dinner_count_guests}"),
-                    rx.text.strong(f"Total served: {State.dinner_count_guests_served}"),
-                    rx.text(f"Meat: {State.dinner_count_guests_meat}"),
-                    rx.text(f"Vegetarian: {State.dinner_count_guests_vegetarian}"),
-                    rx.text(f"Vegan: {State.dinner_count_guests_vegan}"),
-                    flex="1"
-                ),
-                rx.vstack(
-                    rx.text.strong(f"Volunteers eating dinner: {State.dinner_count_volunteers}"),
-                    rx.text.strong(f"Total served: {State.dinner_count_volunteers_served}"),
-                    rx.text(f"Meat: {State.dinner_count_volunteers_meat}"),
-                    rx.text(f"Vegetarian: {State.dinner_count_volunteers_vegetarian}"),
-                    rx.text(f"Vegan: {State.dinner_count_volunteers_vegan}"),
-                    flex="1"
-                ),
-                spacing="4",
-                justify="between",
-                width="100%"
-            ),
-            rx.table.root(
-                rx.table.header(
-                    rx.table.row(
-                        rx.table.column_header_cell("Name"),
-                        rx.table.column_header_cell("Diet"),
-                        rx.table.column_header_cell("Allergies"),
-                        rx.table.column_header_cell("Volunteer"),
-                        rx.table.column_header_cell("Served"),
-                    )
-                ),
-                rx.table.body(
-                    rx.foreach(State.todays_dinner_meals, show_signup)
-                ),
-                variant="surface",
-                size="3"
-            )
-        )
-    )
-)
 
-def admin_breakfast() -> rx.Component:
-    return rx.container(rx.center(
-        rx.vstack(
-            rx.heading("Breakfast", size=default_heading_size),
-            admin_refresh_top_bar(), 
+def admin_dinner() -> rx.Component:
+    return rx.container(
+        rx.center(
             rx.vstack(
-                rx.text.strong(f"Total eating breakfast: {State.breakfast_count}"),
-                rx.text(f"Total served: {State.breakfast_count_served}"),
-                flex="1"
-            ),
-            rx.scroll_area(
+                rx.heading("Dinner", size=default_heading_size),
+                rx.hstack(
+                    admin_refresh_top_bar(),
+                    rx.button(
+                        rx.text("Late sign-up", size=default_button_text_size),
+                        on_click=rx.redirect("/admin/late"),
+                        size=default_button_size,
+                    ),
+                    spacing="2",
+                ),
+                # Make the two columns share the available space evenly
+                rx.hstack(
+                    rx.vstack(
+                        rx.text.strong(f"Total eating dinner: {State.dinner_count}"),
+                        rx.text.strong(f"Total served: {State.dinner_count_served}"),
+                        rx.text(f"Meat: {State.dinner_count_meat}"),
+                        rx.text(f"Vegetarian: {State.dinner_count_vegetarian}"),
+                        rx.text(f"Vegan: {State.dinner_count_vegan}"),
+                        flex="1",
+                    ),
+                    rx.vstack(
+                        rx.text.strong(
+                            f"Guests eating dinner: {State.dinner_count_guests}"
+                        ),
+                        rx.text.strong(
+                            f"Total served: {State.dinner_count_guests_served}"
+                        ),
+                        rx.text(f"Meat: {State.dinner_count_guests_meat}"),
+                        rx.text(f"Vegetarian: {State.dinner_count_guests_vegetarian}"),
+                        rx.text(f"Vegan: {State.dinner_count_guests_vegan}"),
+                        flex="1",
+                    ),
+                    rx.vstack(
+                        rx.text.strong(
+                            f"Volunteers eating dinner: {State.dinner_count_volunteers}"
+                        ),
+                        rx.text.strong(
+                            f"Total served: {State.dinner_count_volunteers_served}"
+                        ),
+                        rx.text(f"Meat: {State.dinner_count_volunteers_meat}"),
+                        rx.text(
+                            f"Vegetarian: {State.dinner_count_volunteers_vegetarian}"
+                        ),
+                        rx.text(f"Vegan: {State.dinner_count_volunteers_vegan}"),
+                        flex="1",
+                    ),
+                    spacing="4",
+                    justify="between",
+                    width="100%",
+                ),
                 rx.table.root(
                     rx.table.header(
                         rx.table.row(
                             rx.table.column_header_cell("Name"),
-                            rx.table.column_header_cell("Menu item"),
+                            rx.table.column_header_cell("Diet"),
                             rx.table.column_header_cell("Allergies"),
-                            rx.table.column_header_cell("Served")
+                            rx.table.column_header_cell("Volunteer"),
+                            rx.table.column_header_cell("Served"),
                         )
                     ),
-                    rx.table.body(
-                        rx.foreach(State.todays_breakfast_meals, show_signup)
-                    ),
+                    rx.table.body(rx.foreach(State.todays_dinner_meals, show_signup)),
                     variant="surface",
-                    size="3"
+                    size="3",
                 ),
-                type="always",
-                scrollbars="vertical",
-                style={"height": "80vh"}
-            ),
+            )
         )
-    ))
+    )
+
+
+def admin_breakfast() -> rx.Component:
+    return rx.container(
+        rx.center(
+            rx.vstack(
+                rx.heading("Breakfast", size=default_heading_size),
+                admin_refresh_top_bar(),
+                rx.vstack(
+                    rx.text.strong(f"Total eating breakfast: {State.breakfast_count}"),
+                    rx.text(f"Total served: {State.breakfast_count_served}"),
+                    flex="1",
+                ),
+                rx.scroll_area(
+                    rx.table.root(
+                        rx.table.header(
+                            rx.table.row(
+                                rx.table.column_header_cell("Name"),
+                                rx.table.column_header_cell("Menu item"),
+                                rx.table.column_header_cell("Allergies"),
+                                rx.table.column_header_cell("Served"),
+                            )
+                        ),
+                        rx.table.body(
+                            rx.foreach(State.todays_breakfast_meals, show_signup)
+                        ),
+                        variant="surface",
+                        size="3",
+                    ),
+                    type="always",
+                    scrollbars="vertical",
+                    style={"height": "80vh"},
+                ),
+            )
+        )
+    )
+
 
 def admin_user_page() -> rx.Component:
-    return rx.container(rx.center(rx.vstack(
-        rx.heading("User information", size=default_heading_size),
-        rx.button(
-            rx.text("Go back", size=default_button_text_size),
-            on_click=rx.redirect("/admin"),
-            size=default_button_size
-        ),
-        rx.text(f"Full name: {State.current_user.first_name} {State.current_user.last_name}"),
-        rx.text(f"Nick name: {State.current_user.nick_name}"),
-        rx.text(f"Owes: {State.get_user_debt}€")
-    )))
+    return rx.container(
+        rx.center(
+            rx.vstack(
+                rx.heading("User information", size=default_heading_size),
+                rx.button(
+                    rx.text("Go back", size=default_button_text_size),
+                    on_click=rx.redirect("/admin"),
+                    size=default_button_size,
+                ),
+                rx.text(
+                    f"Full name: {State.current_user.first_name} {State.current_user.last_name}"
+                ),
+                rx.text(f"Nick name: {State.current_user.nick_name}"),
+                rx.text(f"Owes: {State.get_user_debt}€"),
+            )
+        )
+    )

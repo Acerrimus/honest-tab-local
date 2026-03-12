@@ -5,33 +5,68 @@ from sqlalchemy import select
 import asyncio
 from datetime import datetime
 
-from obhonesty.pages import * 
+from obhonesty.pages import *
 from obhonesty.state import State
 from obhonesty.sheet import user_sheet, item_sheet, order_sheet, admin_sheet
-from obhonesty.models import User as User_Model, Order as Order_Model, Item as Item_Model, Admin as Admin_Model, Meal as Meal_Model
-from obhonesty.aux import check_internet_connection, get_model_string_type_columns, sanitise_record_strings, short_uid, generate_receiver_from_names
+from obhonesty.models import (
+    User as User_Model,
+    Order as Order_Model,
+    Item as Item_Model,
+    Admin as Admin_Model,
+    Meal as Meal_Model,
+)
+from obhonesty.aux import (
+    check_internet_connection,
+    get_model_string_type_columns,
+    sanitise_record_strings,
+    short_uid,
+    generate_receiver_from_names,
+)
 from obhonesty.constants import DATETIME_FORMAT
 
 app = rx.App()
-app.add_page(index, route="/", on_load=[State.clear_temp_state_values, State.reload_sheet_data])
-app.add_page(user_page, route="/user", on_load=[State.clear_temp_state_values, State.on_user_login, State.reload_sheet_data])
+app.add_page(
+    index, route="/", on_load=[State.clear_temp_state_values, State.reload_sheet_data]
+)
+app.add_page(
+    user_page,
+    route="/user",
+    on_load=[
+        State.clear_temp_state_values,
+        State.on_user_login,
+        State.reload_sheet_data,
+    ],
+)
 app.add_page(user_signup_page, route="/signup", on_load=State.cancel_timeout)
 app.add_page(dinner_signup_page, route="/dinner", on_load=State.cancel_timeout)
 app.add_page(breakfast_signup_page, route="/breakfast", on_load=State.cancel_timeout)
 app.add_page(custom_item_page, route="/custom_item", on_load=State.cancel_timeout)
 app.add_page(user_info_page, route="/info", on_load=State.reload_sheet_data)
-app.add_page(admin, route="/admin", on_load=[State.clear_temp_state_values, State.reload_sheet_data])
-app.add_page(admin_dinner, route="/admin/dinner", on_load=State.reload_admin_dinner_data)
-app.add_page(admin_breakfast, route="/admin/breakfast", on_load=State.reload_admin_dinner_data)
+app.add_page(
+    admin,
+    route="/admin",
+    on_load=[State.clear_temp_state_values, State.reload_sheet_data],
+)
+app.add_page(
+    admin_dinner, route="/admin/dinner", on_load=State.reload_admin_dinner_data
+)
+app.add_page(
+    admin_breakfast, route="/admin/breakfast", on_load=State.reload_admin_dinner_data
+)
 app.add_page(admin_user_page, route="/admin/user", on_load=State.reload_sheet_data)
-app.add_page(late_dinner_signup_page, route="/admin/late", on_load=[State.reset_late_dinner_user_nick_name, State.reload_sheet_data])
+app.add_page(
+    late_dinner_signup_page,
+    route="/admin/late",
+    on_load=[State.reset_late_dinner_user_nick_name, State.reload_sheet_data],
+)
+
 
 def get_records(sheet, headers: list[str] = [], add_synced: bool = False):
     check_internet_connection()
 
     if sheet is None:
         return []
-    
+
     records = sheet.get_all_records(expected_headers=headers)
 
     for record in records:
@@ -40,65 +75,94 @@ def get_records(sheet, headers: list[str] = [], add_synced: bool = False):
 
     if not add_synced:
         return records
-    
+
     return [{**record, "synced": True} for record in records]
+
 
 def sync_new_orders(unsynced_orders):
     new_rows = []
     for order in unsynced_orders:
-        new_rows.append([
-            order.order_id,
-            order.user_nick_name,
-            order.time,
-            order.item,
-            order.quantity,
-            order.price,
-            order.total,
-            order.receiver,
-            order.diet,
-            order.allergies,
-            order.served,
-            order.tax_category,
-            order.comment,
-            # this str conversion is temporary until this column can be turned into a bool in the SQLite db
-            str(order.paid) == "1",
-            order.paid_time,
-            order.method, 
-            order.checkout_staff
-            ])
-    order_sheet.append_rows(new_rows, value_input_option="USER_ENTERED", table_range="A1")
+        new_rows.append(
+            [
+                order.order_id,
+                order.user_nick_name,
+                order.time,
+                order.item,
+                order.quantity,
+                order.price,
+                order.total,
+                order.receiver,
+                order.diet,
+                order.allergies,
+                order.served,
+                order.tax_category,
+                order.comment,
+                # this str conversion is temporary until this column can be turned into a bool in the SQLite db
+                str(order.paid) == "1",
+                order.paid_time,
+                order.method,
+                order.checkout_staff,
+            ]
+        )
+    order_sheet.append_rows(
+        new_rows, value_input_option="USER_ENTERED", table_range="A1"
+    )
+
 
 def sync_new_users(unsynced_users):
     new_rows = []
     for user in unsynced_users:
-        new_rows.append([
-            user.nick_name,
-            user.first_name,
-            user.last_name,
-            user.phone_number,
-            user.email,
-            user.diet,
-            user.allergies,
-            user.volunteer,
-            user.away,
-            "",
-            user.current_guest,
-            user.active_tab,
-            ""
-            ])
-    user_sheet.append_rows(new_rows, value_input_option="USER_ENTERED", table_range="A1")
-        
+        new_rows.append(
+            [
+                user.nick_name,
+                user.first_name,
+                user.last_name,
+                user.phone_number,
+                user.email,
+                user.diet,
+                user.allergies,
+                user.volunteer,
+                user.away,
+                "",
+                user.current_guest,
+                user.active_tab,
+                "",
+            ]
+        )
+    user_sheet.append_rows(
+        new_rows, value_input_option="USER_ENTERED", table_range="A1"
+    )
+
 
 def sync_orders():
     order_string_columns = get_model_string_type_columns(Order_Model)
 
     with rx.session() as session:
-        order_data = get_records(order_sheet, [
-            'order_id', 'user', 'time', 'item', 'quantity', 'price', 'total',
-            'diet', 'allergies', 'served', 'tax_category', 'comment', 'paid',
-            'paid_time', 'method', 'checkout_staff'
-        ], True)
-        current_unsynced_orders = session.query(Order_Model).filter(~Order_Model.synced).all()
+        order_data = get_records(
+            order_sheet,
+            [
+                "order_id",
+                "user",
+                "time",
+                "item",
+                "quantity",
+                "price",
+                "total",
+                "diet",
+                "allergies",
+                "served",
+                "tax_category",
+                "comment",
+                "paid",
+                "paid_time",
+                "method",
+                "checkout_staff",
+            ],
+            True,
+        )
+        current_unsynced_orders = (
+            session.query(Order_Model).filter(~Order_Model.synced).all()
+        )
 
         if not len(current_unsynced_orders):
             for order in order_data:
@@ -109,9 +173,7 @@ def sync_orders():
             for row in session.exec(Order_Model.select()).all():
                 session.delete(row)
 
-            session.add_all(
-                Order_Model.model_validate(order) for order in order_data
-            )
+            session.add_all(Order_Model.model_validate(order) for order in order_data)
 
         google_sheet_order_ids = [order["order_id"] for order in order_data]
         remaining_unsynced_orders = []
@@ -120,7 +182,7 @@ def sync_orders():
             if order.order_id in google_sheet_order_ids:
                 order.synced = True
                 continue
-            
+
             remaining_unsynced_orders.append(order)
 
         if len(session.new) or len(session.dirty):
@@ -129,16 +191,33 @@ def sync_orders():
         if len(remaining_unsynced_orders):
             sync_new_orders(remaining_unsynced_orders)
 
+
 def sync_users():
     user_string_columns = get_model_string_type_columns(User_Model)
 
     with rx.session() as session:
-        user_data = get_records(user_sheet, [
-                'nick_name', 'first_name', 'last_name', 'phone_number', 'email',
-                'diet', 'allergies', 'volunteer', 'away', 'owes', "current_guest",
-                "active_tab", "prepaid_dinners_quantity"
-            ], True)
-        current_unsynced_users = session.query(User_Model).filter(~User_Model.synced).all()
+        user_data = get_records(
+            user_sheet,
+            [
+                "nick_name",
+                "first_name",
+                "last_name",
+                "phone_number",
+                "email",
+                "diet",
+                "allergies",
+                "volunteer",
+                "away",
+                "owes",
+                "current_guest",
+                "active_tab",
+                "prepaid_dinners_quantity",
+            ],
+            True,
+        )
+        current_unsynced_users = (
+            session.query(User_Model).filter(~User_Model.synced).all()
+        )
 
         if not len(current_unsynced_users):
             for user in user_data:
@@ -147,14 +226,16 @@ def sync_users():
                     user[key] = user[key].lower() in ["yes", "true"]
 
                 user = sanitise_record_strings(user_string_columns, user)
-                user["prepaid_dinners_quantity"] = 0 if user["prepaid_dinners_quantity"] == "" else int(user["prepaid_dinners_quantity"])
+                user["prepaid_dinners_quantity"] = (
+                    0
+                    if user["prepaid_dinners_quantity"] == ""
+                    else int(user["prepaid_dinners_quantity"])
+                )
 
             for row in session.exec(User_Model.select()).all():
                 session.delete(row)
 
-            session.add_all(
-                User_Model.model_validate(user) for user in user_data
-            )
+            session.add_all(User_Model.model_validate(user) for user in user_data)
 
         google_sheet_user_nick_names = [user["nick_name"] for user in user_data]
         remaining_unsynced_users = []
@@ -163,7 +244,7 @@ def sync_users():
             if user.nick_name in google_sheet_user_nick_names:
                 user.synced = True
                 continue
-            
+
             remaining_unsynced_users.append(user)
 
         if len(session.new) or len(session.dirty):
@@ -172,20 +253,20 @@ def sync_users():
         if len(remaining_unsynced_users):
             sync_new_users(remaining_unsynced_users)
 
+
 def sync_items():
     with rx.session() as session:
-        item_data = get_records(item_sheet, [
-            'name', 'price', 'description', 'tax_category'
-        ])
+        item_data = get_records(
+            item_sheet, ["name", "price", "description", "tax_category"]
+        )
 
         for row in session.exec(Item_Model.select()).all():
             session.delete(row)
 
-        session.add_all(
-            Item_Model.model_validate(item) for item in item_data
-        )
+        session.add_all(Item_Model.model_validate(item) for item in item_data)
 
         session.commit()
+
 
 def sync_admin_data():
     with rx.session() as session:
@@ -195,40 +276,65 @@ def sync_admin_data():
             session.delete(row)
 
         session.add_all(
-            Admin_Model.model_validate({"key": key, "value": str(admin_data[key])}) for key in admin_data
+            Admin_Model.model_validate({"key": key, "value": str(admin_data[key])})
+            for key in admin_data
         )
 
         session.commit()
 
+
 def update_meals_table():
     with rx.session() as session:
-        volunteers: list[User_Model] = session.exec(
-            select(User_Model).where(User_Model.volunteer == True)
-            ).scalars().all()
+        volunteers: list[User_Model] = (
+            session.exec(select(User_Model).where(User_Model.volunteer == True))
+            .scalars()
+            .all()
+        )
         orders: list[Order_Model] = session.exec(Order_Model.select()).all()
         now = datetime.now()
-        todays_meals: list[Meal_Model] = session.execute(Meal_Model.select_todays_meals()).scalars().all()
-        dinner_meals_today: list[Meal_Model] = session.execute(Meal_Model.select_todays_dinner_meals()).scalars().all()
-        signups_in_todays_orders = list(filter(lambda order: (order.item == "Breakfast sign-up" or order.item == "Dinner sign-up") and datetime.strptime(order.time, DATETIME_FORMAT).date() == now.date(), orders))
-        signups_in_todays_orders_as_order_ids = list(map(lambda order: order.order_id, signups_in_todays_orders))
-        
+        todays_meals: list[Meal_Model] = (
+            session.execute(Meal_Model.select_todays_meals()).scalars().all()
+        )
+        dinner_meals_today: list[Meal_Model] = (
+            session.execute(Meal_Model.select_todays_dinner_meals()).scalars().all()
+        )
+        signups_in_todays_orders = list(
+            filter(
+                lambda order: (
+                    order.item == "Breakfast sign-up" or order.item == "Dinner sign-up"
+                )
+                and datetime.strptime(order.time, DATETIME_FORMAT).date() == now.date(),
+                orders,
+            )
+        )
+        signups_in_todays_orders_as_order_ids = list(
+            map(lambda order: order.order_id, signups_in_todays_orders)
+        )
+
         # remove guest meals from today's signups if they've been removed from orders
         for meal in todays_meals:
             # if order_id is "N/A" they are a volunteer getting dinner automatically, so this meal will not appear in the order table
-            if meal.order_id in signups_in_todays_orders_as_order_ids or meal.order_id == "N/A":
+            if (
+                meal.order_id in signups_in_todays_orders_as_order_ids
+                or meal.order_id == "N/A"
+            ):
                 continue
-            
+
             session.delete(meal)
 
-        dinner_meals_today_as_receivers = list(map(lambda meal: meal.receiver, dinner_meals_today))
+        dinner_meals_today_as_receivers = list(
+            map(lambda meal: meal.receiver, dinner_meals_today)
+        )
 
         # add volunteers to today's dinner meals if not already added
         for volunteer in volunteers:
-            volunteer_receiver_name = generate_receiver_from_names(volunteer.first_name, volunteer.last_name)
+            volunteer_receiver_name = generate_receiver_from_names(
+                volunteer.first_name, volunteer.last_name
+            )
 
             if volunteer_receiver_name in dinner_meals_today_as_receivers:
                 continue
-            
+
             session.add(
                 Meal_Model(
                     meal_id=str(short_uid()),
@@ -240,17 +346,17 @@ def update_meals_table():
                     diet=volunteer.diet,
                     allergies=volunteer.allergies,
                     volunteer=True,
-                    served=False
+                    served=False,
                 )
             )
-        
+
         todays_meals_as_order_ids = list(map(lambda meal: meal.order_id, todays_meals))
-        
+
         # add new orders to today's meals if not already added
         for order in signups_in_todays_orders:
             if order.order_id in todays_meals_as_order_ids:
                 continue
-            
+
             session.add(
                 Meal_Model(
                     meal_id=str(short_uid()),
@@ -258,16 +364,19 @@ def update_meals_table():
                     user_nick_name=order.user_nick_name,
                     receiver=order.receiver,
                     order_time=datetime.strptime(order.time, DATETIME_FORMAT),
-                    meal_type="breakfast" if order.item == "Breakfast sign-up" else "dinner",
+                    meal_type="breakfast"
+                    if order.item == "Breakfast sign-up"
+                    else "dinner",
                     diet=order.diet,
                     allergies=order.allergies,
                     volunteer=False,
-                    served=False
-                    )
+                    served=False,
                 )
-            
+            )
+
         if len(session.new) or len(session.dirty) or len(session.deleted):
             session.commit()
+
 
 async def sync_google_sheet_and_local_db():
     sync_orders()
@@ -278,6 +387,7 @@ async def sync_google_sheet_and_local_db():
     await asyncio.sleep(1)
     sync_admin_data()
 
+
 async def run_loop_tasks():
     while True:
         try:
@@ -286,7 +396,8 @@ async def run_loop_tasks():
 
         except Exception as e:
             print(e)
-        
+
         await asyncio.sleep(5)
-            
+
+
 app.register_lifespan_task(run_loop_tasks)

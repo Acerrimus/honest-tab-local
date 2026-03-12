@@ -10,26 +10,27 @@ ERROR_MESSAGE_COLOUR = "var(--red-11)"
 
 DATETIME_FORMAT = "%d/%m/%Y %H:%M:%S"
 
+
 class Diet(StrEnum):
-  VEGAN = "Vegan"
-  VEGETARIAN = "Vegetarian"
-  MEAT = "Meat"
+    VEGAN = "Vegan"
+    VEGETARIAN = "Vegetarian"
+    MEAT = "Meat"
 
 
 class BreakfastMenuItem(StrEnum):
-  VEGAN = "Vegan"
-  SMALL = "Small"
-  CONTINENTAL = "Continental"
-  FULL_ENGLISH = "Full English"
-  VEGETARIAN = "Vegetarian"
-  PACKED_LUNCH_VEGAN = "Packed Lunch (Vegan)"
-  PACKED_LUNCH_VEGETARIAN = "Packed Lunch (Vegetarian)"
-  PACKED_LUNCH_MEAT = "Packed Lunch (Meat)"
+    VEGAN = "Vegan"
+    SMALL = "Small"
+    CONTINENTAL = "Continental"
+    FULL_ENGLISH = "Full English"
+    VEGETARIAN = "Vegetarian"
+    PACKED_LUNCH_VEGAN = "Packed Lunch (Vegan)"
+    PACKED_LUNCH_VEGETARIAN = "Packed Lunch (Vegetarian)"
+    PACKED_LUNCH_MEAT = "Packed Lunch (Meat)"
 
 
 class TaxCategory(StrEnum):
-  NON_ALCOHOLIC = "Food and beverage non-alcoholic"
-  ALCOHOLIC = "Beverage with alcohol"
-  FITNESS = "Fitness"
-  MISC = "Miscellaneous"
-  ACCOMMODATION = "Accommodation"
+    NON_ALCOHOLIC = "Food and beverage non-alcoholic"
+    ALCOHOLIC = "Beverage with alcohol"
+    FITNESS = "Fitness"
+    MISC = "Miscellaneous"
+    ACCOMMODATION = "Accommodation"
