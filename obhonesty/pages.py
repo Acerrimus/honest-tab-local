@@ -949,7 +949,7 @@ def user_info_page() -> rx.Component:
                 ),
                 rx.table.body(
                     rx.foreach(
-                        State.current_user_orders, show_row
+                        State.current_user_orders_in_reverse_chronological_order, show_row
                     )
                 )
             ),

@@ -812,6 +812,12 @@ class State(rx.State):
     # -----------------------------------
 
     @rx.var(cache=False)
+    def current_user_orders_in_reverse_chronological_order(self) -> List[Order]:
+        current_user_orders_copy = self.current_user_orders.copy()
+        current_user_orders_copy.reverse()
+        return current_user_orders_copy
+
+    @rx.var(cache=False)
     def current_user_orders(self) -> List[Order]:
         filtered: List[Order] = []
         if not self.current_user:
@@ -827,9 +833,9 @@ class State(rx.State):
                     pass
 
                 filtered.append(order_copy)
-        filtered.sort(key=lambda x: x.time, reverse=True)
+                
         return filtered
-
+    
     @rx.var(cache=False)
     def no_user(self) -> bool:
         return self.current_user is None
