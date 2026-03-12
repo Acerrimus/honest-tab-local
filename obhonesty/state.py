@@ -887,8 +887,12 @@ class State(rx.State):
                 metadata={"ob_payment_id": ob_payment_id},
                 # payment_intent_data allows staff to track the payment through the stripe dashboard using the payment id
                 payment_intent_data={"metadata": {"ob_payment_id": ob_payment_id}},
-                success_url="https://example.com/success",  # Replace with your app URL
-                cancel_url="https://example.com/cancel",
+                success_url=os.getenv("SUCCESS_URL")
+                if os.getenv("SUCCESS_URL")
+                else "https://example.com/success",
+                cancel_url=os.getenv("CANCEL_URL")
+                if os.getenv("CANCEL_URL")
+                else "https://example.com/cancel",
             )
 
             async with self:

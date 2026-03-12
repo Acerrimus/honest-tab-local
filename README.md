@@ -1,4 +1,4 @@
-# Honest Tab
+****# Honest Tab
 
 A digital POS/tab system for small businesses, written in Python with [Reflex](https://reflex.dev/). Created for the [Olive Branch hostel](https://www.olivebranchelchorro.com/) in El Chorro, Spain.
 
@@ -54,6 +54,7 @@ To setup:
 1. Create a free Stripe account at [https://stripe.com/](https://stripe.com/)
 2. Copy the private key and put in in a `.env` file with the key `STRIPE_SECRET_KEY`.
 3. It should look like `STRIPE_SECRET_KEY=XXXXXXXXX...`
+4. To begin a payment and create a checkout session, Stripe requires urls to redirect the customer to after a successful or unsuccessful payment. These can be set in `.env` with `SUCCESS_URL` and `CANCEL_URL`. If these are not set the customer will be redirected to `https://example.com/success` or `https://example.com/cancel`.
 
 ## Local Database
 
