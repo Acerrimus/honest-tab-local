@@ -13,8 +13,10 @@ def user_button(user: User) -> rx.Component:
     return rx.dialog.root(
         rx.dialog.trigger(
             rx.button(
-                rx.text(user.nick_name, size=default_button_text_size),
-                size=default_button_size,
+                user.nick_name,
+                font_size="1.5rem",
+                padding="1.5rem 2.5rem",
+                border_radius="0.5rem",
             )
         ),
         rx.dialog.content(
@@ -112,7 +114,7 @@ def index() -> rx.Component:
                     rx.flex(
                         rx.foreach(State.users, user_button),
                         padding="8px",
-                        spacing="4",
+                        spacing="5",
                         style={"width": "max"},
                         wrap="wrap",
                     ),
