@@ -34,9 +34,6 @@ def short_uid(k=8):
 def lower_non_alpha_num(s: str) -> str:
   return re.sub(r'\W+', '', s).lower()
 
-def str_cmp(s: str, t: str) -> bool:
-  return lower_non_alpha_num(s) == lower_non_alpha_num(t)
-
 def check_internet_connection():
     try:
         socket.create_connection(("www.google.com", 443), timeout=3) 
