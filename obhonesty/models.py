@@ -1,6 +1,6 @@
 import reflex as rx
 from datetime import datetime, timedelta
-from sqlalchemy import select, case, func
+from sqlalchemy import select, func
 
 # These classes specify the table info for the SQL database, storing google sheets data offline.
 # They must be updated if any new columns are added.

@@ -1,8 +1,6 @@
 from typing import Dict
 import reflex as rx
 
-from obhonesty.constants import true_values
-
 class User(rx.Base):
   nick_name: str
   first_name: str

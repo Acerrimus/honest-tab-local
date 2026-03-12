@@ -8,7 +8,7 @@ import stripe
 
 from sqlalchemy import update, select
 from obhonesty.aux import short_uid, generate_receiver_from_names, check_internet_connection
-from obhonesty.constants import Diet, true_values, DATETIME_FORMAT
+from obhonesty.constants import true_values, DATETIME_FORMAT
 from obhonesty.user import User
 from obhonesty.item import Item
 from obhonesty.order import Order
