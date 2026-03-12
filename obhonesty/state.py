@@ -12,7 +12,7 @@ from obhonesty.constants import Diet, true_values, DATETIME_FORMAT
 from obhonesty.user import User
 from obhonesty.item import Item
 from obhonesty.order import Order
-from obhonesty.sheet import order_sheet, user_sheet
+from obhonesty.sheet import order_sheet, user_sheet, stripe_payments_sheet
 from obhonesty.models import User as User_Model, Order as Order_Model, Item as Item_Model, Admin as Admin_Model, Meal as Meal_Model
 
 from dotenv import load_dotenv
@@ -42,6 +42,7 @@ class State(rx.State):
     show_stripe_connection_failure_message = False
     has_stripe_qr_generation_failed = False
     should_late_dinner_signup_form_reload = False
+    item_uuid: str = ""
 
     # --- Meal Counts ---
 
@@ -339,7 +340,7 @@ class State(rx.State):
         with rx.session() as session:
             session.add(
                 Order_Model(
-                    order_id=str(short_uid()),
+                    order_id=self.item_uuid if self.is_stripe_session_paid else str(short_uid()),
                     user_nick_name=self.current_user.nick_name,
                     time=now,
                     item=item.name,
@@ -416,7 +417,7 @@ class State(rx.State):
         with rx.session() as session:
             session.add(
                 Order_Model(
-                    order_id=str(short_uid()),
+                    order_id=self.item_uuid if self.is_stripe_session_paid else str(short_uid()),
                     user_nick_name=self.current_user.nick_name,
                     time=now,
                     item="Dinner sign-up",
@@ -545,7 +546,7 @@ class State(rx.State):
         with rx.session() as session:
             session.add(
                 Order_Model(
-                    order_id=str(short_uid()),
+                    order_id=self.item_uuid if self.is_stripe_session_paid else str(short_uid()),
                     user_nick_name=self.current_user.nick_name,
                     time=now,
                     item="Breakfast sign-up",
@@ -684,6 +685,10 @@ class State(rx.State):
         line_items = []
 
         if item_name == "tab":
+            # sums up each item in the tab for a total quantity per item per price point to account for any price changes
+            # eg. dinner x 3 @ €10 and dinner x 2 @ €12
+            summarised_item_quantities = {}
+
             for order in self.current_user_orders:
                 name = order.item
                 unit_amount = int(order.price * 100)
@@ -691,8 +696,38 @@ class State(rx.State):
                 if order.order_id in self.prepaid_dinner_ids:
                     name += " (Prepaid)"
                     unit_amount = 0
+
+                if name not in summarised_item_quantities:
+                    summarised_item_quantities[name] = {}
+
+                if unit_amount not in summarised_item_quantities[name]:
+                    summarised_item_quantities[name][unit_amount] = 0
+
+                summarised_item_quantities[name][unit_amount] += int(order.quantity)
                     
-                line_items.append(generate_line_item(name, unit_amount, int(order.quantity)))
+
+            extra_line_item_total = 0
+            last_item_total = 0
+
+            for summarised_item in summarised_item_quantities:
+                for summarised_item_price_point in summarised_item_quantities[summarised_item]:
+                    summarised_item_quantity = summarised_item_quantities[summarised_item][summarised_item_price_point]
+
+                    # stripe cannot accept more than 100 line items in a checkout session.
+                    # if there are more than 100 items then it should display a total with a note to see reception for a full receipt
+                    if len(line_items) == 99:
+                        last_item_total = summarised_item_price_point * summarised_item_quantity
+
+                    if len(line_items) == 100:
+                        extra_line_item_total += summarised_item_price_point * summarised_item_quantity
+                        continue
+                    
+                    line_items.append(generate_line_item(summarised_item, summarised_item_price_point, summarised_item_quantity))
+                    
+            if extra_line_item_total:
+                extra_line_item_total += last_item_total
+                line_items[99] = (generate_line_item("Remaining item total - see reception for full receipt", extra_line_item_total, 1))
+                    
 
         else:
             quantity = self.temp_quantity if self.temp_quantity > 0 and self.ordered_item not in ["breakfast", "dinner"] else 1.0
@@ -708,12 +743,18 @@ class State(rx.State):
             line_items.append(generate_line_item(item_name, int(unit_price * 100), int(quantity)))
             
         # 1. Create Stripe Checkout Session
+
+        ob_payment_id = str(short_uid())
+
         try:
             # This creates a payment page hosted by Stripe
             session = stripe.checkout.Session.create(
                 payment_method_types=['card'],
                 line_items=line_items,
                 mode='payment',
+                metadata={"ob_payment_id": ob_payment_id},
+                # payment_intent_data allows staff to track the payment through the stripe dashboard using the payment id
+                payment_intent_data={"metadata": { "ob_payment_id": ob_payment_id } },
                 success_url='https://example.com/success', # Replace with your app URL
                 cancel_url='https://example.com/cancel',
             )
@@ -731,8 +772,34 @@ class State(rx.State):
 
             return
 
-        if self.current_stripe_session_id != "":
-            return State.check_stripe_payment_status
+        if self.current_stripe_session_id == "":
+            return
+        
+        def generate_stripe_payment_row(order_id):
+            return [str(short_uid()), datetime.now().strftime(DATETIME_FORMAT), self.current_stripe_session_id, ob_payment_id, order_id, self.current_user.nick_name]
+
+        stripe_payment_rows_to_add = []
+
+        if item_name == "tab":
+            stripe_payment_rows_to_add = [generate_stripe_payment_row(order.order_id) for order in self.current_user_orders]
+
+        else:
+            async with self:
+                self.item_uuid = str(short_uid())
+
+            stripe_payment_rows_to_add.append(generate_stripe_payment_row(self.item_uuid))
+
+        try:
+            # log payment session so it can be tracked by staff in case of payment issues
+            stripe_payments_sheet.append_rows(
+                stripe_payment_rows_to_add,
+                value_input_option="USER_ENTERED",
+                table_range="A1"
+            )
+        except Exception as e:
+            print(f"Error adding payments to stripe_payments_sheet: {e}")
+
+        return State.check_stripe_payment_status
 
     @rx.event(background=True)
     async def check_stripe_payment_status(self):
