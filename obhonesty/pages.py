@@ -36,33 +36,47 @@ def user_button_dialog(user: User) -> rx.Component:
                             "If your email address is five characters or less, please enter the full email address."
                         ),
                     ),
-                    rx.box(
-                        rx.input(
-                            name="user_nick_name",
-                            type="hidden",
-                            display="none",
-                            value=user.nick_name,
-                        ),
-                        rx.input(
-                            placeholder="Enter the first five characters of your email here",
-                            type="password",
-                            name="email_first_five_chars",
-                            max_length=5,
-                            required=True,
-                        ),
-                        rx.cond(
-                            State.is_email_login_incorrect,
-                            rx.text(
-                                "This does not match the first five characters of your email, please try again.",
-                                color=ERROR_MESSAGE_COLOUR,
+                    rx.input(
+                        name="user_nick_name",
+                        type="hidden",
+                        display="none",
+                        value=user.nick_name,
+                        size="3",
+                    ),
+                    rx.vstack(
+                        rx.vstack(
+                            rx.input(
+                                placeholder="Enter the first five characters of your email here",
+                                type="password",
+                                name="email_first_five_chars",
+                                max_length=5,
+                                required=True,
+                                width="100%",
                             ),
+                            rx.cond(
+                                State.is_email_login_incorrect,
+                                rx.text(
+                                    "This does not match the first five characters of your email, please try again.",
+                                    color=ERROR_MESSAGE_COLOUR,
+                                ),
+                            ),
+                            width="100%",
                         ),
                         rx.hstack(
-                            rx.button("Submit", type="submit"),
-                            rx.dialog.close(rx.button("Close")),
+                            rx.button(
+                                "Submit", type="submit", size=default_button_size
+                            ),
+                            rx.dialog.close(
+                                rx.button("Close", size=default_button_size)
+                            ),
                         ),
+                        spacing="3",
+                        width="100%",
                     ),
-                    rx.text("Forgotten your email? See reception for help."),
+                    rx.hstack(
+                        rx.text("Forgotten your email?", weight="bold"),
+                        rx.text("See reception for help."),
+                    ),
                     direction="column",
                     spacing="3",
                 ),
