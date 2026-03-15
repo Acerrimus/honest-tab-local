@@ -7,18 +7,12 @@ from obhonesty.order import Order
 from obhonesty.state import State
 from obhonesty.user import User
 from obhonesty.models import Meal as Meal_Model
+from obhonesty.elements import user_button
 
 
-def user_button(user: User) -> rx.Component:
+def user_button_dialog(user: User) -> rx.Component:
     return rx.dialog.root(
-        rx.dialog.trigger(
-            rx.button(
-                user.nick_name,
-                font_size="1.5rem",
-                padding="1.5rem 2.5rem",
-                border_radius="0.5rem",
-            )
-        ),
+        rx.dialog.trigger(user_button(user.nick_name)),
         rx.dialog.content(
             rx.form(
                 rx.flex(
@@ -112,7 +106,7 @@ def index() -> rx.Component:
                 ),
                 rx.scroll_area(
                     rx.flex(
-                        rx.foreach(State.users, user_button),
+                        rx.foreach(State.users, user_button_dialog),
                         padding="8px",
                         spacing="5",
                         style={"width": "max"},
@@ -824,12 +818,8 @@ def late_dinner_signup_page() -> rx.Component:
                                             rx.foreach(
                                                 State.users,
                                                 lambda user: rx.dialog.close(
-                                                    rx.button(
-                                                        rx.text(
-                                                            user.nick_name,
-                                                            size=default_button_text_size,
-                                                        ),
-                                                        size=default_button_size,
+                                                    user_button(
+                                                        user.nick_name,
                                                         on_click=lambda: State.set_late_dinner_user_nick_name(
                                                             user.nick_name
                                                         ),
