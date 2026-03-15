@@ -162,65 +162,6 @@ def error_page() -> rx.Component:
     )
 
 
-def payment_dialog() -> rx.Component:
-    return rx.dialog.root(
-        # The Button that opens the modal
-        rx.dialog.trigger(
-            rx.button(
-                rx.icon("credit-card"),
-                rx.text("Pay Now", size=default_button_text_size),
-                color_scheme="green",
-                size="2",  # Matches size in item_button
-                type="button",  # Prevents form submission
-                # Only generate the QR when they actually open the dialog
-                on_click=State.generate_payment_qr,
-            )
-        ),
-        # The Modal Content
-        rx.dialog.content(
-            rx.dialog.title("Scan to Pay"),
-            rx.dialog.description(
-                "Use your phone camera to scan and pay via Bizum, Apple Pay, or Card."
-            ),
-            rx.center(
-                rx.vstack(
-                    # Show spinner while talking to Stripe (or generating fake QR)
-                    rx.cond(
-                        State.is_generating_payment,
-                        rx.spinner(size="3"),
-                    ),
-                    # Show QR Code when ready
-                    rx.cond(
-                        State.payment_qr_code != "",
-                        rx.image(
-                            src=State.payment_qr_code,
-                            width="250px",
-                            height="250px",
-                            border="1px solid #ddd",
-                        ),
-                    ),
-                    rx.text(
-                        f"Total Due: €{two_decimal_points(State.get_user_debt)}",
-                        weight="bold",
-                    ),
-                    spacing="4",
-                )
-            ),
-            rx.flex(
-                rx.dialog.close(
-                    rx.button(
-                        "Done / Close",
-                        on_click=State.close_payment_dialog,
-                        size=default_button_size,
-                    )
-                ),
-                justify="end",
-                margin_top="20px",
-            ),
-        ),
-    )
-
-
 def stripe_payment_dialog(name, amount) -> rx.Component:
     close_dialog_button = rx.dialog.close(
         rx.button("Close", on_click=State.close_item_dialog, size=default_button_size)
