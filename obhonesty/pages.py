@@ -249,7 +249,7 @@ def stripe_payment_dialog(name, amount) -> rx.Component:
                             ),
                         ),
                         rx.cond(
-                            # if paying the tab the close button should immediately rediret
+                            # if paying the tab the close button should immediately redirect
                             State.is_stripe_session_paid & State.ordered_item == "",
                             rx.button(
                                 "Close",
