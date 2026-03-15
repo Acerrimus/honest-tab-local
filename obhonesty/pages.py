@@ -316,7 +316,7 @@ def item_button(item: Item) -> rx.Component:
                                 rx.icon("credit-card"),
                                 rx.text("Pay Now", size=default_button_text_size),
                                 color_scheme="green",
-                                size="2",
+                                size=default_button_size,
                                 type="button",
                                 # Pass specific item details to backend
                                 loading=State.is_order_request_loading,
@@ -338,7 +338,11 @@ def item_button(item: Item) -> rx.Component:
                                 )
                             ),
                             rx.dialog.close(
-                                rx.button(f"Cancel", on_click=State.close_item_dialog)
+                                rx.button(
+                                    f"Cancel",
+                                    on_click=State.close_item_dialog,
+                                    size=default_button_size,
+                                )
                             ),
                             spacing="3",
                             justify="end",
