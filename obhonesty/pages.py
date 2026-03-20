@@ -98,7 +98,7 @@ def index() -> rx.Component:
                 ),
                 rx.hstack(
                     rx.heading(
-                        "Olive Branch honest self-service", size=default_heading_size
+                        "Olive Branch honest self-service", size=default_heading_size, **{"data-testid": "title"}
                     ),
                     justify="center",
                     width="100%",

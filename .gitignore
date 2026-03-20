@@ -12,3 +12,4 @@ __pycache__/
 alembic/
 alembic.ini
 db
+screenshots

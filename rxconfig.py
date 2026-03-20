@@ -5,8 +5,9 @@ config = rx.Config(
     frontend_port=3000,
     backend_port=8000,
     db_url="sqlite:///reflex.db",
-    # backend_host="0.0.0.0",
-    # api_url="http://192.168.0.105:8000",
-    # deploy_url="http://192.168.0.105:3000",
+    frontend_url="http://app:3000",
+    backend_url="http://app:8000",
+    backend_host="0.0.0.0",
     cors_allowed_origins=["*"],
+    vite_allowed_hosts=True,
 )

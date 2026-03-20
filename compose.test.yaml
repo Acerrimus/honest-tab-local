@@ -1,0 +1,24 @@
+services:
+  app:
+    build: .
+    container_name: reflex_app
+    volumes:
+      - .:/app
+    ports:
+      - "3000:3000"
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://app:3000"]
+      interval: 5s
+      retries: 10
+
+  e2e:
+    build: ./e2e
+    container_name: cypress_test
+    volumes:
+      - ./e2e/cypress:/e2e/cypress
+      - ./e2e/cypress.config.js:/e2e/cypress.config.js
+    depends_on:
+      - app
+    command:
+      npx cypress run
