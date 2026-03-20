@@ -5,5 +5,4 @@ COPY . .
 RUN chmod +x requirements.bash
 RUN ./requirements.bash
 RUN reflex db init
-RUN reflex db migrate
 CMD ["reflex", "run", "--loglevel", "debug"]
