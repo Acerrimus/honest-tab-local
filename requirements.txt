@@ -52,3 +52,4 @@ urllib3==2.6.3
 watchfiles==1.1.1
 wrapt==2.0.1
 wsproto==1.3.2
+psycopg2-binary==2.9.11
