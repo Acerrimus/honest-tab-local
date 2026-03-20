@@ -8,9 +8,9 @@ services:
       - "3000:3000"
       - "8000:8000"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://app:3000"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 5s
-      retries: 10
+      retries: 30
     depends_on:
       db:
         condition: service_healthy
