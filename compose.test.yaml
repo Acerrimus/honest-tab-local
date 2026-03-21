@@ -10,7 +10,7 @@ services:
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 5s
-      retries: 30
+      retries: 60
     depends_on:
       db:
         condition: service_healthy
