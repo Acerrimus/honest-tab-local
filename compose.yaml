@@ -4,6 +4,7 @@ services:
     container_name: reflex_app
     volumes:
       - .:/app
+      - /app/e2e # creates an empty directory so reflex does not hot reload after changes in the e2e folder
     ports:
       - "3000:3000"
       - "8000:8000"
