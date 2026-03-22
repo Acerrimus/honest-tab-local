@@ -12,7 +12,11 @@ from obhonesty.elements import user_button
 
 def user_button_dialog(user: User) -> rx.Component:
     return rx.dialog.root(
-        rx.dialog.trigger(user_button(user.nick_name)),
+        rx.dialog.trigger(
+            user_button(
+                user.nick_name, **{"data-testid": f"user-button-{user.nick_name}"}
+            )
+        ),
         rx.dialog.content(
             rx.form(
                 rx.flex(
@@ -52,6 +56,7 @@ def user_button_dialog(user: User) -> rx.Component:
                                 max_length=5,
                                 required=True,
                                 width="100%",
+                                **{"data-testid": f"user-email-password"},
                             ),
                             rx.cond(
                                 State.is_email_login_incorrect,
@@ -64,7 +69,10 @@ def user_button_dialog(user: User) -> rx.Component:
                         ),
                         rx.hstack(
                             rx.button(
-                                "Submit", type="submit", size=default_button_size
+                                "Submit",
+                                type="submit",
+                                size=default_button_size,
+                                **{"data-testid": "password-submit-button"},
                             ),
                             rx.dialog.close(
                                 rx.button("Close", size=default_button_size)
@@ -98,7 +106,9 @@ def index() -> rx.Component:
                 ),
                 rx.hstack(
                     rx.heading(
-                        "Olive Branch honest self-service", size=default_heading_size, **{"data-testid": "title"}
+                        "Olive Branch honest self-service",
+                        size=default_heading_size,
+                        **{"data-testid": "title"},
                     ),
                     justify="center",
                     width="100%",
@@ -108,7 +118,9 @@ def index() -> rx.Component:
                     rx.button(
                         rx.icon("user-plus"),
                         rx.text(
-                            "Sign up for self-service", size=default_button_text_size
+                            "Sign up for self-service",
+                            size=default_button_text_size,
+                            **{"data-testid": "sign-up-user-button"},
                         ),
                         color_scheme="green",
                         on_click=rx.redirect("/signup"),
@@ -366,6 +378,7 @@ def user_page() -> rx.Component:
                     rx.heading(
                         f"Hello {State.current_user.nick_name}",
                         size=default_heading_size,
+                        **{"data-testid": f"user-page-heading"},
                     ),
                     rx.hstack(
                         rx.button(
@@ -538,6 +551,7 @@ def user_signup_page() -> rx.Component:
                                     name="nick_name",
                                     required=True,
                                     width="200%",
+                                    **{"data-testid": "user-name-input"},
                                 ),
                                 as_child=True,
                             ),
@@ -554,6 +568,7 @@ def user_signup_page() -> rx.Component:
                             name="first_name",
                             required=True,
                             width="100%",
+                            **{"data-testid": "first-name-input"},
                         ),
                         rx.text("Last name", weight="medium"),
                         rx.input(
@@ -561,6 +576,7 @@ def user_signup_page() -> rx.Component:
                             name="last_name",
                             required=True,
                             width="100%",
+                            **{"data-testid": "last-name-input"},
                         ),
                         rx.text("Phone number", weight="medium"),
                         rx.input(
@@ -568,6 +584,7 @@ def user_signup_page() -> rx.Component:
                             name="phone_number",
                             required=True,
                             width="100%",
+                            **{"data-testid": "phone-number-input"},
                         ),
                         rx.text("Email", weight="medium"),
                         rx.input(
@@ -576,6 +593,7 @@ def user_signup_page() -> rx.Component:
                             required=True,
                             type="email",
                             width="100%",
+                            **{"data-testid": "email-input"},
                         ),
                         rx.text("Dietary preferences", weight="medium"),
                         rx.select(
@@ -583,6 +601,7 @@ def user_signup_page() -> rx.Component:
                             placeholder="Select a dietary preference",
                             name="diet",
                             required=True,
+                            **{"data-testid": "diet-select"},
                         ),
                         rx.text("Allergies", weight="medium"),
                         rx.input(
@@ -590,13 +609,22 @@ def user_signup_page() -> rx.Component:
                             name="allergies",
                             width="70%",
                             border_color="tomato",
+                            **{"data-testid": ["allergies-input"]},
                         ),
                         rx.text(
                             "Are you currently staying at the Olive Branch?",
                             weight="medium",
                         ),
-                        rx.radio(
-                            ["Yes", "No"],
+                        rx.radio_group.root(
+                            rx.foreach(
+                                ["Yes", "No"],
+                                lambda x: rx.radio_group.item(
+                                    x,
+                                    value=x,
+                                    **{"data-testid": f"radio-input-{x.lower()}"},
+                                ),
+                            ),
+                            required=True,
                             name="current_guest",
                             default_value="Yes",
                             direction="row",
@@ -607,6 +635,7 @@ def user_signup_page() -> rx.Component:
                             rx.text("Submit", size=default_button_text_size),
                             type="submit",
                             size=default_button_size,
+                            **{"data-testid": "user-submit-button"},
                         ),
                     ),
                     on_submit=State.submit_signup,
