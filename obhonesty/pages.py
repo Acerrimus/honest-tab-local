@@ -63,6 +63,7 @@ def user_button_dialog(user: User) -> rx.Component:
                                 rx.text(
                                     "This does not match the first five characters of your email, please try again.",
                                     color=ERROR_MESSAGE_COLOUR,
+                                    **{"data-testid": f"wrong-password-error"},
                                 ),
                             ),
                             width="100%",

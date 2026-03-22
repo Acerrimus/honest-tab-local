@@ -11,9 +11,9 @@ export function createUser(username){
     cy.get('[data-testid="user-submit-button"]').click();
 }
 
-export function logUserOn(username){
+export function logUserOn(username, password="test@"){
     cy.get(`[data-testid="user-button-${username}"]`, { timeout: 10000 }).click();
-    cy.get(`[data-testid="user-email-password"]`).click().type("test@");
+    cy.get(`[data-testid="user-email-password"]`).click().type(password);
     cy.get(`[data-testid="password-submit-button"]`).click();
 
 }
