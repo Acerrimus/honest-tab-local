@@ -1,2 +1,0 @@
-FROM cypress/included:cypress-15.12.0-node-24.14.0-chrome-146.0.7680.80-1-ff-148.0.2-edge-146.0.3856.62-1
-WORKDIR /e2e

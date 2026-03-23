@@ -7,6 +7,7 @@ Contents:
 1. [Setup](#setup)
 2. [Local Database](#local-database)
 3. [How To Contribute](#how-to-contribute)
+4. [e2e testing]
 
 ## Setup
 
@@ -85,3 +86,8 @@ How to make changes to the SQLite databaser:
 1. Make your changes to tables in `obhonesty/models.py`
 2. Run `reflex db makemigrations` to generate new version files.
 3. Run `reflex db migrate` to apply these changes to the db.
+
+
+## e2e testing
+
+This app uses Cypress for end to end testing. To run the test suite first start the docker container network, and run `npm run test` from within `/e2e`.
