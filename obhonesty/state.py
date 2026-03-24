@@ -192,7 +192,6 @@ class State(rx.State):
         self.payment_qr_code = ""
         self.is_stripe_session_paid = False
         self.is_stripe_dialog_active = False
-        self.ordered_item = ""
         self.order_request_id = ""
         self.current_order_request_id = ""
         self.is_closing_account = None
