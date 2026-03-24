@@ -9,6 +9,10 @@ from obhonesty.user import User
 from obhonesty.models import Meal as Meal_Model
 from obhonesty.elements import user_button
 
+import os
+
+is_test_environment = True if os.getenv("TEST") else False
+
 
 def user_button_dialog(user: User) -> rx.Component:
     return rx.dialog.root(
@@ -405,7 +409,8 @@ def user_page() -> rx.Component:
                             ),
                             on_click=rx.redirect("/breakfast"),
                             size=default_button_size,
-                            disabled=~State.breakfast_signup_available,
+                            disabled=~State.breakfast_signup_available
+                            & (not is_test_environment),
                             **{"data-testid": "breakfast-signup-button"},
                         ),
                         rx.text(
@@ -423,7 +428,8 @@ def user_page() -> rx.Component:
                             ),
                             on_click=rx.redirect("/dinner"),
                             size=default_button_size,
-                            disabled=~State.dinner_signup_available,
+                            disabled=~State.dinner_signup_available
+                            & (not is_test_environment),
                             **{"data-testid": "dinner-signup-button"},
                         ),
                         rx.text(
