@@ -181,7 +181,12 @@ def error_page() -> rx.Component:
 
 def stripe_payment_dialog(name, amount) -> rx.Component:
     close_dialog_button = rx.dialog.close(
-        rx.button("Close", on_click=State.close_item_dialog, size=default_button_size)
+        rx.button(
+            "Close",
+            on_click=State.close_item_dialog,
+            size=default_button_size,
+            **{"data-testid": "stripe_dialog_close"},
+        )
     )
 
     return rx.cond(
@@ -199,7 +204,10 @@ def stripe_payment_dialog(name, amount) -> rx.Component:
             on_escape_key_down=rx.prevent_default,
         ),
         rx.dialog.content(
-            rx.dialog.title(f"Pay for {name}"),
+            rx.dialog.title(
+                f"Pay for {name}",
+                **{"data-testid": "stripe_dialog_title"},
+            ),
             rx.center(
                 rx.vstack(
                     rx.cond(
@@ -224,6 +232,7 @@ def stripe_payment_dialog(name, amount) -> rx.Component:
                                     width="250px",
                                     height="250px",
                                     border="1px solid #ddd",
+                                    **{"data-testid": "stripe_qr_code_image"},
                                 ),
                                 rx.spinner(size="3"),
                             ),
@@ -274,6 +283,7 @@ def stripe_payment_dialog(name, amount) -> rx.Component:
                                     rx.cond(State.is_closing_account, "/", "/user")
                                 ),
                                 size=default_button_size,
+                                **{"data-testid": "stripe_dialog_close"},
                             ),
                             close_dialog_button,
                         ),
@@ -339,6 +349,7 @@ def item_button(item: Item) -> rx.Component:
                                     item.name, item.price
                                 ),
                             ],
+                            **{"data-testid": "item_pay_now"},
                         ),
                         rx.dialog.close(
                             rx.button(

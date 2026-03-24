@@ -10,3 +10,9 @@ export function orderDinner(username) {
   getDataTestIdElement("dinner-signup-allergies").should("have.value", "Nuts");
   getDataTestIdElement("dinner-signup-register").click();
 }
+
+export function clickTestItemButton() {
+  getDataTestIdElement("order_item_button")
+    .filter(":contains(TEST ITEM (€1.00))")
+    .click();
+}
