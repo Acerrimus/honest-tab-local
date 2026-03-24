@@ -91,3 +91,12 @@ How to make changes to the SQLite databaser:
 ## e2e testing
 
 This app uses Cypress for end to end testing. To run the test suite first start the docker container network, and run `npm run test` from within `/e2e`.
+
+Spec files should be isolated, tests within them can rely on each other.
+
+Eg:
+
+* Test 1: create a user, do something with that user.
+* Test 2: do something else with that user related to test 1.
+
+A spec file will fail if any test fails and immediately move on.
