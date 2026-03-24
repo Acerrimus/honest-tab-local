@@ -298,6 +298,7 @@ def item_button(item: Item) -> rx.Component:
                 size=default_button_size,
                 # Reset temp quantity to 1 every time we open a fresh dialog
                 on_click=lambda: State.open_item_dialog(item.name),
+                **{"data-testid": f"order_item_button"},
             )
         ),
         rx.cond(
@@ -307,65 +308,58 @@ def item_button(item: Item) -> rx.Component:
                 rx.dialog.title(title),
                 rx.dialog.description(item.description),
                 rx.vstack(
-                    rx.form(
-                        rx.flex(
-                            rx.input(
-                                name="item_name",
-                                type="hidden",
-                                value=item.name,
-                                display="none",
-                            ),
-                            rx.input(
-                                placeholder="Quantity",
-                                name="quantity",
-                                default_value="1",
-                                type="number",
-                                # --- Track input in real-time ---
-                                on_change=State.set_temp_quantity,
-                            ),
-                        ),
-                        rx.text(
-                            "Total: €", State.temp_quantity * item.price, weight="bold"
-                        ),
-                        rx.flex(
-                            # We use the payment_dialog logic but trigger it differently
-                            rx.button(
-                                rx.icon("credit-card"),
-                                rx.text("Pay Now", size=default_button_text_size),
-                                color_scheme="green",
-                                size=default_button_size,
-                                type="button",
-                                # Pass specific item details to backend
-                                loading=State.is_order_request_loading,
-                                on_click=[
-                                    State.set_order_request_id,
-                                    lambda: State.show_stripe_item_payment_dialog(
-                                        item.name, item.price
-                                    ),
-                                ],
-                            ),
-                            rx.dialog.close(
-                                rx.button(
-                                    "Register (Tab)",
-                                    size=default_button_size,
-                                    on_click=[
-                                        State.order_item,
-                                        State.close_item_dialog,
-                                    ],
-                                )
-                            ),
-                            rx.dialog.close(
-                                rx.button(
-                                    f"Cancel",
-                                    on_click=State.close_item_dialog,
-                                    size=default_button_size,
-                                )
-                            ),
-                            spacing="3",
-                            justify="end",
-                            margin_top="10px",
-                        ),
+                    rx.input(
+                        placeholder="Quantity",
+                        name="quantity",
+                        default_value="1",
+                        type="number",
+                        # --- Track input in real-time ---
+                        on_change=State.set_temp_quantity,
+                        **{"data-testid": "item_quantity_input"},
                     ),
+                    rx.text(
+                        "Total: €",
+                        State.temp_quantity * item.price,
+                        weight="bold",
+                        **{"data-testid": "item_total"},
+                    ),
+                    rx.flex(
+                        # We use the payment_dialog logic but trigger it differently
+                        rx.button(
+                            rx.icon("credit-card"),
+                            rx.text("Pay Now", size=default_button_text_size),
+                            color_scheme="green",
+                            size=default_button_size,
+                            type="button",
+                            # Pass specific item details to backend
+                            loading=State.is_order_request_loading,
+                            on_click=[
+                                State.set_order_request_id,
+                                lambda: State.show_stripe_item_payment_dialog(
+                                    item.name, item.price
+                                ),
+                            ],
+                        ),
+                        rx.dialog.close(
+                            rx.button(
+                                "Register (Tab)",
+                                size=default_button_size,
+                                on_click=[State.order_item, State.close_item_dialog],
+                                **{"data-testid": "item_register"},
+                            )
+                        ),
+                        rx.dialog.close(
+                            rx.button(
+                                f"Cancel",
+                                on_click=State.close_item_dialog,
+                                size=default_button_size,
+                            )
+                        ),
+                        spacing="3",
+                        justify="end",
+                        margin_top="10px",
+                    ),
+                    # ),
                     spacing="3",
                 ),
             ),
@@ -984,6 +978,7 @@ def user_info_page() -> rx.Component:
                     f"{order.quantity}",
                 ),
                 align="right",
+                **{"data-testid": "ordered_item_quantity"},
             ),
             rx.table.cell(
                 rx.cond(
@@ -1000,6 +995,7 @@ def user_info_page() -> rx.Component:
                     f"€{two_decimal_points(order.total)}",
                 ),
                 align="right",
+                **{"data-testid": "ordered_item_total"},
             ),
         )
 

@@ -24,6 +24,10 @@ from obhonesty.aux import (
 )
 from obhonesty.constants import DATETIME_FORMAT
 
+import os
+
+is_test_environment = True if os.getenv("TEST") else False
+
 app = rx.App()
 app.add_page(
     index, route="/", on_load=[State.clear_temp_state_values, State.reload_sheet_data]
@@ -264,6 +268,28 @@ def sync_items():
             session.delete(row)
 
         session.add_all(Item_Model.model_validate(item) for item in item_data)
+
+        # seeds a test item for e2e testing if it doesn't already exist
+        if is_test_environment:
+            test_item_exists = False
+            for item in item_data:
+                if item["name"] != "TEST ITEM":
+                    continue
+                test_item_exists = True
+                break
+
+            if not test_item_exists:
+                session.add(
+                    Item_Model.model_validate(
+                        {
+                            "name": "TEST ITEM",
+                            "price": 1.0,
+                            "description": "",
+                            "tax_category": "Miscellaneous",
+                            "icon": "",
+                        }
+                    )
+                )
 
         session.commit()
 
