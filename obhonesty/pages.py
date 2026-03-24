@@ -335,6 +335,14 @@ def item_button(item: Item) -> rx.Component:
                     ),
                     rx.flex(
                         # We use the payment_dialog logic but trigger it differently
+                        rx.dialog.close(
+                            rx.button(
+                                "Register (Add to Tab)",
+                                size=default_button_size,
+                                on_click=[State.order_item, State.close_item_dialog],
+                                **{"data-testid": "item_register"},
+                            )
+                        ),
                         rx.button(
                             rx.icon("credit-card"),
                             rx.text("Pay Now", size=default_button_text_size),
@@ -350,14 +358,6 @@ def item_button(item: Item) -> rx.Component:
                                 ),
                             ],
                             **{"data-testid": "item_pay_now"},
-                        ),
-                        rx.dialog.close(
-                            rx.button(
-                                "Register (Tab)",
-                                size=default_button_size,
-                                on_click=[State.order_item, State.close_item_dialog],
-                                **{"data-testid": "item_register"},
-                            )
                         ),
                         rx.dialog.close(
                             rx.button(
