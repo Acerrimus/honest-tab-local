@@ -3,6 +3,7 @@ import { createUser, logUserOn } from "../steps/users";
 
 describe("When ordering dinner", () => {
   const username = `CypressUser${Date.now()}`;
+
   it("is successfully ordered", () => {
     cy.visit("/");
     createUser(username);
@@ -32,4 +33,12 @@ describe("When ordering dinner", () => {
       .filter(`:contains(${username.toUpperCase()} TEST)`)
       .should("have.length", 1);
   });
+
+  it("a user cannot order dinner twice with the same name", () => {
+    cy.visit("/");
+    logUserOn(username);
+    getDataTestIdElement("dinner-signup-button").click();
+    getDataTestIdElement("dinner-signup-register").click();
+    cy.contains("please provide different name if you want to sign up another person")
+  })
 });
