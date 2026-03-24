@@ -419,11 +419,11 @@ def user_page() -> rx.Component:
                             rx.text(
                                 "Sign up for dinner",
                                 size=default_button_text_size,
-                                **{"data-testid": "dinner-signup-button"},
                             ),
                             on_click=rx.redirect("/dinner"),
                             size=default_button_size,
                             disabled=~State.dinner_signup_available,
+                            **{"data-testid": "dinner-signup-button"},
                         ),
                         rx.text(
                             f"(last sign-up at {State.admin_data['dinner_signup_deadline']}, "
