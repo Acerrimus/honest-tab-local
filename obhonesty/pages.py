@@ -388,6 +388,7 @@ def user_page() -> rx.Component:
                             on_click=rx.redirect("/info"),
                             color_scheme="green",
                             size=default_button_size,
+                            **{"data-testid": "view-orders-button"},
                         ),
                         logout_button(),
                         rx.text(
@@ -416,7 +417,9 @@ def user_page() -> rx.Component:
                         rx.button(
                             rx.icon("utensils"),
                             rx.text(
-                                "Sign up for dinner", size=default_button_text_size
+                                "Sign up for dinner",
+                                size=default_button_text_size,
+                                **{"data-testid": "dinner-signup-button"},
                             ),
                             on_click=rx.redirect("/dinner"),
                             size=default_button_size,
@@ -676,6 +679,7 @@ def dinner_signup_page() -> rx.Component:
                         default_value=State.current_user.first_name,
                         required=True,
                         on_change=State.set_dinner_signup_first_name,
+                        **{"data-testid": f"dinner-signup-first-name"},
                     ),
                     rx.text("Last name of dinner guest", weight="bold"),
                     rx.input(
@@ -684,6 +688,7 @@ def dinner_signup_page() -> rx.Component:
                         default_value=State.current_user.last_name,
                         required=True,
                         on_change=State.set_dinner_signup_last_name,
+                        **{"data-testid": f"dinner-signup-last-name"},
                     ),
                     rx.text("Dietary preferences", weight="bold"),
                     rx.select(
@@ -697,6 +702,7 @@ def dinner_signup_page() -> rx.Component:
                         default_value=State.current_user.allergies,
                         name="allergies",
                         on_change=State.set_dinner_allergies,
+                        **{"data-testid": f"dinner-signup-allergies"},
                     ),
                     rx.divider(),
                     rx.cond(
@@ -713,6 +719,7 @@ def dinner_signup_page() -> rx.Component:
                             lambda: State.sign_guest_up_for_dinner(False),
                         ],
                         loading=State.is_order_request_loading,
+                        **{"data-testid": f"dinner-signup-register"},
                     ),
                     rx.button(
                         rx.icon("credit-card"),
@@ -954,7 +961,7 @@ def user_info_page() -> rx.Component:
     def show_row(order: Order):
         return rx.table.row(
             rx.table.cell(order.time),
-            rx.table.cell(order.item),
+            rx.table.cell(order.item, **{"data-testid": f"ordered_item"}),
             rx.table.cell(
                 rx.cond(
                     State.prepaid_dinner_ids.contains(order.order_id),
@@ -1152,7 +1159,7 @@ def show_signup(meal: Meal_Model):
     has_allergies = meal.allergies != ""
 
     return rx.table.row(
-        rx.table.cell(meal.receiver),
+        rx.table.cell(meal.receiver, **{"data-testid": "meal-receiver"}),
         rx.table.cell(meal.diet),
         rx.table.cell(meal.allergies),
         rx.cond(
