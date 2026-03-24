@@ -406,6 +406,7 @@ def user_page() -> rx.Component:
                             on_click=rx.redirect("/breakfast"),
                             size=default_button_size,
                             disabled=~State.breakfast_signup_available,
+                            **{"data-testid": "breakfast-signup-button"},
                         ),
                         rx.text(
                             f"(last sign-up at {State.admin_data['breakfast_signup_deadline']})",
@@ -890,6 +891,7 @@ def breakfast_signup_page() -> rx.Component:
                     default_value=State.current_user.first_name,
                     name="first_name",
                     on_change=State.set_breakfast_signup_first_name,
+                    **{"data-testid": "breakfast-signup-first-name"},
                 ),
                 rx.text("Last name of breakfast guest *"),
                 rx.input(
@@ -897,16 +899,21 @@ def breakfast_signup_page() -> rx.Component:
                     default_value=State.current_user.last_name,
                     name="last_name",
                     on_change=State.set_breakfast_signup_last_name,
+                    **{"data-testid": "breakfast-signup-last-name"},
                 ),
                 rx.text("Breakfast item *"),
                 rx.select.root(
-                    rx.select.trigger(placeholder="Select a breakfast item"),
+                    rx.select.trigger(
+                        placeholder="Select a breakfast item",
+                        **{"data-testid": "breakfast-signup-item-select"},
+                    ),
                     rx.select.content(
                         rx.foreach(
                             [str(x) for x in BreakfastMenuItem],
                             lambda item: rx.select.item(
                                 f"{item} ({State.admin_data[item + '_price']}€)",
                                 value=item,
+                                **{"data-testid": "breakfast-signup-item-option"},
                             ),
                         )
                     ),
@@ -918,6 +925,7 @@ def breakfast_signup_page() -> rx.Component:
                     name="allergies",
                     default_value=State.current_user.allergies,
                     on_change=State.set_breakfast_signup_allergies,
+                    **{"data-testid": "breakfast-signup-allergies"},
                 ),
                 rx.button(
                     rx.text("Register", size=default_button_text_size),
@@ -927,6 +935,7 @@ def breakfast_signup_page() -> rx.Component:
                         State.set_order_request_id,
                         lambda: State.sign_guest_up_for_breakfast(False),
                     ],
+                    **{"data-testid": "breakfast-signup-register"},
                 ),
                 rx.button(
                     rx.icon("credit-card"),
