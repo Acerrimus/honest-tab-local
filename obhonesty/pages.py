@@ -309,6 +309,7 @@ def item_button(item: Item) -> rx.Component:
                 # Reset temp quantity to 1 every time we open a fresh dialog
                 on_click=lambda: State.open_item_dialog(item.name),
                 **{"data-testid": f"order_item_button"},
+                disabled=State.is_stripe_dialog_active,
             )
         ),
         rx.cond(

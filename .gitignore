@@ -14,3 +14,4 @@ alembic.ini
 db
 screenshots
 videos
+node_modules
