@@ -514,6 +514,7 @@ class State(rx.State):
 
         if not self.is_stripe_session_paid:
             # only redirect if the user hasn't paid with stripe
+            self.current_order_request_id = ""
             return rx.redirect("/user")
 
     @rx.event
@@ -1021,6 +1022,7 @@ class State(rx.State):
         self.is_closing_account = None
         self.show_stripe_connection_failure_message = False
         self.has_stripe_qr_generation_failed = False
+        self.current_order_request_id = ""
         yield State.reset_order_request_id
         if (
             temp_ordered_item == "dinner" or temp_ordered_item == "breakfast"
