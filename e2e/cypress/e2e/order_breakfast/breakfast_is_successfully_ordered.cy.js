@@ -1,5 +1,5 @@
-import { getDataTestIdElement } from "../helpers";
-import { createUser, logUserOn } from "../steps/users";
+import { getDataTestIdElement } from "../../helpers";
+import { createUser, logUserOn } from "../../steps/users";
 
 describe("When a user orders breakfast", () => {
   const username = `CypressUser${Date.now()}`;
