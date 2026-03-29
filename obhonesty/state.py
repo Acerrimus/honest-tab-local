@@ -662,6 +662,7 @@ class State(rx.State):
 
         if not self.is_stripe_session_paid:
             # only redirect if the user hasn't paid with stripe
+            self.current_order_request_id = ""
             return rx.redirect("/user")
 
     @rx.event
