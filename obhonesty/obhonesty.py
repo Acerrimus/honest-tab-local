@@ -116,6 +116,8 @@ def sync_new_orders(unsynced_orders):
 def sync_new_users(unsynced_users):
     new_rows = []
     for user in unsynced_users:
+        if user.nick_name == "111":
+            print(user, flush=True)
         new_rows.append(
             [
                 user.nick_name,
@@ -223,19 +225,19 @@ def sync_users():
             session.query(User_Model).filter(~User_Model.synced).all()
         )
 
+        for user in user_data:
+            del user["owes"]
+            for key in ["volunteer", "away", "current_guest", "active_tab"]:
+                user[key] = user[key].lower() in ["yes", "true"]
+
+            user = sanitise_record_strings(user_string_columns, user)
+            user["prepaid_dinners_quantity"] = (
+                0
+                if user["prepaid_dinners_quantity"] == ""
+                else int(user["prepaid_dinners_quantity"])
+            )
+
         if not len(current_unsynced_users):
-            for user in user_data:
-                del user["owes"]
-                for key in ["volunteer", "away", "current_guest", "active_tab"]:
-                    user[key] = user[key].lower() in ["yes", "true"]
-
-                user = sanitise_record_strings(user_string_columns, user)
-                user["prepaid_dinners_quantity"] = (
-                    0
-                    if user["prepaid_dinners_quantity"] == ""
-                    else int(user["prepaid_dinners_quantity"])
-                )
-
             for row in session.exec(User_Model.select()).all():
                 session.delete(row)
 
