@@ -116,8 +116,7 @@ def sync_new_orders(unsynced_orders):
 def sync_new_users(unsynced_users):
     new_rows = []
     for user in unsynced_users:
-        if user.nick_name == "111":
-            print(user, flush=True)
+
         new_rows.append(
             [
                 user.nick_name,
