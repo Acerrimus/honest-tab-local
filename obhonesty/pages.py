@@ -300,6 +300,7 @@ def stripe_payment_dialog(name, amount) -> rx.Component:
 
 def item_button(item: Item) -> rx.Component:
     title: str = f"{item.name} (€{two_decimal_points(item.price)})"
+
     return rx.dialog.root(
         rx.dialog.trigger(
             rx.button(
@@ -309,7 +310,7 @@ def item_button(item: Item) -> rx.Component:
                 # Reset temp quantity to 1 every time we open a fresh dialog
                 on_click=lambda: State.open_item_dialog(item.name),
                 **{"data-testid": f"order_item_button"},
-                disabled=State.is_stripe_dialog_active,
+                disabled=State.is_stripe_dialog_active | State.is_logging_user_in,
             )
         ),
         rx.cond(

@@ -35,7 +35,6 @@ stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 is_test_environment = True if os.getenv("TEST") else False
 
 
-
 class State(rx.State):
     """The app state."""
 
@@ -58,6 +57,7 @@ class State(rx.State):
     has_stripe_qr_generation_failed = False
     should_late_dinner_signup_form_reload = False
     item_uuid: str = ""
+    is_logging_user_in: bool = False
 
     # --- Meal Counts ---
 
@@ -180,6 +180,11 @@ class State(rx.State):
         )
 
     @rx.event
+    def reset_stripe_dialog_active_state(self):
+        self.is_stripe_dialog_active = False
+        self.current_order_request_id = ""
+
+    @rx.event
     def clear_temp_state_values(self):
         self.is_item_button_dialog_active = False
         self.dinner_signup_first_name = ""
@@ -196,6 +201,13 @@ class State(rx.State):
         self.is_closing_account = None
         self.show_stripe_connection_failure_message = False
         self.has_stripe_qr_generation_failed = False
+
+        if self.is_stripe_dialog_active and not self.is_logging_user_in:
+            # unblocks item buttons if the page is navigated away from before item payment is completed
+            self.is_stripe_dialog_active = False
+            self.current_order_request_id = ""
+
+        self.is_logging_user_in = False
 
     @rx.event(background=True)
     async def set_served(
@@ -378,6 +390,7 @@ class State(rx.State):
 
         self.current_user = User.from_dict(user.model_dump())
         self.is_email_login_incorrect = False
+        self.is_logging_user_in = True
         return rx.redirect("/user")
 
     @rx.event
@@ -957,7 +970,7 @@ class State(rx.State):
         while True:
             if self.current_stripe_session_id == "" or self.is_stripe_session_paid:
                 return
-            
+
             if not is_test_environment:
                 result = False
 

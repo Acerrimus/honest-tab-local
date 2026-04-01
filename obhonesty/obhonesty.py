@@ -30,7 +30,13 @@ is_test_environment = True if os.getenv("TEST") else False
 
 app = rx.App()
 app.add_page(
-    index, route="/", on_load=[State.clear_temp_state_values, State.reload_sheet_data]
+    index,
+    route="/",
+    on_load=[
+        State.reset_stripe_dialog_active_state,
+        State.clear_temp_state_values,
+        State.reload_sheet_data,
+    ],
 )
 app.add_page(
     user_page,
