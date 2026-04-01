@@ -102,7 +102,7 @@ def sync_new_orders(unsynced_orders):
                 order.tax_category,
                 order.comment,
                 # this str conversion is temporary until this column can be turned into a bool in the SQLite db
-                str(order.paid) == "1",
+                str(order.paid) == "true",
                 order.paid_time,
                 order.method,
                 order.checkout_staff,
