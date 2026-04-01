@@ -1,11 +1,11 @@
 import { getDataTestIdElement } from "../../helpers";
-import { createUser, logUserOn } from "../../steps/users";
+import { createUserAPI, generateUsername, logUserOn } from "../../steps/users";
 
 describe("When a user orders breakfast twice with the same name", () => {
-  const username = `CypressUser${Date.now()}`;
   it("it will not be ordered", () => {
+    const username = generateUsername();
+    createUserAPI(username);
     cy.visit("/");
-    createUser(username);
     logUserOn(username);
     getDataTestIdElement("breakfast-signup-button").click();
     getDataTestIdElement("breakfast-signup-item-select").click();

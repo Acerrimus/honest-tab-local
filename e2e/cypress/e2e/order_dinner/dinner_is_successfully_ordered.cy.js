@@ -1,12 +1,12 @@
 import { getDataTestIdElement } from "../../helpers";
 import { orderDinner } from "../../steps/ordering";
-import { createUser, logUserOn } from "../../steps/users";
+import { createUserAPI, generateUsername, logUserOn } from "../../steps/users";
 
 describe("When a user orders dinner", () => {
-  const username = `CypressUser${Date.now()}`;
+  const username = generateUsername();
   it("it is successfully ordered", () => {
+    createUserAPI(username);
     cy.visit("/");
-    createUser(username);
     logUserOn(username);
     orderDinner(username);
     getDataTestIdElement("view-orders-button").click();

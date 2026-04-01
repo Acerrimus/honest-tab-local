@@ -1,11 +1,11 @@
 import { getDataTestIdElement } from "../../helpers";
-import { createUser, logUserOn } from "../../steps/users";
+import { createUserAPI, generateUsername, logUserOn } from "../../steps/users";
 
 describe("When a user orders many items", () => {
-  const username = `CypressUser${Date.now()}`;
+  const username = generateUsername();
   it("they are all successfully ordered", () => {
+    createUserAPI(username);
     cy.visit("/");
-    createUser(username);
     logUserOn(username);
     getDataTestIdElement("order_item_button")
       .filter(":contains(TEST ITEM (€1.00))")

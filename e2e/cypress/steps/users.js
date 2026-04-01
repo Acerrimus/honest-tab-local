@@ -1,5 +1,9 @@
 import { getDataTestIdElement } from "../helpers";
 
+export function generateUsername() {
+  return `CypressUser${Date.now()}`;
+}
+
 export function createUser(username) {
   getDataTestIdElement("sign-up-user-button").click();
   getDataTestIdElement("user-name-input").click().type(username);
@@ -17,4 +21,12 @@ export function logUserOn(username, password = "test@") {
   cy.get(`[data-testid="user-button-${username}"]`).click();
   getDataTestIdElement("user-email-password").click().type(password);
   getDataTestIdElement("password-submit-button").click();
+}
+
+export async function createUserAPI(username) {
+  return cy.request({
+    method: "POST",
+    url: "http://app:8000/api/test/user",
+    qs: { username },
+  });
 }
