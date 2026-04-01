@@ -23,12 +23,14 @@ from obhonesty.aux import (
     generate_receiver_from_names,
 )
 from obhonesty.constants import DATETIME_FORMAT
+from obhonesty.api.test_setup import fastapi_app
 
 import os
 
 is_test_environment = True if os.getenv("TEST") else False
 
-app = rx.App()
+app = rx.App() if not is_test_environment else rx.App(api_transformer=fastapi_app)
+
 app.add_page(
     index,
     route="/",
