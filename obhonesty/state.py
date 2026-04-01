@@ -32,6 +32,8 @@ import os
 from gspread import Cell
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+is_test_environment = True if os.getenv("TEST") else False
+
 
 
 class State(rx.State):
@@ -955,34 +957,35 @@ class State(rx.State):
         while True:
             if self.current_stripe_session_id == "" or self.is_stripe_session_paid:
                 return
+            
+            if not is_test_environment:
+                result = False
 
-            result = False
-
-            try:
-                check_internet_connection()
-                session = stripe.checkout.Session.retrieve(
-                    self.current_stripe_session_id
-                )
-                result = session.payment_status == "paid"
-                stripe_error_message = ""
-
-                async with self:
-                    self.show_stripe_connection_failure_message = False
-
-            except Exception as e:
-                if stripe_error_message != str(e):
-                    stripe_error_message = str(e)
-                    print(
-                        f"Stripe Error: {stripe_error_message} - {datetime.now()}",
-                        flush=True,
+                try:
+                    check_internet_connection()
+                    session = stripe.checkout.Session.retrieve(
+                        self.current_stripe_session_id
                     )
+                    result = session.payment_status == "paid"
+                    stripe_error_message = ""
 
-                async with self:
-                    self.show_stripe_connection_failure_message = True
+                    async with self:
+                        self.show_stripe_connection_failure_message = False
 
-            if not result:
-                await asyncio.sleep(1)
-                continue
+                except Exception as e:
+                    if stripe_error_message != str(e):
+                        stripe_error_message = str(e)
+                        print(
+                            f"Stripe Error: {stripe_error_message} - {datetime.now()}",
+                            flush=True,
+                        )
+
+                    async with self:
+                        self.show_stripe_connection_failure_message = True
+
+                if not result:
+                    await asyncio.sleep(1)
+                    continue
 
             async with self:
                 self.is_stripe_session_paid = True
