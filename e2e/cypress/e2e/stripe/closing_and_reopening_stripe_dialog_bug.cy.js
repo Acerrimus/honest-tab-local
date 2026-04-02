@@ -1,5 +1,5 @@
 import { getDataTestIdElement } from "../../helpers";
-import { clickTestItemButton } from "../../steps/ordering";
+import { clickTestItemButton } from "../../steps/orders";
 import { assertStripeDialogNotVisibleBeforeItemPayButton } from "../../steps/stripe";
 import { createUserAPI, generateUsername, logUserOn } from "../../steps/users";
 

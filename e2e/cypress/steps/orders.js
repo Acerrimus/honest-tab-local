@@ -16,3 +16,4 @@ export function clickTestItemButton() {
     .filter(":contains(TEST ITEM (€1.00))")
     .click();
 }
+
