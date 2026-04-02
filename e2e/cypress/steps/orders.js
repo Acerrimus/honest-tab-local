@@ -18,12 +18,12 @@ export function clickTestItemButton() {
     .click();
 }
 
-export function generateOrderDetails(username) {
+export function generateOrderDetails(username, item = "TEST ITEM") {
   return {
     order_id: uuidv4(),
     user_nick_name: username,
     time: "01/01/2025 12:00:00",
-    item: "TEST ITEM",
+    item,
     quantity: 1.0,
     price: 1.0,
     total: 1.0,

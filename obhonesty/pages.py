@@ -213,7 +213,10 @@ def stripe_payment_dialog(name, amount) -> rx.Component:
                     rx.cond(
                         State.is_stripe_session_paid,
                         rx.vstack(
-                            rx.text("Paid! Thank you."),
+                            rx.text(
+                                "Paid! Thank you.",
+                                **{"data-testid": "stripe_payment_successful_text"},
+                            ),
                             rx.cond(
                                 State.current_user.current_guest
                                 & State.is_closing_account,
