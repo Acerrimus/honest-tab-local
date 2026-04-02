@@ -527,10 +527,13 @@ class State(rx.State):
             )
             session.commit()
 
+        events = [rx.toast.info("Dinner sign-up registration successful!")]
         if not self.is_stripe_session_paid:
             # only redirect if the user hasn't paid with stripe
             self.current_order_request_id = ""
-            return rx.redirect("/user")
+            events.append(rx.redirect("/user"))
+
+        return events
 
     @rx.event
     def sign_guest_up_for_breakfast(self, is_guest_paying_now: bool):
