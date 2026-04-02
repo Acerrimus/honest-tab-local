@@ -749,6 +749,7 @@ def dinner_signup_page() -> rx.Component:
                             State.set_order_request_id,
                             lambda: State.sign_guest_up_for_dinner(True),
                         ],
+                        **{"data-testid": f"dinner-signup-pay-now"},
                     ),
                     rx.dialog.root(
                         stripe_payment_dialog(
