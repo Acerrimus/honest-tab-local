@@ -964,6 +964,7 @@ def breakfast_signup_page() -> rx.Component:
                         State.set_order_request_id,
                         lambda: State.sign_guest_up_for_breakfast(True),
                     ],
+                    **{"data-testid": "breakfast-pay-now"},
                 ),
                 rx.dialog.root(
                     stripe_payment_dialog("breakfast", State.get_breakfast_price),
