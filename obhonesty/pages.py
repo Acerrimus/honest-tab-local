@@ -1036,7 +1036,7 @@ def user_info_page() -> rx.Component:
                     size=default_text_size,
                 ),
                 rx.text(
-                    f"Total amount due: €{two_decimal_points(State.get_user_debt)} ",
+                    f"Total amount due: €{two_decimal_points(State.get_user_debt)}",
                     size=default_text_size,
                     weight="bold",
                 ),
