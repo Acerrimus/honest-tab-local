@@ -375,7 +375,6 @@ def item_button(item: Item) -> rx.Component:
                         justify="end",
                         margin_top="10px",
                     ),
-                    # ),
                     spacing="3",
                 ),
             ),
