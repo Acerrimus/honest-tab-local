@@ -1,5 +1,5 @@
 import { getDataTestIdElement } from "../../helpers";
-import { orderDinner } from "../../steps/ordering";
+import { orderDinner } from "../../steps/orders";
 import { createUserAPI, generateUsername, logUserOn } from "../../steps/users";
 
 describe("When a user orders dinner", () => {

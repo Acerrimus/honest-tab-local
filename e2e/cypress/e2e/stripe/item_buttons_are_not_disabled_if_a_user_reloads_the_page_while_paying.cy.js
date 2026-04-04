@@ -1,5 +1,5 @@
 import { getDataTestIdElement } from "../../helpers";
-import { clickTestItemButton } from "../../steps/ordering";
+import { clickTestItemButton } from "../../steps/orders";
 import { createUserAPI, generateUsername, logUserOn } from "../../steps/users";
 
 describe("When a user reloads the page after initiating a payment", () => {
