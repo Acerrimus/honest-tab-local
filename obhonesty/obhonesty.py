@@ -53,7 +53,11 @@ app.add_page(user_signup_page, route="/signup", on_load=State.cancel_timeout)
 app.add_page(dinner_signup_page, route="/dinner", on_load=State.cancel_timeout)
 app.add_page(breakfast_signup_page, route="/breakfast", on_load=State.cancel_timeout)
 app.add_page(custom_item_page, route="/custom_item", on_load=State.cancel_timeout)
-app.add_page(user_info_page, route="/info", on_load=State.reload_sheet_data)
+app.add_page(
+    user_info_page,
+    route="/info",
+    on_load=[State.reload_sheet_data, State.cancel_timeout],
+)
 app.add_page(
     admin,
     route="/admin",
