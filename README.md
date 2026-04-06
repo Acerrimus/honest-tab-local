@@ -19,7 +19,9 @@ To run with Docker: `docker compose up`
 
 This will install all requirements and run the app.
 
-Once running open [http://localhost:3000/](http://localhost:3000/) in a browser to use the app.
+Once the app is running run `reflex db init; reflex db migrate` to initialise the db.
+
+Then open [http://localhost:3000/](http://localhost:3000/) in a browser to use the app.
 
 #### Running natively on Linux
 
@@ -29,7 +31,9 @@ This will install requirements and activate the virtual environment.
 
 Then run `reflex run`.
 
-Once running open [http://localhost:3000/](http://localhost:3000/) in a browser to use the app.
+Once the app is running run `reflex db init; reflex db migrate` to initialise the db.
+
+Then open [http://localhost:3000/](http://localhost:3000/) in a browser to use the app.
 
 ### Backend setup
 
@@ -86,7 +90,6 @@ How to make changes to the SQLite databaser:
 1. Make your changes to tables in `obhonesty/models.py`
 2. Run `reflex db makemigrations` to generate new version files.
 3. Run `reflex db migrate` to apply these changes to the db.
-
 
 ## e2e testing
 
