@@ -11,6 +11,9 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    environment:
+      SQLALCHEMY_POOL_SIZE: 10
+      SQLALCHEMY_MAX_OVERFLOW: 20
 
   db:
     image: postgres:16
