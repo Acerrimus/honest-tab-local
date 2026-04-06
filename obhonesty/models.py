@@ -89,7 +89,7 @@ class Meal(rx.Model, table=True):
             )
             if meal_type is not None
             else select(cls).where(cls.order_time >= start, cls.order_time < end)
-        )
+        ).order_by(cls.order_time, cls.receiver)
 
     @classmethod
     def select_todays_breakfast_meals(cls):
