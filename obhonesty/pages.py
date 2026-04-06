@@ -211,7 +211,7 @@ def stripe_payment_dialog(name, amount) -> rx.Component:
             rx.center(
                 rx.vstack(
                     rx.cond(
-                        State.is_stripe_session_paid,
+                        State.is_payment_status_written_to_db,
                         rx.vstack(
                             rx.text(
                                 "Paid! Thank you.",
@@ -223,6 +223,7 @@ def stripe_payment_dialog(name, amount) -> rx.Component:
                                 rx.text(
                                     "Please see reception to complete your checkout.",
                                     weight="bold",
+                                    **{"data-testid": "checkout-complete-text"},
                                 ),
                             ),
                             rx.text("Press close below to finish."),
@@ -247,7 +248,7 @@ def stripe_payment_dialog(name, amount) -> rx.Component:
                         ),
                     ),
                     rx.cond(
-                        ~State.is_stripe_session_paid,
+                        ~State.is_payment_status_written_to_db,
                         rx.text(
                             "Having issues paying? Please close and contact reception.",
                             size=default_text_size,
@@ -270,7 +271,7 @@ def stripe_payment_dialog(name, amount) -> rx.Component:
                     ),
                     rx.hstack(
                         rx.cond(
-                            ~State.is_stripe_session_paid,
+                            ~State.is_payment_status_written_to_db,
                             rx.button(
                                 "Back",
                                 on_click=State.close_item_dialog,
@@ -279,7 +280,8 @@ def stripe_payment_dialog(name, amount) -> rx.Component:
                         ),
                         rx.cond(
                             # if paying the tab the close button should immediately redirect
-                            State.is_stripe_session_paid & State.ordered_item == "",
+                            State.is_payment_status_written_to_db & State.ordered_item
+                            == "",
                             rx.button(
                                 "Close",
                                 on_click=rx.redirect(
@@ -455,6 +457,7 @@ def user_page() -> rx.Component:
                             on_click=rx.redirect("/info"),
                             size=default_button_size,
                             color_scheme="yellow",
+                            **{"data-testid": "pay-tab-button"},
                         ),
                         rx.text(
                             f"Pay your tab securely via Stripe.", size=default_text_size
@@ -1038,6 +1041,7 @@ def user_info_page() -> rx.Component:
                     f"Total amount due: €{two_decimal_points(State.get_user_debt)}",
                     size=default_text_size,
                     weight="bold",
+                    **{"data-testid": "total-amount-due"},
                 ),
                 rx.hstack(
                     rx.dialog.root(
@@ -1055,6 +1059,7 @@ def user_info_page() -> rx.Component:
                                 size=default_button_size,
                                 color_scheme="yellow",
                                 disabled=is_user_debt_0,
+                                **{"data-testid": "pay-tab-button"},
                             )
                         ),
                         rx.cond(
@@ -1071,8 +1076,18 @@ def user_info_page() -> rx.Component:
                                             ),
                                             weight="medium",
                                         ),
-                                        rx.radio(
-                                            ["Yes", "No"],
+                                        rx.radio_group.root(
+                                            rx.foreach(
+                                                ["Yes", "No"],
+                                                lambda x: rx.radio_group.item(
+                                                    x,
+                                                    value=x,
+                                                    **{
+                                                        "data-testid": f"radio-input-{x.lower()}"
+                                                    },
+                                                ),
+                                            ),
+                                            required=True,
                                             name="is_closing_account",
                                             default_value="Yes",
                                             direction="row",
@@ -1085,6 +1100,7 @@ def user_info_page() -> rx.Component:
                                                 ),
                                                 type="submit",
                                                 size=default_button_size,
+                                                **{"data-testid": "submit-button"},
                                             ),
                                             rx.dialog.close(
                                                 rx.button(

@@ -6,7 +6,7 @@ from urllib.parse import quote
 import reflex as rx
 import stripe
 
-from sqlalchemy import update, select
+from sqlalchemy import update, select, or_
 from obhonesty.aux import (
     short_uid,
     generate_receiver_from_names,
@@ -88,6 +88,7 @@ class State(rx.State):
     payment_qr_code: str = ""
     is_stripe_session_paid: bool = False
     is_stripe_dialog_active: bool = False
+    is_payment_status_written_to_db: bool = False
     # ------------------------------------
 
     # --- Item Payment State ---
@@ -198,6 +199,7 @@ class State(rx.State):
         self.current_stripe_session_id = ""
         self.payment_qr_code = ""
         self.is_stripe_session_paid = False
+        self.is_payment_status_written_to_db = False
         self.is_closing_account = None
         self.show_stripe_connection_failure_message = False
         self.has_stripe_qr_generation_failed = False
@@ -441,6 +443,9 @@ class State(rx.State):
             )
             session.commit()
 
+        if self.is_stripe_session_paid:
+            self.is_payment_status_written_to_db = True
+
         return rx.toast.info(
             f"'{item.name}' registered succesfully. Thank you!",
             position="bottom-center",
@@ -476,6 +481,9 @@ class State(rx.State):
                 )
             )
             session.commit()
+
+        if self.is_stripe_session_paid:
+            self.is_payment_status_written_to_db = True
 
         return rx.toast.info(
             f"'{item_name}' registered succesfully. Thank you!",
@@ -528,10 +536,13 @@ class State(rx.State):
             session.commit()
 
         events = [rx.toast.info("Dinner sign-up registration successful!")]
+
         if not self.is_stripe_session_paid:
             # only redirect if the user hasn't paid with stripe
             self.current_order_request_id = ""
             events.append(rx.redirect("/user"))
+        else:
+            self.is_payment_status_written_to_db = True
 
         return events
 
@@ -683,6 +694,8 @@ class State(rx.State):
             # only redirect if the user hasn't paid with stripe
             self.current_order_request_id = ""
             events.append(rx.redirect("/user"))
+        else:
+            self.is_payment_status_written_to_db = True
 
         return events
 
@@ -774,7 +787,6 @@ class State(rx.State):
         )
         cells = []
         now = datetime.now().strftime(DATETIME_FORMAT)
-
         for row_num, _ in current_users_unpaid_orders:
             for col_num, value in [
                 [14, True],
@@ -788,6 +800,28 @@ class State(rx.State):
 
         except Exception as e:
             return rx.toast.error(f"Error updating cells: {e}")
+
+        with rx.session() as session:
+            unpaid_orders = (
+                session.query(Order_Model)
+                .filter(
+                    Order_Model.user_nick_name == self.current_user.nick_name,
+                    # this is necessary while paid is a string because depending on whether that row has been pulled from google sheets, it can either be in lower or upper case
+                    or_(Order_Model.paid == "false", Order_Model.paid == "FALSE"),
+                )
+                .all()
+            )
+
+            for order in unpaid_orders:
+                order.paid = True
+                order.paid_time = now
+                order.method = "stripe"
+                order.checkout_staff = "tablet"
+                order.synced = True
+
+            session.commit()
+
+        self.is_payment_status_written_to_db = True
 
         return [rx.toast.success("Tab paid successfully!"), State.reload_sheet_data]
 
@@ -807,6 +841,7 @@ class State(rx.State):
             }
 
         async with self:
+            self.is_payment_status_written_to_db = False
             self.is_stripe_session_paid = False
             self.payment_qr_code = ""
 
@@ -1040,6 +1075,7 @@ class State(rx.State):
         self.payment_qr_code = ""
         self.current_stripe_session_id = ""
         self.is_stripe_session_paid = False
+        self.is_payment_status_written_to_db = False
         self.is_stripe_dialog_active = False
         self.ordered_item = ""
         self.is_closing_account = None
@@ -1055,33 +1091,37 @@ class State(rx.State):
     # -----------------------------------
 
     @rx.var(cache=False)
-    def current_user_orders_in_reverse_chronological_order(self) -> List[Order]:
+    def current_user_orders_in_reverse_chronological_order(self) -> List[Order_Model]:
         current_user_orders_copy = self.current_user_orders.copy()
         current_user_orders_copy.reverse()
         return current_user_orders_copy
 
     @rx.var(cache=False)
-    def current_user_orders(self) -> List[Order]:
-        filtered: List[Order] = []
+    def current_user_orders(self) -> List[Order_Model]:
         if not self.current_user:
             return []
 
-        for order in self.orders:
-            if (
-                order.user_nick_name == self.current_user.nick_name
-                and not order.paid_bool
-            ):
-                order_copy: Order = order.copy()
-                try:
-                    order_copy.time = datetime.fromisoformat(order.time).strftime(
-                        "%d/%m/%Y, %H:%M:%S"
-                    )
-                except BaseException:
-                    pass
+        orders = (
+            rx.session()
+            .query(Order_Model)
+            .filter(
+                Order_Model.user_nick_name == self.current_user.nick_name,
+                # this is necessary while paid is a string because depending on whether that row has been pulled from google sheets, it can either be in lower or upper case
+                or_(Order_Model.paid == "false", Order_Model.paid == "FALSE"),
+            )
+            .all()
+        )
 
-                filtered.append(order_copy)
+        for order in orders:
+            order = order.model_dump()
+            try:
+                order.time = datetime.fromisoformat(order.time).strftime(
+                    "%d/%m/%Y, %H:%M:%S"
+                )
+            except BaseException:
+                pass
 
-        return filtered
+        return orders
 
     @rx.var(cache=False)
     def no_user(self) -> bool:

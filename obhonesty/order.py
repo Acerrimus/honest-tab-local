@@ -31,7 +31,7 @@ class Order(rx.Base):
 
     @property
     def paid_bool(self) -> bool:
-        return self.paid == "true"
+        return self.paid.lower() == "true"
 
     @staticmethod
     def from_dict(x: Dict[str, str]):
