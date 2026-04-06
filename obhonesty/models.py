@@ -43,7 +43,7 @@ class Order(rx.Model, table=True):
     served: str
     tax_category: str
     comment: str
-    paid: str | None
+    paid: bool | None
     paid_time: str | None
     method: str | None
     checkout_staff: str | None

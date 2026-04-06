@@ -775,8 +775,7 @@ class State(rx.State):
         def filter_current_user_orders(order_enumerate: list[int, Order]) -> bool:
             order = order_enumerate[1]
             return (
-                order.user_nick_name == self.current_user.nick_name
-                and not order.paid_bool
+                order.user_nick_name == self.current_user.nick_name and not order.paid
             )
 
         current_users_unpaid_orders = list(
@@ -806,8 +805,7 @@ class State(rx.State):
                 session.query(Order_Model)
                 .filter(
                     Order_Model.user_nick_name == self.current_user.nick_name,
-                    # this is necessary while paid is a string because depending on whether that row has been pulled from google sheets, it can either be in lower or upper case
-                    or_(Order_Model.paid == "false", Order_Model.paid == "FALSE"),
+                    Order_Model.paid == False,
                 )
                 .all()
             )
@@ -1106,8 +1104,7 @@ class State(rx.State):
             .query(Order_Model)
             .filter(
                 Order_Model.user_nick_name == self.current_user.nick_name,
-                # this is necessary while paid is a string because depending on whether that row has been pulled from google sheets, it can either be in lower or upper case
-                or_(Order_Model.paid == "false", Order_Model.paid == "FALSE"),
+                Order_Model.paid == False,
             )
             .all()
         )

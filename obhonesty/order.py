@@ -19,7 +19,7 @@ class Order(rx.Base):
     served: str
     tax_category: str
     comment: str
-    paid: str | None
+    paid: bool | None
     paid_time: str | None
     method: str | None
     checkout_staff: str | None
@@ -28,10 +28,6 @@ class Order(rx.Base):
     @property
     def served_bool(self) -> bool:
         return self.served.lower() in true_values
-
-    @property
-    def paid_bool(self) -> bool:
-        return self.paid.lower() == "true"
 
     @staticmethod
     def from_dict(x: Dict[str, str]):

@@ -109,8 +109,7 @@ def sync_new_orders(unsynced_orders):
                 order.served,
                 order.tax_category,
                 order.comment,
-                # this str conversion is temporary until this column can be turned into a bool in the SQLite db
-                str(order.paid) == "true",
+                order.paid,
                 order.paid_time,
                 order.method,
                 order.checkout_staff,
@@ -182,6 +181,7 @@ def sync_orders():
                 order["user_nick_name"] = order["user"]
                 del order["user"]
                 sanitise_record_strings(order_string_columns, order)
+                order["paid"] = order["paid"].lower() in ["true", "yes"]
 
             for row in session.exec(Order_Model.select()).all():
                 session.delete(row)

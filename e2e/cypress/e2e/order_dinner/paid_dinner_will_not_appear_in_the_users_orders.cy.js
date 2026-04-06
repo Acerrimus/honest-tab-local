@@ -20,7 +20,7 @@ describe("When a user pays for their dinner", () => {
       expect(response.body.orders).to.have.lengthOf(1);
       const order = response.body.orders[0];
       expect(order.item).to.eq("Dinner sign-up");
-      expect(order.paid).to.eq("true");
+      expect(order.paid).to.be.true
     });
     const itemName = "REGISTERED TEST ITEM";
     const orderDetails = generateOrderDetails(username, itemName);
