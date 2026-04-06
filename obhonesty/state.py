@@ -236,6 +236,7 @@ class State(rx.State):
                 .values(served=value)
             )
             session.commit()
+        return State.update_meal_totals
 
     def set_dinner_as_ordered_item(self):
         self.ordered_item = "dinner"
