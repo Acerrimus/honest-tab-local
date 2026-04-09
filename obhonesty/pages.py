@@ -1218,10 +1218,12 @@ def show_signup(meal: Meal_Model):
                 ),
                 color_scheme=rx.cond(meal.served, "green", "red"),
                 size="4",
+                **{"data-testid": "served-button"},
             )
         ),
         key=meal.meal_id,
         bg=rx.cond(has_allergies, "#FC281D20", "transparent"),
+        **{"data-testid": "meal-row"},
     )
 
 
@@ -1243,7 +1245,10 @@ def admin_dinner() -> rx.Component:
                 rx.hstack(
                     rx.vstack(
                         rx.text.strong(f"Total eating dinner: {State.dinner_count}"),
-                        rx.text.strong(f"Total served: {State.dinner_count_served}"),
+                        rx.text.strong(
+                            f"Total served: {State.dinner_count_served}",
+                            **{"data-testid": "total-served"},
+                        ),
                         rx.text(f"Meat: {State.dinner_count_meat}"),
                         rx.text(f"Vegetarian: {State.dinner_count_vegetarian}"),
                         rx.text(f"Vegan: {State.dinner_count_vegan}"),
@@ -1254,7 +1259,8 @@ def admin_dinner() -> rx.Component:
                             f"Guests eating dinner: {State.dinner_count_guests}"
                         ),
                         rx.text.strong(
-                            f"Total served: {State.dinner_count_guests_served}"
+                            f"Total served: {State.dinner_count_guests_served}",
+                            **{"data-testid": "total-guests-served"},
                         ),
                         rx.text(f"Meat: {State.dinner_count_guests_meat}"),
                         rx.text(f"Vegetarian: {State.dinner_count_guests_vegetarian}"),

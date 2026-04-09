@@ -18,11 +18,23 @@ export function clickTestItemButton() {
     .click();
 }
 
+function generateFormattedTime() {
+  const now = new Date();
+  const pad = (n) => n.toString().padStart(2, "0");
+  const day = pad(now.getDate());
+  const month = pad(now.getMonth() + 1);
+  const year = now.getFullYear();
+  const hours = pad(now.getHours());
+  const minutes = pad(now.getMinutes());
+  const seconds = pad(now.getSeconds());
+  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+}
+
 export function generateOrderDetails(username, item = "TEST ITEM") {
   return {
     order_id: uuidv4(),
     user_nick_name: username,
-    time: "01/01/2025 12:00:00",
+    time: generateFormattedTime(),
     item,
     quantity: 1.0,
     price: 1.0,
@@ -38,6 +50,30 @@ export function generateOrderDetails(username, item = "TEST ITEM") {
     method: "",
     checkout_staff: "",
   };
+}
+
+export function createDinnerOrderApi(username, receiver) {
+  const dinnerOrder = {
+    price: 12.0,
+    paid: false,
+    total: 12.0,
+    paid_time: "",
+    receiver: receiver,
+    method: "",
+    diet: "Vegan",
+    checkout_staff: "",
+    user_nick_name: username,
+    allergies: "",
+    synced: false,
+    time: generateFormattedTime(),
+    served: "",
+    item: "Dinner sign-up",
+    tax_category: "Food and beverage non-alcoholic",
+    order_id: uuidv4(),
+    quantity: 1.0,
+    comment: "",
+  };
+  return createUserOrderAPI(dinnerOrder);
 }
 
 export function createUserOrderAPI(qs) {
