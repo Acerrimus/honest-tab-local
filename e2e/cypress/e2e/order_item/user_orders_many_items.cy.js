@@ -1,10 +1,14 @@
 import { getDataTestIdElement } from "../../helpers";
-import { createUserAPI, generateUsername, logUserOn } from "../../steps/users";
+import {
+  createGuestUserApi,
+  generateUsername,
+  logUserOn,
+} from "../../steps/users";
 
 describe("When a user orders many items", () => {
   const username = generateUsername();
   it("they are all successfully ordered", () => {
-    createUserAPI(username);
+    createGuestUserApi(username);
     cy.visit("/");
     logUserOn(username);
     getDataTestIdElement("order_item_button")

@@ -1,11 +1,15 @@
 import { getDataTestIdElement } from "../../helpers";
 import { orderDinner } from "../../steps/orders";
-import { createUserAPI, generateUsername, logUserOn } from "../../steps/users";
+import {
+  createGuestUserApi,
+  generateUsername,
+  logUserOn,
+} from "../../steps/users";
 
 describe("When a user orders dinner twice with the same name", () => {
   it("they will be shown an error", () => {
     const username = generateUsername();
-    createUserAPI(username);
+    createGuestUserApi(username);
     cy.visit("/");
     logUserOn(username);
     orderDinner(username);

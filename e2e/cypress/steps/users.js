@@ -23,10 +23,18 @@ export function logUserOn(username, password = "test@") {
   getDataTestIdElement("password-submit-button").click();
 }
 
-export async function createUserAPI(username) {
+function createUserApi(qs) {
   return cy.request({
     method: "POST",
     url: "http://app:8000/api/test/user",
-    qs: { username },
+    qs,
   });
+}
+
+export function createGuestUserApi(username) {
+  return createUserApi({ username });
+}
+
+export function createVolunteerUserApi(username) {
+  return createUserApi({ username, volunteer: "1" });
 }

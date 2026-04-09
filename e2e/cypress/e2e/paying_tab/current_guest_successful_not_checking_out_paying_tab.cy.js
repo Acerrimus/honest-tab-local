@@ -4,12 +4,16 @@ import {
   generateOrderDetails,
   getUserOrdersAPI,
 } from "../../steps/orders";
-import { createUserAPI, generateUsername, logUserOn } from "../../steps/users";
+import {
+  createGuestUserApi,
+  generateUsername,
+  logUserOn,
+} from "../../steps/users";
 
 describe("When a current guest successfully pays their tab and chooses to not check out", () => {
   const username = generateUsername();
   it("they will stay logged in and their paid items will not be in their tab", () => {
-    createUserAPI(username);
+    createGuestUserApi(username);
     const itemNames = [1, 2, 3].map((num) => `REGISTERED TEST ITEM${num}`);
     const orderDetails = itemNames.map((itemName) =>
       generateOrderDetails(username, itemName),

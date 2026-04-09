@@ -6,7 +6,7 @@ fastapi_app = FastAPI(title="Honesty Bar API")
 
 
 @fastapi_app.post("/api/test/user", status_code=status.HTTP_201_CREATED)
-async def create_test_user(username: str):
+async def create_test_user(username: str, volunteer: str = ""):
     with rx.session() as session:
         session.add(
             User.model_validate(
@@ -20,7 +20,7 @@ async def create_test_user(username: str):
                     "allergies": "Nuts",
                     "current_guest": "Yes",
                     "synced": False,
-                    "volunteer": False,
+                    "volunteer": len(volunteer) > 0,
                     "away": False,
                 }
             )

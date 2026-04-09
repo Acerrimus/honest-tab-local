@@ -4,12 +4,16 @@ import {
   generateOrderDetails,
   getUserOrdersAPI,
 } from "../../steps/orders";
-import { createUserAPI, generateUsername, logUserOn } from "../../steps/users";
+import {
+  createGuestUserApi,
+  generateUsername,
+  logUserOn,
+} from "../../steps/users";
 
 describe("When a user pays for their dinner", () => {
   it("the dinner does not appear in the user's orders", () => {
     const username = generateUsername();
-    createUserAPI(username);
+    createGuestUserApi(username);
     cy.visit("/");
     logUserOn(username);
     getDataTestIdElement("dinner-signup-button").click();
@@ -20,7 +24,7 @@ describe("When a user pays for their dinner", () => {
       expect(response.body.orders).to.have.lengthOf(1);
       const order = response.body.orders[0];
       expect(order.item).to.eq("Dinner sign-up");
-      expect(order.paid).to.be.true
+      expect(order.paid).to.be.true;
     });
     const itemName = "REGISTERED TEST ITEM";
     const orderDetails = generateOrderDetails(username, itemName);

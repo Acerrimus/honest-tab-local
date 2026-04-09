@@ -1,11 +1,15 @@
 import { getDataTestIdElement } from "../../helpers";
 import { orderDinner } from "../../steps/orders";
-import { createUserAPI, generateUsername, logUserOn } from "../../steps/users";
+import {
+  createGuestUserApi,
+  generateUsername,
+  logUserOn,
+} from "../../steps/users";
 
 describe("When a user orders dinner twice using different names", () => {
   const username = generateUsername();
   it("it is successfully ordered", () => {
-    createUserAPI(username);
+    createGuestUserApi(username);
     cy.visit("/");
     logUserOn(username);
     orderDinner(username);

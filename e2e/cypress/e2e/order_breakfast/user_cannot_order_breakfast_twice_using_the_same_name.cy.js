@@ -1,10 +1,14 @@
 import { getDataTestIdElement } from "../../helpers";
-import { createUserAPI, generateUsername, logUserOn } from "../../steps/users";
+import {
+  createGuestUserApi,
+  generateUsername,
+  logUserOn,
+} from "../../steps/users";
 
 describe("When a user orders breakfast twice with the same name", () => {
   it("it will not be ordered", () => {
     const username = generateUsername();
-    createUserAPI(username);
+    createGuestUserApi(username);
     cy.visit("/");
     logUserOn(username);
     getDataTestIdElement("breakfast-signup-button").click();

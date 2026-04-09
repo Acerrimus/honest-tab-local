@@ -1,12 +1,16 @@
 import { getDataTestIdElement } from "../../helpers";
 import { clickTestItemButton } from "../../steps/orders";
 import { assertStripeDialogNotVisibleBeforeItemPayButton } from "../../steps/stripe";
-import { createUserAPI, generateUsername, logUserOn } from "../../steps/users";
+import {
+  createGuestUserApi,
+  generateUsername,
+  logUserOn,
+} from "../../steps/users";
 
 describe("When a user closes the stripe payment dialog when ordering an item before the qr code generates", () => {
   it("it does not reopen the stripe payment dialog", () => {
     const username = generateUsername();
-    createUserAPI(username);
+    createGuestUserApi(username);
     cy.visit("/");
     logUserOn(username);
     clickTestItemButton();

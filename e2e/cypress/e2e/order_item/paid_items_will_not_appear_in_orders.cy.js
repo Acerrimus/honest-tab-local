@@ -4,12 +4,16 @@ import {
   generateOrderDetails,
   getUserOrdersAPI,
 } from "../../steps/orders";
-import { createUserAPI, generateUsername, logUserOn } from "../../steps/users";
+import {
+  createGuestUserApi,
+  generateUsername,
+  logUserOn,
+} from "../../steps/users";
 
 describe("When a user pays for an item", () => {
   it("the item will be registered but not appear in the user's orders", () => {
     const username = generateUsername();
-    createUserAPI(username);
+    createGuestUserApi(username);
     cy.visit("/");
     logUserOn(username);
     getDataTestIdElement("order_item_button")
@@ -17,12 +21,12 @@ describe("When a user pays for an item", () => {
       .click();
     getDataTestIdElement("item_pay_now").click();
     getDataTestIdElement("stripe_payment_successful_text").should("be.visible");
-    cy.contains("'TEST ITEM' registered succesfully. Thank you!")
+    cy.contains("'TEST ITEM' registered succesfully. Thank you!");
     getUserOrdersAPI(username).then((response) => {
       expect(response.body.orders).to.have.lengthOf(1);
       const order = response.body.orders[0];
       expect(order.item).to.eq("TEST ITEM");
-      expect(order.paid).to.be.true
+      expect(order.paid).to.be.true;
     });
     const itemName = "REGISTERED TEST ITEM";
     const orderDetails = generateOrderDetails(username, itemName);
