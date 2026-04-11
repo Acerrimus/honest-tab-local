@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta, UTC
 import asyncio
 from typing import Any, Dict, List, Optional, Literal
 from urllib.parse import quote
@@ -54,6 +54,7 @@ class State(rx.State):
     is_email_login_incorrect = False
     late_dinner_user_nick_name: Optional[str] = None
     show_stripe_connection_failure_message = False
+    show_stripe_timeout_message = False
     has_stripe_qr_generation_failed = False
     should_late_dinner_signup_form_reload = False
     item_uuid: str = ""
@@ -840,6 +841,7 @@ class State(rx.State):
             }
 
         async with self:
+            self.show_stripe_timeout_message = False
             self.is_payment_status_written_to_db = False
             self.is_stripe_session_paid = False
             self.payment_qr_code = ""
@@ -946,6 +948,9 @@ class State(rx.State):
                 cancel_url=os.getenv("CANCEL_URL")
                 if os.getenv("CANCEL_URL")
                 else "https://example.com/cancel",
+                # our stripe session are set to expire after 30 minutes, this is the minimum expiry time for a checkout session, see https://docs.stripe.com/api/checkout/sessions/create
+                # this is to have the maximum frequency that the app can poll the stripe api without hitting the rate limit, see https://docs.stripe.com/rate-limits#api-read-request-allocations
+                expires_at=int((datetime.now(UTC) + timedelta(minutes=30)).timestamp()),
             )
 
             async with self:
@@ -1006,12 +1011,16 @@ class State(rx.State):
     async def check_stripe_payment_status(self):
         """Periodically checks if payment was successful"""
         stripe_error_message = ""
+        # read requests are limited to 500 requests per transaction, see https://docs.stripe.com/rate-limits#api-read-request-allocations
+        stripe_api_get_rate_limit_per_transaction = 500
+        request_count = 0
 
         while True:
             if self.current_stripe_session_id == "" or self.is_stripe_session_paid:
                 return
 
             if not is_test_environment:
+                request_count += 1
                 result = False
 
                 try:
@@ -1019,6 +1028,13 @@ class State(rx.State):
                     session = stripe.checkout.Session.retrieve(
                         self.current_stripe_session_id
                     )
+
+                    if session.status == "expired":
+                        async with self:
+                            self.show_stripe_timeout_message = True
+
+                        return
+
                     result = session.payment_status == "paid"
                     stripe_error_message = ""
 
@@ -1037,8 +1053,15 @@ class State(rx.State):
                         self.show_stripe_connection_failure_message = True
 
                 if not result:
-                    await asyncio.sleep(1)
-                    continue
+                    if request_count < stripe_api_get_rate_limit_per_transaction:
+                        # 500 requests spread over 30 minutes is 3.607 secs/request, rounded up to 3.7
+                        await asyncio.sleep(3.7)
+                        continue
+
+                    async with self:
+                        self.show_stripe_timeout_message = True
+
+                    return
 
             async with self:
                 self.is_stripe_session_paid = True

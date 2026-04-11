@@ -190,11 +190,15 @@ def stripe_payment_dialog(name, amount) -> rx.Component:
     )
 
     return rx.cond(
-        State.has_stripe_qr_generation_failed,
+        State.has_stripe_qr_generation_failed | State.show_stripe_timeout_message,
         rx.dialog.content(
             rx.vstack(
                 rx.text(
-                    "There are some issues with the internet connection. Please see reception to complete payment.",
+                    rx.cond(
+                        State.show_stripe_timeout_message,
+                        "This transaction has timed out, please try again. Please see reception if you have already completed payment.",
+                        "There are some issues with the internet connection. Please see reception to complete payment.",
+                    ),
                     size=default_text_size,
                     weight="bold",
                 ),
