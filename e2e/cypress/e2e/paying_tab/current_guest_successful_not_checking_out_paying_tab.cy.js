@@ -32,6 +32,7 @@ describe("When a current guest successfully pays their tab and chooses to not ch
     getDataTestIdElement("pay-tab-button").click();
     getDataTestIdElement("radio-input-no").click();
     getDataTestIdElement("submit-button").click();
+    getDataTestIdElement("stripe_qr_code_image");
     getDataTestIdElement("stripe_payment_successful_text").should("be.visible");
     getDataTestIdElement("stripe_dialog_close").click();
     cy.contains("Tab paid successfully!");

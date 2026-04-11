@@ -32,6 +32,7 @@ describe("When a current guest successfully pays their tab and chooses to check 
     getDataTestIdElement("pay-tab-button").click();
     getDataTestIdElement("radio-input-yes").click();
     getDataTestIdElement("submit-button").click();
+    getDataTestIdElement("stripe_qr_code_image");
     getDataTestIdElement("checkout-complete-text").should("be.visible");
     getDataTestIdElement("stripe_dialog_close").click();
     getDataTestIdElement("title").should("be.visible");
