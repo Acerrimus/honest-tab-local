@@ -2,11 +2,12 @@ from datetime import datetime, timedelta, UTC
 import asyncio
 from typing import Any, Dict, List, Optional, Literal
 from urllib.parse import quote
-
 import reflex as rx
 import stripe
-
 from sqlalchemy import update, select
+from dotenv import load_dotenv
+import os
+from gspread import Cell
 from obhonesty.aux import (
     short_uid,
     generate_receiver_from_names,
@@ -25,12 +26,7 @@ from obhonesty.models import (
     Meal as Meal_Model,
 )
 
-from dotenv import load_dotenv
-
 load_dotenv()
-import os
-from gspread import Cell
-
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 is_test_environment = True if os.getenv("TEST") else False
 

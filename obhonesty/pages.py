@@ -1,5 +1,5 @@
 import reflex as rx
-
+import os
 from obhonesty.aux import two_decimal_points
 from obhonesty.constants import *
 from obhonesty.item import Item
@@ -8,8 +8,6 @@ from obhonesty.state import State
 from obhonesty.user import User
 from obhonesty.models import Meal as Meal_Model
 from obhonesty.elements import user_button
-
-import os
 
 is_test_environment = True if os.getenv("TEST") else False
 
