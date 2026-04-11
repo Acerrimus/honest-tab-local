@@ -187,6 +187,23 @@ class State(rx.State):
         self.current_order_request_id = ""
 
     @rx.event
+    def expire_stripe_session(self):
+        try:
+            stripe.checkout.Session.expire(self.current_stripe_session_id)
+
+        except Exception as e:
+            # this message means the transaction was successful or has already expired so we should ignore it
+            if (
+                'Only Checkout Sessions with a status in ["open"] can be expired.'
+                not in str(e)
+            ):
+                print(
+                    f"Error expiring Stripe session: {e} - {datetime.now()}", flush=True
+                )
+
+        self.current_stripe_session_id = ""
+
+    @rx.event
     def clear_temp_state_values(self):
         self.is_item_button_dialog_active = False
         self.dinner_signup_first_name = ""
@@ -197,7 +214,10 @@ class State(rx.State):
         self.breakfast_signup_last_name = ""
         self.breakfast_signup_item = ""
         self.dinner_signup_allergies = ""
-        self.current_stripe_session_id = ""
+
+        if self.current_stripe_session_id != "":
+            yield State.expire_stripe_session
+
         self.payment_qr_code = ""
         self.is_stripe_session_paid = False
         self.is_payment_status_written_to_db = False
@@ -1095,7 +1115,10 @@ class State(rx.State):
         temp_ordered_item = self.ordered_item
         temp_is_stripe_session_paid = self.is_stripe_session_paid
         self.payment_qr_code = ""
-        self.current_stripe_session_id = ""
+
+        if self.current_stripe_session_id != "":
+            yield State.expire_stripe_session
+
         self.is_stripe_session_paid = False
         self.is_payment_status_written_to_db = False
         self.is_stripe_dialog_active = False
