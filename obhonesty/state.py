@@ -6,7 +6,7 @@ from urllib.parse import quote
 import reflex as rx
 import stripe
 
-from sqlalchemy import update, select, or_
+from sqlalchemy import update, select
 from obhonesty.aux import (
     short_uid,
     generate_receiver_from_names,
