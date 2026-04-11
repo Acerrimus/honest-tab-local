@@ -3,16 +3,14 @@ import {
   getTotalServedInt,
   waitForReceiverServedStatusAndTotalCountToRender,
 } from "../../steps/meals";
-import { createDinnerOrderApi } from "../../steps/orders";
-import { createGuestUserApi, generateUsername } from "../../steps/users";
+import { createVolunteerUserApi, generateUsername } from "../../steps/users";
 
-describe("When an admin user clicks served for a guest's dinner meal", () => {
+describe("When an admin user clicks served for a volunteer's dinner meal", () => {
   const username = generateUsername();
   const receiver = `${username.toUpperCase()} TEST`;
 
-  it("it will show as served and increment the guests served count with the volunteers served count staying the same", function () {
-    createGuestUserApi(username);
-    createDinnerOrderApi(username, receiver);
+  it("it will show as served and increment the volunteers served count with the guests served staying the same", function () {
+    createVolunteerUserApi(username);
     cy.visit("/admin/dinner");
     cy.contains(receiver);
     getDataTestIdElement("total-served").invoke("text").as("totalServed");
@@ -32,27 +30,27 @@ describe("When an admin user clicks served for a guest's dinner meal", () => {
           "have.text",
           `Total served: ${getTotalServedInt(this.totalServed) + 1}`,
         );
-        getDataTestIdElement("total-volunteers-served").should(
-          "have.text",
-          this.totalVolunteersServed,
-        );
         getDataTestIdElement("total-guests-served").should(
           "have.text",
-          `Total served: ${getTotalServedInt(this.totalGuestsServed) + 1}`,
+          this.totalGuestsServed,
+        );
+        getDataTestIdElement("total-volunteers-served").should(
+          "have.text",
+          `Total served: ${getTotalServedInt(this.totalVolunteersServed) + 1}`,
         );
       });
   });
 
-  it("and when clicked again it will show as not served and decrement the guests served count with the volunteers served count staying the same", function () {
+  it("and when clicked again it will show as not served and decrement the volunteers served count with the guests served count staying the same", function () {
     cy.visit("/admin/dinner");
     waitForReceiverServedStatusAndTotalCountToRender(receiver);
     getDataTestIdElement("total-served").invoke("text").as("totalServed");
-    getDataTestIdElement("total-guests-served")
-      .invoke("text")
-      .as("totalGuestsServed");
     getDataTestIdElement("total-volunteers-served")
       .invoke("text")
       .as("totalVolunteersServed");
+    getDataTestIdElement("total-guests-served")
+      .invoke("text")
+      .as("totalGuestsServed");
     getDataTestIdElement("meal-row")
       .filter(`:contains(${receiver})`)
       .find(`[data-testid=served-button]`)
@@ -63,13 +61,13 @@ describe("When an admin user clicks served for a guest's dinner meal", () => {
           "have.text",
           `Total served: ${getTotalServedInt(this.totalServed) - 1}`,
         );
+        getDataTestIdElement("total-served").should(
+          "have.text",
+          this.totalGuestsServed,
+        );
         getDataTestIdElement("total-volunteers-served").should(
           "have.text",
-          this.totalVolunteersServed,
-        );
-        getDataTestIdElement("total-guests-served").should(
-          "have.text",
-          `Total served: ${getTotalServedInt(this.totalGuestsServed) - 1}`,
+          `Total served: ${getTotalServedInt(this.totalVolunteersServed) - 1}`,
         );
       });
   });

@@ -1272,7 +1272,8 @@ def admin_dinner() -> rx.Component:
                             f"Volunteers eating dinner: {State.dinner_count_volunteers}"
                         ),
                         rx.text.strong(
-                            f"Total served: {State.dinner_count_volunteers_served}"
+                            f"Total served: {State.dinner_count_volunteers_served}",
+                            **{"data-testid": "total-volunteers-served"},
                         ),
                         rx.text(f"Meat: {State.dinner_count_volunteers_meat}"),
                         rx.text(
