@@ -184,18 +184,20 @@ class State(rx.State):
 
     @rx.event
     def expire_stripe_session(self):
-        try:
-            stripe.checkout.Session.expire(self.current_stripe_session_id)
+        if not is_test_environment:
+            try:
+                stripe.checkout.Session.expire(self.current_stripe_session_id)
 
-        except Exception as e:
-            # this message means the transaction was successful or has already expired so we should ignore it
-            if (
-                'Only Checkout Sessions with a status in ["open"] can be expired.'
-                not in str(e)
-            ):
-                print(
-                    f"Error expiring Stripe session: {e} - {datetime.now()}", flush=True
-                )
+            except Exception as e:
+                # this message means the transaction was successful or has already expired so we should ignore it
+                if (
+                    'Only Checkout Sessions with a status in ["open"] can be expired.'
+                    not in str(e)
+                ):
+                    print(
+                        f"Error expiring Stripe session: {e} - {datetime.now()}",
+                        flush=True,
+                    )
 
         self.current_stripe_session_id = ""
 
@@ -862,128 +864,136 @@ class State(rx.State):
             self.is_stripe_session_paid = False
             self.payment_qr_code = ""
 
-        line_items = []
-
-        if item_name == "tab":
-            # sums up each item in the tab for a total quantity per item per price point to account for any price changes
-            # eg. dinner x 3 @ €10 and dinner x 2 @ €12
-            summarised_item_quantities = {}
-
-            for order in self.current_user_orders:
-                name = order.item
-                unit_amount = int(order.price * 100)
-
-                if order.order_id in self.prepaid_dinner_ids:
-                    name += " (Prepaid)"
-                    unit_amount = 0
-
-                if name not in summarised_item_quantities:
-                    summarised_item_quantities[name] = {}
-
-                if unit_amount not in summarised_item_quantities[name]:
-                    summarised_item_quantities[name][unit_amount] = 0
-
-                summarised_item_quantities[name][unit_amount] += int(order.quantity)
-
-            extra_line_item_total = 0
-            last_item_total = 0
-
-            for summarised_item in summarised_item_quantities:
-                for summarised_item_price_point in summarised_item_quantities[
-                    summarised_item
-                ]:
-                    summarised_item_quantity = summarised_item_quantities[
-                        summarised_item
-                    ][summarised_item_price_point]
-
-                    # stripe cannot accept more than 100 line items in a checkout session.
-                    # if there are more than 100 items then it should display a total with a note to see reception for a full receipt
-                    if len(line_items) == 99:
-                        last_item_total = (
-                            summarised_item_price_point * summarised_item_quantity
-                        )
-
-                    if len(line_items) == 100:
-                        extra_line_item_total += (
-                            summarised_item_price_point * summarised_item_quantity
-                        )
-                        continue
-
-                    line_items.append(
-                        generate_line_item(
-                            summarised_item,
-                            summarised_item_price_point,
-                            summarised_item_quantity,
-                        )
-                    )
-
-            if extra_line_item_total:
-                extra_line_item_total += last_item_total
-                line_items[99] = generate_line_item(
-                    "Remaining item total - see reception for full receipt",
-                    extra_line_item_total,
-                    1,
-                )
-
-        else:
-            quantity = (
-                self.temp_quantity
-                if self.temp_quantity > 0
-                and self.ordered_item not in ["breakfast", "dinner"]
-                else 1.0
-            )
-
-            if self.ordered_item == "breakfast":
-                item_name = self.breakfast_signup_item
-                unit_price = self.get_breakfast_price
-
-            if self.ordered_item == "dinner":
-                item_name = "dinner"
-                unit_price = self.admin_data["dinner_price"]
-
-            line_items.append(
-                generate_line_item(item_name, int(unit_price * 100), int(quantity))
-            )
-
-        # 1. Create Stripe Checkout Session
-
         ob_payment_id = str(short_uid())
 
-        try:
-            # This creates a payment page hosted by Stripe
-            session = stripe.checkout.Session.create(
-                payment_method_types=["card"],
-                line_items=line_items,
-                mode="payment",
-                metadata={"ob_payment_id": ob_payment_id},
-                # payment_intent_data allows staff to track the payment through the stripe dashboard using the payment id
-                payment_intent_data={"metadata": {"ob_payment_id": ob_payment_id}},
-                success_url=os.getenv("SUCCESS_URL")
-                if os.getenv("SUCCESS_URL")
-                else "https://example.com/success",
-                cancel_url=os.getenv("CANCEL_URL")
-                if os.getenv("CANCEL_URL")
-                else "https://example.com/cancel",
-                # our stripe session are set to expire after 30 minutes, this is the minimum expiry time for a checkout session, see https://docs.stripe.com/api/checkout/sessions/create
-                # this is to have the maximum frequency that the app can poll the stripe api without hitting the rate limit, see https://docs.stripe.com/rate-limits#api-read-request-allocations
-                expires_at=int((datetime.now(UTC) + timedelta(minutes=30)).timestamp()),
-            )
+        if not is_test_environment:
+            line_items = []
 
+            if item_name == "tab":
+                # sums up each item in the tab for a total quantity per item per price point to account for any price changes
+                # eg. dinner x 3 @ €10 and dinner x 2 @ €12
+                summarised_item_quantities = {}
+
+                for order in self.current_user_orders:
+                    name = order.item
+                    unit_amount = int(order.price * 100)
+
+                    if order.order_id in self.prepaid_dinner_ids:
+                        name += " (Prepaid)"
+                        unit_amount = 0
+
+                    if name not in summarised_item_quantities:
+                        summarised_item_quantities[name] = {}
+
+                    if unit_amount not in summarised_item_quantities[name]:
+                        summarised_item_quantities[name][unit_amount] = 0
+
+                    summarised_item_quantities[name][unit_amount] += int(order.quantity)
+
+                extra_line_item_total = 0
+                last_item_total = 0
+
+                for summarised_item in summarised_item_quantities:
+                    for summarised_item_price_point in summarised_item_quantities[
+                        summarised_item
+                    ]:
+                        summarised_item_quantity = summarised_item_quantities[
+                            summarised_item
+                        ][summarised_item_price_point]
+
+                        # stripe cannot accept more than 100 line items in a checkout session.
+                        # if there are more than 100 items then it should display a total with a note to see reception for a full receipt
+                        if len(line_items) == 99:
+                            last_item_total = (
+                                summarised_item_price_point * summarised_item_quantity
+                            )
+
+                        if len(line_items) == 100:
+                            extra_line_item_total += (
+                                summarised_item_price_point * summarised_item_quantity
+                            )
+                            continue
+
+                        line_items.append(
+                            generate_line_item(
+                                summarised_item,
+                                summarised_item_price_point,
+                                summarised_item_quantity,
+                            )
+                        )
+
+                if extra_line_item_total:
+                    extra_line_item_total += last_item_total
+                    line_items[99] = generate_line_item(
+                        "Remaining item total - see reception for full receipt",
+                        extra_line_item_total,
+                        1,
+                    )
+
+            else:
+                quantity = (
+                    self.temp_quantity
+                    if self.temp_quantity > 0
+                    and self.ordered_item not in ["breakfast", "dinner"]
+                    else 1.0
+                )
+
+                if self.ordered_item == "breakfast":
+                    item_name = self.breakfast_signup_item
+                    unit_price = self.get_breakfast_price
+
+                if self.ordered_item == "dinner":
+                    item_name = "dinner"
+                    unit_price = self.admin_data["dinner_price"]
+
+                line_items.append(
+                    generate_line_item(item_name, int(unit_price * 100), int(quantity))
+                )
+
+            # 1. Create Stripe Checkout Session
+
+            try:
+                # This creates a payment page hosted by Stripe
+                session = stripe.checkout.Session.create(
+                    payment_method_types=["card"],
+                    line_items=line_items,
+                    mode="payment",
+                    metadata={"ob_payment_id": ob_payment_id},
+                    # payment_intent_data allows staff to track the payment through the stripe dashboard using the payment id
+                    payment_intent_data={"metadata": {"ob_payment_id": ob_payment_id}},
+                    success_url=os.getenv("SUCCESS_URL")
+                    if os.getenv("SUCCESS_URL")
+                    else "https://example.com/success",
+                    cancel_url=os.getenv("CANCEL_URL")
+                    if os.getenv("CANCEL_URL")
+                    else "https://example.com/cancel",
+                    # our stripe session are set to expire after 30 minutes, this is the minimum expiry time for a checkout session, see https://docs.stripe.com/api/checkout/sessions/create
+                    # this is to have the maximum frequency that the app can poll the stripe api without hitting the rate limit, see https://docs.stripe.com/rate-limits#api-read-request-allocations
+                    expires_at=int(
+                        (datetime.now(UTC) + timedelta(minutes=30)).timestamp()
+                    ),
+                )
+
+                async with self:
+                    # 2. Generate QR Code pointing to that Stripe URL
+                    self.current_stripe_session_id = session.id
+                    self.payment_qr_code = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={quote(session.url)}"
+
+            except Exception as e:
+                print(f"Stripe Error: {e}", flush=True)
+
+                async with self:
+                    self.has_stripe_qr_generation_failed = True
+
+                return
+
+            if self.current_stripe_session_id == "":
+                return
+
+        else:
             async with self:
-                # 2. Generate QR Code pointing to that Stripe URL
-                self.current_stripe_session_id = session.id
-                self.payment_qr_code = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={quote(session.url)}"
-
-        except Exception as e:
-            print(f"Stripe Error: {e}", flush=True)
-
-            async with self:
-                self.has_stripe_qr_generation_failed = True
-
-            return
-
-        if self.current_stripe_session_id == "":
-            return
+                self.current_stripe_session_id = f"TEST-STRIPE-ID-{short_uid()}"
+                self.payment_qr_code = "TEST_URL"
 
         def generate_stripe_payment_row(order_id):
             return [
