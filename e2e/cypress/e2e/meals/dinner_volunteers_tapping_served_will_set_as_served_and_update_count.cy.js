@@ -12,7 +12,7 @@ describe("When an admin user clicks served for a volunteer's dinner meal", () =>
   it("it will show as served and increment the volunteers served count with the guests served staying the same", function () {
     createVolunteerUserApi(username);
     cy.visit("/admin/dinner");
-    cy.contains(receiver);
+    cy.contains(receiver, { timeout: 60000 });
     getDataTestIdElement("total-served").invoke("text").as("totalServed");
     getDataTestIdElement("total-guests-served")
       .invoke("text")
@@ -61,7 +61,7 @@ describe("When an admin user clicks served for a volunteer's dinner meal", () =>
           "have.text",
           `Total served: ${getTotalServedInt(this.totalServed) - 1}`,
         );
-        getDataTestIdElement("total-served").should(
+        getDataTestIdElement("total-guests-served").should(
           "have.text",
           this.totalGuestsServed,
         );

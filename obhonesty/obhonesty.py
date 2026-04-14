@@ -13,6 +13,7 @@ from obhonesty.sheet import (
     order_sheet,
     admin_sheet,
     stripe_payments_sheet,
+    payments_sheet,
 )
 from obhonesty.models import (
     User as User_Model,
@@ -21,6 +22,7 @@ from obhonesty.models import (
     Admin as Admin_Model,
     Meal as Meal_Model,
     Stripe_Checkout_Session,
+    Payment,
 )
 from obhonesty.aux import (
     check_internet_connection,
@@ -120,10 +122,6 @@ def sync_new_orders(unsynced_orders):
                 order.served,
                 order.tax_category,
                 order.comment,
-                order.paid,
-                order.paid_time,
-                order.method,
-                order.checkout_staff,
             ]
         )
     order_sheet.append_rows(
@@ -176,10 +174,6 @@ def sync_orders():
                 "served",
                 "tax_category",
                 "comment",
-                "paid",
-                "paid_time",
-                "method",
-                "checkout_staff",
             ],
             True,
         )
@@ -192,7 +186,6 @@ def sync_orders():
                 order["user_nick_name"] = order["user"]
                 del order["user"]
                 sanitise_record_strings(order_string_columns, order)
-                order["paid"] = order["paid"].lower() in ["true", "yes"]
 
             for row in session.exec(Order_Model.select()).all():
                 session.delete(row)
@@ -482,6 +475,49 @@ def sync_new_stripe_checkout_sessions():
     )
 
 
+def sync_payments():
+    payment_data = get_records(
+        payments_sheet,
+        [
+            "order_id",
+            "paid_time",
+            "method",
+            "checkout_staff",
+        ],
+    )
+    payment_order_ids: list[str] = [payment["order_id"] for payment in payment_data]
+
+    with rx.session() as session:
+        unsynced_payments: list[Payment] = (
+            session.query(Payment)
+            .filter(Payment.order_id.not_in(payment_order_ids))
+            .all()
+        )
+
+        if len(unsynced_payments):
+            session.close()
+            payments_sheet.append_rows(
+                [
+                    [
+                        unsynced_payment.order_id,
+                        unsynced_payment.paid_time,
+                        unsynced_payment.method,
+                        unsynced_payment.checkout_staff,
+                    ]
+                    for unsynced_payment in unsynced_payments
+                ],
+                value_input_option="USER_ENTERED",
+                table_range="A1",
+            )
+            return
+
+        for row in session.exec(Payment.select()).all():
+            session.delete(row)
+
+        session.add_all(Payment.model_validate(payment) for payment in payment_data)
+        session.commit()
+
+
 async def sync_google_sheet_and_local_db():
     sync_orders()
     await asyncio.sleep(1)
@@ -492,6 +528,8 @@ async def sync_google_sheet_and_local_db():
     sync_admin_data()
     await asyncio.sleep(1)
     sync_new_stripe_checkout_sessions()
+    await asyncio.sleep(1)
+    sync_payments()
 
 
 async def run_loop_tasks():

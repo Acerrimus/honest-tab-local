@@ -14,7 +14,7 @@ describe("When an admin user clicks served for a guest's dinner meal", () => {
     createGuestUserApi(username);
     createDinnerOrderApi(username, receiver);
     cy.visit("/admin/dinner");
-    cy.contains(receiver);
+    cy.contains(receiver, {timeout: 60000});
     getDataTestIdElement("total-served").invoke("text").as("totalServed");
     getDataTestIdElement("total-guests-served")
       .invoke("text")
@@ -30,7 +30,7 @@ describe("When an admin user clicks served for a guest's dinner meal", () => {
         cy.wrap($servedButtonEl).click().should("have.text", "✅");
         getDataTestIdElement("total-served").should(
           "have.text",
-          `Total served: ${getTotalServedInt(this.totalServed) + 1}`,
+          `Total served: ${getTotalServedInt(this.totalServed) + 1}`,{timeout: 60000}
         );
         getDataTestIdElement("total-volunteers-served").should(
           "have.text",

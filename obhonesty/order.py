@@ -19,10 +19,6 @@ class Order(rx.Base):
     served: str
     tax_category: str
     comment: str
-    paid: bool | None
-    paid_time: str | None
-    method: str | None
-    checkout_staff: str | None
     synced: bool
 
     @property
@@ -45,9 +41,5 @@ class Order(rx.Base):
             served=x["served"],
             tax_category=x["tax_category"],
             comment=x["comment"],
-            paid=x.get("paid"),
-            paid_time=x.get("paid_time"),
-            method=x.get("method"),
-            checkout_staff=x.get("checkout_staff"),
             synced=x["synced"],
         )

@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Literal
 from urllib.parse import quote
 import reflex as rx
 import stripe
-from sqlalchemy import update, select
+from sqlalchemy import update, select, exists
 from dotenv import load_dotenv
 import os
 from gspread import Cell
@@ -17,7 +17,7 @@ from obhonesty.constants import true_values, DATETIME_FORMAT
 from obhonesty.user import User
 from obhonesty.item import Item
 from obhonesty.order import Order
-from obhonesty.sheet import order_sheet, user_sheet, stripe_payments_sheet
+from obhonesty.sheet import user_sheet, stripe_payments_sheet
 from obhonesty.models import (
     User as User_Model,
     Order as Order_Model,
@@ -25,6 +25,7 @@ from obhonesty.models import (
     Admin as Admin_Model,
     Meal as Meal_Model,
     Stripe_Checkout_Session,
+    Payment,
 )
 
 load_dotenv()
@@ -378,7 +379,7 @@ class State(rx.State):
     async def reload_admin_dinner_data(self):
         while self.router.page.path in ["/admin/breakfast", "/admin/dinner"]:
             yield State.reload_sheet_data  # , State.update_meal_totals]
-            await asyncio.sleep(10)
+            await asyncio.sleep(3)
 
     @rx.event
     def handle_user_login_form_submit(self, form_data):
@@ -455,13 +456,20 @@ class State(rx.State):
                     served="",
                     tax_category=item.tax_category,
                     comment="",
-                    paid=self.is_stripe_session_paid,
-                    paid_time=now if self.is_stripe_session_paid else "",
-                    method="stripe" if self.is_stripe_session_paid else "",
-                    checkout_staff="tablet" if self.is_stripe_session_paid else "",
                     synced=False,
                 )
             )
+
+            if self.is_stripe_session_paid:
+                session.add(
+                    Payment(
+                        order_id=self.item_uuid,
+                        paid_time=now,
+                        method="stripe-tablet",
+                        checkout_staff="",
+                    )
+                )
+
             session.commit()
 
         if self.is_stripe_session_paid:
@@ -494,17 +502,10 @@ class State(rx.State):
                     served="",
                     tax_category=form_data["tax_category"],
                     comment=form_data["custom_item_description"],
-                    paid=self.is_stripe_session_paid,
-                    paid_time=now if self.is_stripe_session_paid else "",
-                    method="stripe" if self.is_stripe_session_paid else "",
-                    checkout_staff="tablet" if self.is_stripe_session_paid else "",
                     synced=False,
                 )
             )
             session.commit()
-
-        if self.is_stripe_session_paid:
-            self.is_payment_status_written_to_db = True
 
         return rx.toast.info(
             f"'{item_name}' registered succesfully. Thank you!",
@@ -547,13 +548,20 @@ class State(rx.State):
                     served="",
                     tax_category="Food and beverage non-alcoholic",
                     comment="",
-                    paid=self.is_stripe_session_paid,
-                    paid_time=now if self.is_stripe_session_paid else "",
-                    method="stripe" if self.is_stripe_session_paid else "",
-                    checkout_staff="tablet" if self.is_stripe_session_paid else "",
                     synced=False,
                 )
             )
+
+            if self.is_stripe_session_paid:
+                session.add(
+                    Payment(
+                        order_id=self.item_uuid,
+                        paid_time=now,
+                        method="stripe-tablet",
+                        checkout_staff="",
+                    )
+                )
+
             session.commit()
 
         events = [rx.toast.info("Dinner sign-up registration successful!")]
@@ -658,10 +666,6 @@ class State(rx.State):
                     served="",
                     tax_category="Food and beverage non-alcoholic",
                     comment="Late dinner signup",
-                    paid=False,
-                    paid_time="",
-                    method="",
-                    checkout_staff="",
                     synced=False,
                 )
             )
@@ -701,13 +705,20 @@ class State(rx.State):
                     served="",
                     tax_category="Food and beverage non-alcoholic",
                     comment="",
-                    paid=self.is_stripe_session_paid,
-                    paid_time=now if self.is_stripe_session_paid else "",
-                    method="stripe" if self.is_stripe_session_paid else "",
-                    checkout_staff="tablet" if self.is_stripe_session_paid else "",
                     synced=False,
                 )
             )
+
+            if self.is_stripe_session_paid:
+                session.add(
+                    Payment(
+                        order_id=self.item_uuid,
+                        paid_time=now,
+                        method="stripe-tablet",
+                        checkout_staff="",
+                    )
+                )
+
             session.commit()
 
         events = [rx.toast.info("Breakfast sign-up registration successful!")]
@@ -790,55 +801,18 @@ class State(rx.State):
 
     @rx.event
     def pay_current_tab(self):
-        if not order_sheet:
-            return rx.error("No backend connected")
-
-        def filter_current_user_orders(order_enumerate: list[int, Order]) -> bool:
-            order = order_enumerate[1]
-            return (
-                order.user_nick_name == self.current_user.nick_name and not order.paid
-            )
-
-        current_users_unpaid_orders = list(
-            filter(
-                filter_current_user_orders,
-                [[i + 2, v] for i, v in enumerate(self.orders)],
-            )
-        )
-        cells = []
         now = datetime.now().strftime(DATETIME_FORMAT)
-        for row_num, _ in current_users_unpaid_orders:
-            for col_num, value in [
-                [14, True],
-                [15, now],
-                [16, "stripe"],
-                [17, "tablet"],
-            ]:
-                cells.append(Cell(row=row_num, col=col_num, value=value))
-        try:
-            order_sheet.update_cells(cells, value_input_option="USER_ENTERED")
-
-        except Exception as e:
-            error_message = f"Error updating cells: {e}"
-            print(f"{error_message} - {datetime.now()}")
-            return rx.toast.error(f"Error updating cells: {e}")
 
         with rx.session() as session:
-            unpaid_orders = (
-                session.query(Order_Model)
-                .filter(
-                    Order_Model.user_nick_name == self.current_user.nick_name,
-                    Order_Model.paid == False,
+            for order in self.current_user_orders:
+                session.add(
+                    Payment(
+                        order_id=order.order_id,
+                        paid_time=now,
+                        method="stripe-tablet",
+                        checkout_staff="",
+                    )
                 )
-                .all()
-            )
-
-            for order in unpaid_orders:
-                order.paid = True
-                order.paid_time = now
-                order.method = "stripe"
-                order.checkout_staff = "tablet"
-                order.synced = True
 
             session.commit()
 
@@ -1156,7 +1130,7 @@ class State(rx.State):
             .query(Order_Model)
             .filter(
                 Order_Model.user_nick_name == self.current_user.nick_name,
-                Order_Model.paid == False,
+                ~exists().where(Payment.order_id == Order_Model.order_id),
             )
             .all()
         )

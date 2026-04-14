@@ -43,11 +43,14 @@ class Order(rx.Model, table=True):
     served: str
     tax_category: str
     comment: str
-    paid: bool | None
-    paid_time: str | None
-    method: str | None
-    checkout_staff: str | None
     synced: bool
+
+
+class Payment(rx.Model, table=True):
+    order_id: str
+    paid_time: str
+    method: str
+    checkout_staff: str
 
 
 class Stripe_Checkout_Session(rx.Model, table=True):

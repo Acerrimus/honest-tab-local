@@ -4,6 +4,7 @@ import {
   generateOrderDetails,
   getUserOrdersAPI,
 } from "../../steps/orders";
+import { getPaymentApi } from "../../steps/payments";
 import {
   createGuestUserApi,
   generateUsername,
@@ -46,9 +47,13 @@ describe("When a current guest successfully pays their tab and chooses to not ch
 
   it("all their orders will have a paid status", () => {
     cy.waitUntil(() =>
-      getUserOrdersAPI(username).then((response) =>
-        response.body.orders.every((order) => order.paid),
-      ),
+      getUserOrdersAPI(username).then((response) => {
+        cy.wrap(response.body.orders).each((order) => {
+          getPaymentApi(order.order_id).then((paymentResponse) => {
+            expect(paymentResponse.body.payment.order_id).to.eq(order.order_id);
+          });
+        });
+      }),
     );
   });
 });

@@ -4,6 +4,7 @@ import {
   generateOrderDetails,
   getUserOrdersAPI,
 } from "../../steps/orders";
+import { getPaymentApi } from "../../steps/payments";
 import {
   createGuestUserApi,
   generateUsername,
@@ -24,7 +25,9 @@ describe("When a user pays for their dinner", () => {
       expect(response.body.orders).to.have.lengthOf(1);
       const order = response.body.orders[0];
       expect(order.item).to.eq("Dinner sign-up");
-      expect(order.paid).to.be.true;
+      getPaymentApi(order.order_id).then((paymentResponse) => {
+        expect(paymentResponse.body.payment.order_id).to.eq(order.order_id);
+      });
     });
     const itemName = "REGISTERED TEST ITEM";
     const orderDetails = generateOrderDetails(username, itemName);

@@ -1,4 +1,6 @@
 import { getDataTestIdElement } from "../../helpers";
+import { getUserOrdersAPI } from "../../steps/orders";
+import { getPaymentApi } from "../../steps/payments";
 import {
   createGuestUserApi,
   generateUsername,
@@ -19,5 +21,13 @@ describe("When a user orders an item", () => {
     getDataTestIdElement("item_register").click();
     getDataTestIdElement("view-orders-button").click();
     getDataTestIdElement("ordered_item").contains("TEST ITEM");
+    getUserOrdersAPI(username).then((userOrdersresponse) => {
+      expect(userOrdersresponse.body.orders).to.have.lengthOf(1);
+      const order = userOrdersresponse.body.orders[0];
+      expect(order.item).to.eq("TEST ITEM");
+      getPaymentApi(order.order_id).then((paymentResponse) => {
+        expect(paymentResponse.body.payment).to.eq("None found");
+      });
+    });
   });
 });

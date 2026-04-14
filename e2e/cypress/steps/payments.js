@@ -4,3 +4,10 @@ export function getStripeCheckoutSessionsApi(username) {
     qs: { username },
   });
 }
+
+export function getPaymentApi(order_id) {
+  return cy.request({
+    url: "http://app:8000/api/test/payments",
+    qs: { order_id },
+  });
+}

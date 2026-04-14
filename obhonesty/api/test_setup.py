@@ -1,6 +1,6 @@
 import reflex as rx
 from fastapi import FastAPI, status
-from obhonesty.models import User, Order, Stripe_Checkout_Session
+from obhonesty.models import User, Order, Stripe_Checkout_Session, Payment
 
 fastapi_app = FastAPI(title="Honesty Bar API")
 
@@ -45,10 +45,6 @@ async def create_test_order(
     served: str,
     tax_category: str,
     comment: str,
-    paid: bool,
-    paid_time: str,
-    method: str,
-    checkout_staff: str,
 ):
     with rx.session() as session:
         session.add(
@@ -66,10 +62,6 @@ async def create_test_order(
                 served=served,
                 tax_category=tax_category,
                 comment=comment,
-                paid=paid,
-                paid_time=paid_time,
-                method=method,
-                checkout_staff=checkout_staff,
                 synced=False,
             )
         )
@@ -99,3 +91,11 @@ async def get_stripe_checkout_sessions(username: str):
                 checkout_session.model_dump() for checkout_session in checkout_sessions
             ]
         }
+
+
+@fastapi_app.get("/api/test/payments")
+async def get_payment(order_id: str):
+    with rx.session() as session:
+        payment = session.query(Payment).filter(Payment.order_id == order_id).first()
+
+    return {"payment": payment.model_dump() if payment else "None found"}

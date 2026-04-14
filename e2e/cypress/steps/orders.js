@@ -45,23 +45,15 @@ export function generateOrderDetails(username, item = "TEST ITEM") {
     served: "",
     tax_category: "",
     comment: "",
-    paid: false,
-    paid_time: "",
-    method: "",
-    checkout_staff: "",
   };
 }
 
 export function createDinnerOrderApi(username, receiver) {
   const dinnerOrder = {
     price: 12.0,
-    paid: false,
     total: 12.0,
-    paid_time: "",
     receiver: receiver,
-    method: "",
     diet: "Vegan",
-    checkout_staff: "",
     user_nick_name: username,
     allergies: "",
     synced: false,

@@ -4,7 +4,7 @@ import {
   generateOrderDetails,
   getUserOrdersAPI,
 } from "../../steps/orders";
-import { getStripeCheckoutSessionsApi } from "../../steps/payments";
+import { getPaymentApi, getStripeCheckoutSessionsApi } from "../../steps/payments";
 import {
   createGuestUserApi,
   generateUsername,
@@ -28,7 +28,6 @@ describe("When a user pays for an item", () => {
       expect(userOrdersresponse.body.orders).to.have.lengthOf(1);
       const order = userOrdersresponse.body.orders[0];
       expect(order.item).to.eq("TEST ITEM");
-      expect(order.paid).to.be.true;
       getStripeCheckoutSessionsApi(username).then(
         (stripeCheckoutSessionsResponse) => {
           expect(stripeCheckoutSessionsResponse.body.checkout_sessions).to.have.lengthOf(
@@ -42,6 +41,9 @@ describe("When a user pays for an item", () => {
           );
         },
       );
+      getPaymentApi(order.order_id).then(paymentResponse => {
+        expect(paymentResponse.body.payment.order_id).to.eq(order.order_id)
+      })
     });
     const itemName = "REGISTERED TEST ITEM";
     const orderDetails = generateOrderDetails(username, itemName);
