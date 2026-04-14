@@ -4,6 +4,7 @@ import {
   generateOrderDetails,
   getUserOrdersAPI,
 } from "../../steps/orders";
+import { getStripeCheckoutSessionsApi } from "../../steps/payments";
 import {
   createGuestUserApi,
   generateUsername,
@@ -23,11 +24,24 @@ describe("When a user pays for an item", () => {
     getDataTestIdElement("stripe_qr_code_image");
     getDataTestIdElement("stripe_payment_successful_text").should("be.visible");
     cy.contains("'TEST ITEM' registered succesfully. Thank you!");
-    getUserOrdersAPI(username).then((response) => {
-      expect(response.body.orders).to.have.lengthOf(1);
-      const order = response.body.orders[0];
+    getUserOrdersAPI(username).then((userOrdersresponse) => {
+      expect(userOrdersresponse.body.orders).to.have.lengthOf(1);
+      const order = userOrdersresponse.body.orders[0];
       expect(order.item).to.eq("TEST ITEM");
       expect(order.paid).to.be.true;
+      getStripeCheckoutSessionsApi(username).then(
+        (stripeCheckoutSessionsResponse) => {
+          expect(stripeCheckoutSessionsResponse.body.checkout_sessions).to.have.lengthOf(
+            1,
+          );
+          expect(
+            stripeCheckoutSessionsResponse.body.checkout_sessions[0].order_id,
+          ).to.eq(order.order_id);
+          expect(stripeCheckoutSessionsResponse.body.checkout_sessions[0].user).to.eq(
+            username,
+          );
+        },
+      );
     });
     const itemName = "REGISTERED TEST ITEM";
     const orderDetails = generateOrderDetails(username, itemName);
