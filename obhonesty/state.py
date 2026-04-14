@@ -819,6 +819,8 @@ class State(rx.State):
             order_sheet.update_cells(cells, value_input_option="USER_ENTERED")
 
         except Exception as e:
+            error_message = f"Error updating cells: {e}"
+            print(f"{error_message} - {datetime.now()}")
             return rx.toast.error(f"Error updating cells: {e}")
 
         with rx.session() as session:
