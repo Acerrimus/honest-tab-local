@@ -1326,3 +1326,7 @@ class State(rx.State):
         return [
             o.order_id for o in self.current_user_orders if o.item == "Dinner sign-up"
         ][: self.current_user.prepaid_dinners_quantity]
+
+    @rx.var
+    def are_user_buttons_disabled(self) -> bool:
+        return self.is_stripe_dialog_active or self.is_logging_user_in

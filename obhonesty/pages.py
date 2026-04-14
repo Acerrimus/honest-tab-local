@@ -319,7 +319,7 @@ def item_button(item: Item) -> rx.Component:
                 # Reset temp quantity to 1 every time we open a fresh dialog
                 on_click=lambda: State.open_item_dialog(item.name),
                 **{"data-testid": f"order_item_button"},
-                disabled=State.is_stripe_dialog_active | State.is_logging_user_in,
+                disabled=State.are_user_buttons_disabled,
             )
         ),
         rx.cond(
@@ -407,6 +407,7 @@ def user_page() -> rx.Component:
                             on_click=rx.redirect("/info"),
                             color_scheme="green",
                             size=default_button_size,
+                            disabled=State.are_user_buttons_disabled,
                             **{"data-testid": "view-orders-button"},
                         ),
                         logout_button(),
@@ -424,8 +425,11 @@ def user_page() -> rx.Component:
                             ),
                             on_click=rx.redirect("/breakfast"),
                             size=default_button_size,
-                            disabled=~State.breakfast_signup_available
-                            & (not is_test_environment),
+                            disabled=(
+                                ~State.breakfast_signup_available
+                                & (not is_test_environment)
+                            )
+                            | State.are_user_buttons_disabled,
                             **{"data-testid": "breakfast-signup-button"},
                         ),
                         rx.text(
@@ -443,8 +447,11 @@ def user_page() -> rx.Component:
                             ),
                             on_click=rx.redirect("/dinner"),
                             size=default_button_size,
-                            disabled=~State.dinner_signup_available
-                            & (not is_test_environment),
+                            disabled=(
+                                ~State.dinner_signup_available
+                                & (not is_test_environment)
+                            )
+                            | State.are_user_buttons_disabled,
                             **{"data-testid": "dinner-signup-button"},
                         ),
                         rx.text(
@@ -461,6 +468,7 @@ def user_page() -> rx.Component:
                             on_click=rx.redirect("/info"),
                             size=default_button_size,
                             color_scheme="yellow",
+                            disabled=State.are_user_buttons_disabled,
                             **{"data-testid": "pay-tab-button"},
                         ),
                         rx.text(
@@ -492,6 +500,7 @@ def user_page() -> rx.Component:
                             color_scheme="sky",
                             on_click=rx.redirect("/custom_item"),
                             size=default_button_size,
+                            disabled=State.are_user_buttons_disabled,
                         ),
                         align="center",
                     ),
