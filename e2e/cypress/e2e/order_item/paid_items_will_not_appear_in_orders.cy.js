@@ -20,6 +20,7 @@ describe("When a user pays for an item", () => {
       .filter(":contains(TEST ITEM (€1.00))")
       .click();
     getDataTestIdElement("item_pay_now").click();
+    getDataTestIdElement("stripe_qr_code_image");
     getDataTestIdElement("stripe_payment_successful_text").should("be.visible");
     cy.contains("'TEST ITEM' registered succesfully. Thank you!");
     getUserOrdersAPI(username).then((response) => {
