@@ -1,6 +1,6 @@
 import reflex as rx
 from fastapi import FastAPI, status
-from obhonesty.models import User, Order
+from obhonesty.models import User, Order, Stripe_Checkout_Session
 
 fastapi_app = FastAPI(title="Honesty Bar API")
 
@@ -83,3 +83,19 @@ async def get_test_orders(username: str):
     with rx.session() as session:
         orders = session.query(Order).filter(Order.user_nick_name == username).all()
         return {"orders": [order.model_dump() for order in orders]}
+
+
+@fastapi_app.get("/api/test/stripe-checkout-sessions")
+async def get_stripe_checkout_sessions(username: str):
+    with rx.session() as session:
+        checkout_sessions = (
+            session.query(Stripe_Checkout_Session)
+            .filter(Stripe_Checkout_Session.user == username)
+            .all()
+        )
+
+        return {
+            "checkout_sessions": [
+                checkout_session.model_dump() for checkout_session in checkout_sessions
+            ]
+        }
