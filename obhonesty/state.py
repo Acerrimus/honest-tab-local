@@ -24,6 +24,7 @@ from obhonesty.models import (
     Item as Item_Model,
     Admin as Admin_Model,
     Meal as Meal_Model,
+    Stripe_Checkout_Session,
 )
 
 load_dotenv()
@@ -973,6 +974,9 @@ class State(rx.State):
                         (datetime.now(UTC) + timedelta(minutes=30)).timestamp()
                     ),
                 )
+                datetime_requested = datetime.fromtimestamp(session.created).strftime(
+                    DATETIME_FORMAT
+                )
 
                 async with self:
                     # 2. Generate QR Code pointing to that Stripe URL
@@ -991,45 +995,38 @@ class State(rx.State):
                 return
 
         else:
+            datetime_requested = datetime.now().strftime(DATETIME_FORMAT)
+
             async with self:
                 self.current_stripe_session_id = f"TEST-STRIPE-ID-{short_uid()}"
                 self.payment_qr_code = "TEST_URL"
 
-        def generate_stripe_payment_row(order_id):
-            return [
-                str(short_uid()),
-                datetime.now().strftime(DATETIME_FORMAT),
-                self.current_stripe_session_id,
-                ob_payment_id,
-                order_id,
-                self.current_user.nick_name,
-            ]
-
-        stripe_payment_rows_to_add = []
+        order_ids = []
 
         if item_name == "tab":
-            stripe_payment_rows_to_add = [
-                generate_stripe_payment_row(order.order_id)
-                for order in self.current_user_orders
-            ]
+            order_ids = [order.order_id for order in self.current_user_orders]
 
         else:
             async with self:
                 self.item_uuid = str(short_uid())
 
-            stripe_payment_rows_to_add.append(
-                generate_stripe_payment_row(self.item_uuid)
-            )
+            order_ids.append(self.item_uuid)
 
-        try:
-            # log payment session so it can be tracked by staff in case of payment issues
-            stripe_payments_sheet.append_rows(
-                stripe_payment_rows_to_add,
-                value_input_option="USER_ENTERED",
-                table_range="A1",
-            )
-        except Exception as e:
-            print(f"Error adding payments to stripe_payments_sheet: {e}")
+        with rx.session() as session:
+            for order_id in order_ids:
+                session.add(
+                    Stripe_Checkout_Session(
+                        payment_order_id=str(short_uid()),
+                        datetime_requested=datetime_requested,
+                        stripe_payment_id=self.current_stripe_session_id,
+                        ob_payment_id=ob_payment_id,
+                        order_id=order_id,
+                        user=self.current_user.nick_name,
+                        synced=False,
+                    )
+                )
+
+            session.commit()
 
         return State.check_stripe_payment_status
 

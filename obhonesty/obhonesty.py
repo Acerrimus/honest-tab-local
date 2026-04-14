@@ -7,13 +7,20 @@ from datetime import datetime
 
 from obhonesty.pages import *
 from obhonesty.state import State
-from obhonesty.sheet import user_sheet, item_sheet, order_sheet, admin_sheet
+from obhonesty.sheet import (
+    user_sheet,
+    item_sheet,
+    order_sheet,
+    admin_sheet,
+    stripe_payments_sheet,
+)
 from obhonesty.models import (
     User as User_Model,
     Order as Order_Model,
     Item as Item_Model,
     Admin as Admin_Model,
     Meal as Meal_Model,
+    Stripe_Checkout_Session,
 )
 from obhonesty.aux import (
     check_internet_connection,
@@ -417,6 +424,64 @@ def update_meals_table():
             session.commit()
 
 
+def sync_new_stripe_checkout_sessions():
+    stripe_checkout_session_records = get_records(
+        stripe_payments_sheet,
+        [
+            "payment_order_id",
+            "datetime_requested",
+            "stripe_payment_id",
+            "ob_payment_id",
+            "order_id",
+            "user",
+        ],
+    )
+    stripe_checkout_session_record_payment_ids: list[str] = [
+        checkout_session["payment_order_id"]
+        for checkout_session in stripe_checkout_session_records
+    ]
+    remaining_unsynced_sessions: list[Stripe_Checkout_Session] = []
+
+    with rx.session() as session:
+        unsynced_stripe_checkout_session_rows = (
+            session.query(Stripe_Checkout_Session)
+            .filter(~Stripe_Checkout_Session.synced)
+            .all()
+        )
+
+        for unsynced_session in unsynced_stripe_checkout_session_rows:
+            if (
+                unsynced_session.payment_order_id
+                in stripe_checkout_session_record_payment_ids
+            ):
+                unsynced_session.synced = True
+                continue
+
+            remaining_unsynced_sessions.append(unsynced_session)
+
+        if len(session.new) or len(session.dirty) or len(session.deleted):
+            session.commit()
+
+    if not len(remaining_unsynced_sessions):
+        return
+
+    stripe_payments_sheet.append_rows(
+        [
+            [
+                remaining_unsynced_session.payment_order_id,
+                remaining_unsynced_session.datetime_requested,
+                remaining_unsynced_session.stripe_payment_id,
+                remaining_unsynced_session.ob_payment_id,
+                remaining_unsynced_session.order_id,
+                remaining_unsynced_session.user,
+            ]
+            for remaining_unsynced_session in remaining_unsynced_sessions
+        ],
+        value_input_option="USER_ENTERED",
+        table_range="A1",
+    )
+
+
 async def sync_google_sheet_and_local_db():
     sync_orders()
     await asyncio.sleep(1)
@@ -425,6 +490,8 @@ async def sync_google_sheet_and_local_db():
     sync_items()
     await asyncio.sleep(1)
     sync_admin_data()
+    await asyncio.sleep(1)
+    sync_new_stripe_checkout_sessions()
 
 
 async def run_loop_tasks():

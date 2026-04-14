@@ -50,6 +50,16 @@ class Order(rx.Model, table=True):
     synced: bool
 
 
+class Stripe_Checkout_Session(rx.Model, table=True):
+    payment_order_id: str
+    datetime_requested: str
+    stripe_payment_id: str
+    ob_payment_id: str
+    order_id: str
+    user: str
+    synced: bool
+
+
 class Item(rx.Model, table=True):
     name: str
     price: float
