@@ -1,4 +1,4 @@
-****# Honest Tab
+# Honest Tab
 
 A digital POS/tab system for small businesses, written in Python with [Reflex](https://reflex.dev/). Created for the [Olive Branch hostel](https://www.olivebranchelchorro.com/) in El Chorro, Spain.
 
