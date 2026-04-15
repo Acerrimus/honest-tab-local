@@ -1,5 +1,5 @@
 import { getDataTestIdElement } from "../../helpers";
-import { getUserOrdersAPI } from "../../steps/orders";
+import { getUserOrdersApi } from "../../steps/orders";
 import { getPaymentApi } from "../../steps/payments";
 import {
   createGuestUserApi,
@@ -29,7 +29,7 @@ describe("When a user pays for two items in a row", () => {
     getDataTestIdElement("stripe_payment_successful_text").should("be.visible");
     cy.contains("'TEST ITEM' registered succesfully. Thank you!");
     cy.waitUntil(() =>
-      getUserOrdersAPI(username).then((response) => {
+      getUserOrdersApi(username).then((response) => {
         cy.wrap(response.body.orders).each((order) => {
           getPaymentApi(order.order_id).then((paymentResponse) => {
             expect(paymentResponse.body.payment.order_id).to.eq(order.order_id);

@@ -1,8 +1,8 @@
 import { getDataTestIdElement } from "../../helpers";
 import {
-  createUserOrderAPI,
+  createUserOrderApi,
   generateOrderDetails,
-  getUserOrdersAPI,
+  getUserOrdersApi,
 } from "../../steps/orders";
 import { getPaymentApi } from "../../steps/payments";
 import {
@@ -20,7 +20,7 @@ describe("When a current guest successfully pays their tab and chooses to not ch
       generateOrderDetails(username, itemName),
     );
     cy.wrap(orderDetails).each((orderDetail) => {
-      createUserOrderAPI(orderDetail);
+      createUserOrderApi(orderDetail);
     });
     cy.visit("/");
     logUserOn(username);
@@ -47,7 +47,7 @@ describe("When a current guest successfully pays their tab and chooses to not ch
 
   it("all their orders will have a paid status", () => {
     cy.waitUntil(() =>
-      getUserOrdersAPI(username).then((response) => {
+      getUserOrdersApi(username).then((response) => {
         cy.wrap(response.body.orders).each((order) => {
           getPaymentApi(order.order_id).then((paymentResponse) => {
             expect(paymentResponse.body.payment.order_id).to.eq(order.order_id);

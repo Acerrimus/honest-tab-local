@@ -1,10 +1,13 @@
 import { getDataTestIdElement } from "../../helpers";
 import {
-  createUserOrderAPI,
+  createUserOrderApi,
   generateOrderDetails,
-  getUserOrdersAPI,
+  getUserOrdersApi,
 } from "../../steps/orders";
-import { getPaymentApi, getStripeCheckoutSessionsApi } from "../../steps/payments";
+import {
+  getPaymentApi,
+  getStripeCheckoutSessionsApi,
+} from "../../steps/payments";
 import {
   createGuestUserApi,
   generateUsername,
@@ -24,30 +27,30 @@ describe("When a user pays for an item", () => {
     getDataTestIdElement("stripe_qr_code_image");
     getDataTestIdElement("stripe_payment_successful_text").should("be.visible");
     cy.contains("'TEST ITEM' registered succesfully. Thank you!");
-    getUserOrdersAPI(username).then((userOrdersresponse) => {
+    getUserOrdersApi(username).then((userOrdersresponse) => {
       expect(userOrdersresponse.body.orders).to.have.lengthOf(1);
       const order = userOrdersresponse.body.orders[0];
       expect(order.item).to.eq("TEST ITEM");
       getStripeCheckoutSessionsApi(username).then(
         (stripeCheckoutSessionsResponse) => {
-          expect(stripeCheckoutSessionsResponse.body.checkout_sessions).to.have.lengthOf(
-            1,
-          );
+          expect(
+            stripeCheckoutSessionsResponse.body.checkout_sessions,
+          ).to.have.lengthOf(1);
           expect(
             stripeCheckoutSessionsResponse.body.checkout_sessions[0].order_id,
           ).to.eq(order.order_id);
-          expect(stripeCheckoutSessionsResponse.body.checkout_sessions[0].user).to.eq(
-            username,
-          );
+          expect(
+            stripeCheckoutSessionsResponse.body.checkout_sessions[0].user,
+          ).to.eq(username);
         },
       );
-      getPaymentApi(order.order_id).then(paymentResponse => {
-        expect(paymentResponse.body.payment.order_id).to.eq(order.order_id)
-      })
+      getPaymentApi(order.order_id).then((paymentResponse) => {
+        expect(paymentResponse.body.payment.order_id).to.eq(order.order_id);
+      });
     });
     const itemName = "REGISTERED TEST ITEM";
     const orderDetails = generateOrderDetails(username, itemName);
-    createUserOrderAPI(orderDetails);
+    createUserOrderApi(orderDetails);
     getDataTestIdElement("stripe_dialog_close").click();
     getDataTestIdElement("view-orders-button").click();
     getDataTestIdElement("ordered_item")

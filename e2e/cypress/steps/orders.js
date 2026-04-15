@@ -65,10 +65,10 @@ export function createDinnerOrderApi(username, receiver) {
     quantity: 1.0,
     comment: "",
   };
-  return createUserOrderAPI(dinnerOrder);
+  return createUserOrderApi(dinnerOrder);
 }
 
-export function createUserOrderAPI(qs) {
+export function createUserOrderApi(qs) {
   return cy.request({
     method: "POST",
     url: "http://app:8000/api/test/orders",
@@ -76,7 +76,7 @@ export function createUserOrderAPI(qs) {
   });
 }
 
-export function getUserOrdersAPI(username) {
+export function getUserOrdersApi(username) {
   return cy.request({
     url: "http://app:8000/api/test/orders",
     qs: { username },

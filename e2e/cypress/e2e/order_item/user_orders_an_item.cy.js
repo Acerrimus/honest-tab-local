@@ -1,5 +1,5 @@
 import { getDataTestIdElement } from "../../helpers";
-import { getUserOrdersAPI } from "../../steps/orders";
+import { getUserOrdersApi } from "../../steps/orders";
 import { getPaymentApi } from "../../steps/payments";
 import {
   createGuestUserApi,
@@ -21,7 +21,7 @@ describe("When a user orders an item", () => {
     getDataTestIdElement("item_register").click();
     getDataTestIdElement("view-orders-button").click();
     getDataTestIdElement("ordered_item").contains("TEST ITEM");
-    getUserOrdersAPI(username).then((userOrdersresponse) => {
+    getUserOrdersApi(username).then((userOrdersresponse) => {
       expect(userOrdersresponse.body.orders).to.have.lengthOf(1);
       const order = userOrdersresponse.body.orders[0];
       expect(order.item).to.eq("TEST ITEM");

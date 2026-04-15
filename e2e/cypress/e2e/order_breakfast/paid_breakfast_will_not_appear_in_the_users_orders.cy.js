@@ -1,8 +1,8 @@
 import { getDataTestIdElement } from "../../helpers";
 import {
-  createUserOrderAPI,
+  createUserOrderApi,
   generateOrderDetails,
-  getUserOrdersAPI,
+  getUserOrdersApi,
 } from "../../steps/orders";
 import { getPaymentApi } from "../../steps/payments";
 import {
@@ -23,7 +23,7 @@ describe("When a user pays for their breakfast", () => {
     getDataTestIdElement("breakfast-pay-now").click();
     getDataTestIdElement("stripe_qr_code_image");
     cy.contains("Breakfast sign-up registration successful!");
-    getUserOrdersAPI(username).then((response) => {
+    getUserOrdersApi(username).then((response) => {
       expect(response.body.orders).to.have.lengthOf(1);
       const order = response.body.orders[0];
       expect(order.item).to.eq("Breakfast sign-up");
@@ -33,7 +33,7 @@ describe("When a user pays for their breakfast", () => {
     });
     const itemName = "REGISTERED TEST ITEM";
     const orderDetails = generateOrderDetails(username, itemName);
-    createUserOrderAPI(orderDetails);
+    createUserOrderApi(orderDetails);
     getDataTestIdElement("stripe_dialog_close").click();
     getDataTestIdElement("view-orders-button").click();
     getDataTestIdElement("ordered_item")
