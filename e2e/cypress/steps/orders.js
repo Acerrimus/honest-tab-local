@@ -48,6 +48,26 @@ export function generateOrderDetails(username, item = "TEST ITEM") {
   };
 }
 
+export function createBreakfastOrderApi(username, receiver) {
+  const breakfastOrder = {
+    price: 8.0,
+    total: 8.0,
+    receiver: receiver,
+    diet: "Full English",
+    user_nick_name: username,
+    allergies: "",
+    synced: false,
+    time: generateFormattedTime(),
+    served: "",
+    item: "Breakfast sign-up",
+    tax_category: "Food and beverage non-alcoholic",
+    order_id: uuidv4(),
+    quantity: 1.0,
+    comment: "",
+  };
+  return createUserOrderApi(breakfastOrder);
+}
+
 export function createDinnerOrderApi(username, receiver) {
   const dinnerOrder = {
     price: 12.0,

@@ -1326,7 +1326,10 @@ def admin_breakfast() -> rx.Component:
                 admin_refresh_top_bar(),
                 rx.vstack(
                     rx.text.strong(f"Total eating breakfast: {State.breakfast_count}"),
-                    rx.text(f"Total served: {State.breakfast_count_served}"),
+                    rx.text(
+                        f"Total served: {State.breakfast_count_served}",
+                        **{"data-testid": "total-served"},
+                    ),
                     flex="1",
                 ),
                 rx.scroll_area(
