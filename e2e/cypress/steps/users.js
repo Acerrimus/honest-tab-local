@@ -1,7 +1,7 @@
 import { getDataTestIdElement } from "../helpers";
 
 export function generateUsername() {
-  return `CypressUser${Date.now()}`;
+  return `CypressUser${Date.now()}${Math.floor(Math.random()*90000) + 10000}`;
 }
 
 export function createUser(username) {
