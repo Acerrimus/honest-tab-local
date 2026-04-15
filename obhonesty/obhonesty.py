@@ -82,7 +82,7 @@ app.add_page(admin_user_page, route="/admin/user", on_load=State.reload_sheet_da
 app.add_page(
     late_dinner_signup_page,
     route="/admin/late",
-    on_load=[State.reset_late_dinner_user_nick_name, State.reload_sheet_data],
+    on_load=State.reload_sheet_data,
 )
 
 

@@ -51,6 +51,7 @@ class State(rx.State):
     is_closing_account: Optional[bool] = None
     is_email_login_incorrect = False
     late_dinner_user_nick_name: Optional[str] = None
+    late_dinner_diet: str = ""
     show_stripe_connection_failure_message = False
     show_stripe_timeout_message = False
     has_stripe_qr_generation_failed = False
@@ -129,6 +130,10 @@ class State(rx.State):
             return
 
         self.current_order_request_id = request_id
+
+    @rx.event
+    def set_late_dinner_diet(self, value: str):
+        self.late_dinner_diet = value
 
     @rx.event
     def reset_order_request_id(self):
@@ -269,6 +274,7 @@ class State(rx.State):
     @rx.event
     def reset_late_dinner_user_nick_name(self):
         self.late_dinner_user_nick_name = None
+        self.late_dinner_diet = ""
 
     @rx.event
     def cancel_timeout(self):
@@ -647,6 +653,14 @@ class State(rx.State):
 
     @rx.event
     def order_dinner_late(self, form_data: dict):
+        if (
+            not len(form_data["nick_name"])
+            or not form_data["full_name"]
+            or not form_data["allergies"]
+            or not len(self.late_dinner_diet)
+        ):
+            return rx.toast.error("Please fill in all the details!")
+
         now = datetime.now().strftime(DATETIME_FORMAT)
         price = self.admin_data.get("dinner_price", 0)
 
@@ -677,6 +691,8 @@ class State(rx.State):
             "/admin/late"
         )
         self.should_late_dinner_signup_form_reload = False
+
+        return State.reset_late_dinner_user_nick_name
 
     @rx.var(cache=False)
     def get_breakfast_price(self) -> float:

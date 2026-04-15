@@ -795,25 +795,6 @@ def late_dinner_signup_page() -> rx.Component:
                 rx.form(
                     rx.vstack(
                         rx.heading("Late dinner signup", size=default_heading_size),
-                        rx.text("Full name of dinner guest", weight="bold"),
-                        rx.input(
-                            placeholder="Full name", name="full_name", required=True
-                        ),
-                        rx.input(
-                            type="hidden",
-                            display="none",
-                            value=State.late_dinner_user_nick_name,
-                            name="nick_name",
-                        ),
-                        rx.text("Dietary preferences", weight="bold"),
-                        rx.select(
-                            [str(x) for x in Diet],
-                            placeholder="Select a dietary preference",
-                            name="diet",
-                            required=True,
-                        ),
-                        rx.text("Allergies", weight="bold"),
-                        rx.input(name="allergies"),
                         rx.hstack(
                             rx.cond(
                                 is_late_dinner_user_selected,
@@ -823,6 +804,7 @@ def late_dinner_signup_page() -> rx.Component:
                                         State.late_dinner_user_nick_name,
                                         weight="bold",
                                         size="5",
+                                        **{"data-testid": "late-signup-user-to-pay"},
                                     ),
                                 ),
                             ),
@@ -836,6 +818,9 @@ def late_dinner_signup_page() -> rx.Component:
                                         ),
                                         color_scheme=user_selection_button_colour_scheme,
                                         size=default_button_size,
+                                        **{
+                                            "data-testid": "late-signup-user-select-button"
+                                        },
                                     )
                                 ),
                                 rx.dialog.content(
@@ -849,9 +834,22 @@ def late_dinner_signup_page() -> rx.Component:
                                                 lambda user: rx.dialog.close(
                                                     user_button(
                                                         user.nick_name,
-                                                        on_click=lambda: State.set_late_dinner_user_nick_name(
-                                                            user.nick_name
-                                                        ),
+                                                        on_click=[
+                                                            lambda: State.set_late_dinner_user_nick_name(
+                                                                user.nick_name
+                                                            ),
+                                                            rx.set_value(
+                                                                "full-name",
+                                                                f"{user.first_name} {user.last_name}",
+                                                            ),
+                                                            rx.set_value(
+                                                                "allergies",
+                                                                user.allergies,
+                                                            ),
+                                                        ],
+                                                        **{
+                                                            "data-testid": f"late-signup-user-select-button-{user.nick_name}"
+                                                        },
                                                     )
                                                 ),
                                             ),
@@ -868,39 +866,94 @@ def late_dinner_signup_page() -> rx.Component:
                             ),
                             align="center",
                         ),
+                        rx.input(
+                            type="hidden",
+                            display="none",
+                            value=State.late_dinner_user_nick_name,
+                            name="nick_name",
+                        ),
+                        rx.vstack(
+                            rx.text("Full name of dinner guest", weight="bold"),
+                            rx.input(
+                                placeholder="Full name",
+                                name="full_name",
+                                required=True,
+                                **{"data-testid": "late-signup-full-name-input"},
+                                id="full-name",
+                                disabled=~is_late_dinner_user_selected,
+                            ),
+                            rx.text("Dietary preferences", weight="bold"),
+                            rx.select.root(
+                                rx.select.trigger(
+                                    placeholder="Select a dietary preference",
+                                    **{"data-testid": "late-signup-item-select"},
+                                ),
+                                rx.select.content(
+                                    rx.foreach(
+                                        [str(x) for x in Diet],
+                                        lambda item: rx.select.item(
+                                            item,
+                                            value=item,
+                                            **{
+                                                "data-testid": "late-signup-item-option"
+                                            },
+                                        ),
+                                    )
+                                ),
+                                name="diet",
+                                required=True,
+                                disabled=~is_late_dinner_user_selected,
+                                on_change=State.set_late_dinner_diet,
+                            ),
+                            rx.text(
+                                "Allergies",
+                                weight="bold",
+                            ),
+                            rx.input(
+                                name="allergies",
+                                id="allergies",
+                                disabled=~is_late_dinner_user_selected,
+                                **{"data-testid": "late-signup-allergies"},
+                            ),
+                        ),
                         rx.hstack(
                             rx.button(
                                 rx.text("Register", size=default_button_text_size),
                                 type="submit",
                                 size=default_button_size,
-                                disabled=~is_late_dinner_user_selected,
+                                disabled=~is_late_dinner_user_selected
+                                | State.late_dinner_diet
+                                != "",
+                                **{"data-testid": "late-signup-register-button"},
                             ),
                             rx.button(
                                 rx.text(
                                     "Register and add another",
                                     size=default_button_text_size,
+                                    **{
+                                        "data-testid": "late-signup-register-and-add-another-button"
+                                    },
                                 ),
                                 type="submit",
                                 size=default_button_size,
-                                disabled=~is_late_dinner_user_selected,
+                                disabled=~is_late_dinner_user_selected
+                                | State.late_dinner_diet
+                                != "",
                                 on_click=State.handle_add_another_press_for_late_dinner_signup,
-                            ),
-                            rx.button(
-                                rx.text("Cancel", size=default_button_text_size),
-                                on_click=[
-                                    State.reset_late_dinner_user_nick_name,
-                                    rx.redirect("/admin/dinner"),
-                                ],
-                                size=default_button_size,
                             ),
                         ),
                     ),
-                    on_submit=[
-                        State.order_dinner_late,
-                        State.reset_late_dinner_user_nick_name,
-                    ],
+                    on_submit=State.order_dinner_late,
                     reset_on_submit=True,
-                )
+                ),
+                rx.button(
+                    rx.text("Cancel", size=default_button_text_size),
+                    on_click=[
+                        State.reset_late_dinner_user_nick_name,
+                        rx.redirect("/admin/dinner"),
+                    ],
+                    size=default_button_size,
+                ),
             )
         )
     )
@@ -1217,8 +1270,8 @@ def show_signup(meal: Meal_Model):
 
     return rx.table.row(
         rx.table.cell(meal.receiver, **{"data-testid": "meal-receiver"}),
-        rx.table.cell(meal.diet),
-        rx.table.cell(meal.allergies),
+        rx.table.cell(meal.diet, **{"data-testid": "diet"}),
+        rx.table.cell(meal.allergies, **{"data-testid": "allergies"}),
         rx.cond(
             meal.meal_type == "dinner",
             rx.table.cell(rx.cond(meal.volunteer, "yes", "")),
@@ -1251,6 +1304,7 @@ def admin_dinner() -> rx.Component:
                         rx.text("Late sign-up", size=default_button_text_size),
                         on_click=rx.redirect("/admin/late"),
                         size=default_button_size,
+                        **{"data-testid": "late-signup-button"},
                     ),
                     spacing="2",
                 ),
