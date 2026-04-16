@@ -1,13 +1,15 @@
-import { getDataTestIdElement } from "../../helpers";
-import { getUserOrdersApi } from "../../steps/orders";
-import { createGuestUserApi, generateUsername } from "../../steps/users";
+import { getDataTestIdElement } from "../../../helpers";
+import { getUserOrdersApi } from "../../../steps/orders";
+import { createGuestUserApi, generateUsername } from "../../../steps/users";
 
-describe("When an admin user signs a guest up for late dinner", () => {
+describe("When an admin user signs a guest up for late dinner but changes the user", () => {
   const username = generateUsername();
-  const receiver = `${username.toUpperCase()} TEST`;
+  const secondUsername = generateUsername();
+  const receiver = `${secondUsername.toUpperCase()} TEST`;
 
   it("they will appear in the dinner list", function () {
     createGuestUserApi(username);
+    createGuestUserApi(secondUsername);
     cy.visit("/admin/dinner");
     getDataTestIdElement("late-signup-button").click();
     getDataTestIdElement("late-signup-user-select-button").click();
@@ -15,12 +17,25 @@ describe("When an admin user signs a guest up for late dinner", () => {
     getDataTestIdElement(`late-signup-user-select-button-${username}`).should(
       "not.exist",
     );
-    getDataTestIdElement("late-signup-user-to-pay").should("have.text", username)
+    getDataTestIdElement("late-signup-user-to-pay").should(
+      "have.text",
+      username,
+    );
     getDataTestIdElement("late-signup-full-name-input").should(
       "have.value",
       `${username} Test`,
     );
-    getDataTestIdElement("late-signup-allergies").should("have.value", "Nuts");
+    getDataTestIdElement("late-signup-user-select-button").click();
+    getDataTestIdElement(
+      `late-signup-user-select-button-${secondUsername}`,
+    ).click();
+    getDataTestIdElement(
+      `late-signup-user-select-button-${secondUsername}`,
+    ).should("not.exist");
+    getDataTestIdElement("late-signup-user-to-pay").should(
+      "have.text",
+      secondUsername,
+    );
     getDataTestIdElement("late-signup-item-select").click();
     getDataTestIdElement("late-signup-item-option")
       .first()
@@ -44,8 +59,14 @@ describe("When an admin user signs a guest up for late dinner", () => {
   });
 
   it("an order will have been made in their name", () => {
-    getUserOrdersApi(username).then((orderResponse) => {
+    getUserOrdersApi(secondUsername).then((orderResponse) => {
       expect(orderResponse.body.orders[0].item).to.eq("Dinner sign-up");
+    });
+  });
+
+  it("and not in the name of the other user", () => {
+    getUserOrdersApi(username).then((orderResponse) => {
+      expect(orderResponse.body.orders).to.have.lengthOf(0);
     });
   });
 });
