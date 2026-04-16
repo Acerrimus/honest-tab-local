@@ -136,6 +136,12 @@ class State(rx.State):
         self.late_dinner_diet = value
 
     @rx.event
+    def redirect_to_later_dinner_signup(self):
+        self.late_dinner_diet = ""
+        self.late_dinner_user_nick_name = ""
+        return rx.redirect("/admin/late")
+
+    @rx.event
     def reset_order_request_id(self):
         self.order_request_id = ""
         self.current_order_request_id = ""
@@ -656,7 +662,6 @@ class State(rx.State):
         if (
             not len(form_data["nick_name"])
             or not form_data["full_name"]
-            or not form_data["allergies"]
             or not len(self.late_dinner_diet)
         ):
             return rx.toast.error("Please fill in all the details!")
@@ -676,7 +681,7 @@ class State(rx.State):
                     total=price,
                     receiver=form_data["full_name"].upper().strip(),
                     diet=form_data["diet"],
-                    allergies=form_data["allergies"],
+                    allergies=form_data["allergies"] if form_data["allergies"] else "",
                     served="",
                     tax_category="Food and beverage non-alcoholic",
                     comment="Late dinner signup",
@@ -685,14 +690,13 @@ class State(rx.State):
             )
             session.commit()
 
-        yield rx.redirect(
-            "/admin/dinner"
-        ) if not self.should_late_dinner_signup_form_reload else rx.redirect(
-            "/admin/late"
-        )
+        events = [rx.toast(f"{form_data['full_name']} added successfully!")]
+        if not self.should_late_dinner_signup_form_reload:
+            events.append(rx.redirect("/admin/dinner"))
         self.should_late_dinner_signup_form_reload = False
-
-        return State.reset_late_dinner_user_nick_name
+        self.late_dinner_user_nick_name = None
+        self.late_dinner_diet = ""
+        return events
 
     @rx.var(cache=False)
     def get_breakfast_price(self) -> float:

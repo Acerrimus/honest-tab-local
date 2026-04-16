@@ -901,6 +901,7 @@ def late_dinner_signup_page() -> rx.Component:
                                     )
                                 ),
                                 name="diet",
+                                value=State.late_dinner_diet,
                                 required=True,
                                 disabled=~is_late_dinner_user_selected,
                                 on_change=State.set_late_dinner_diet,
@@ -923,7 +924,7 @@ def late_dinner_signup_page() -> rx.Component:
                                 size=default_button_size,
                                 disabled=~is_late_dinner_user_selected
                                 | State.late_dinner_diet
-                                != "",
+                                == "",
                                 **{"data-testid": "late-signup-register-button"},
                             ),
                             rx.button(
@@ -938,7 +939,7 @@ def late_dinner_signup_page() -> rx.Component:
                                 size=default_button_size,
                                 disabled=~is_late_dinner_user_selected
                                 | State.late_dinner_diet
-                                != "",
+                                == "",
                                 on_click=State.handle_add_another_press_for_late_dinner_signup,
                             ),
                         ),
@@ -1302,7 +1303,7 @@ def admin_dinner() -> rx.Component:
                     admin_refresh_top_bar(),
                     rx.button(
                         rx.text("Late sign-up", size=default_button_text_size),
-                        on_click=rx.redirect("/admin/late"),
+                        on_click=State.redirect_to_later_dinner_signup,
                         size=default_button_size,
                         **{"data-testid": "late-signup-button"},
                     ),
