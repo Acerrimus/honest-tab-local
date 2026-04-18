@@ -17,7 +17,7 @@ from obhonesty.sheet import (
 from obhonesty.models import (
     User as User_Model,
     Order as Order_Model,
-    Item as Item_Model,
+    Item,
     Admin as Admin_Model,
     Meal as Meal_Model,
     Stripe_Checkout_Session,
@@ -272,10 +272,10 @@ def sync_items():
             item_sheet, ["name", "price", "description", "tax_category"]
         )
 
-        for row in session.exec(Item_Model.select()).all():
+        for row in session.exec(Item.select()).all():
             session.delete(row)
 
-        session.add_all(Item_Model.model_validate(item) for item in item_data)
+        session.add_all(Item.model_validate(item) for item in item_data)
 
         # seeds a test item for e2e testing if it doesn't already exist
         if is_test_environment:
@@ -288,7 +288,7 @@ def sync_items():
 
             if not test_item_exists:
                 session.add(
-                    Item_Model.model_validate(
+                    Item.model_validate(
                         {
                             "name": "TEST ITEM",
                             "price": 1.0,

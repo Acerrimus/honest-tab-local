@@ -20,7 +20,7 @@ from obhonesty.sheet import user_sheet
 from obhonesty.models import (
     User as User_Model,
     Order as Order_Model,
-    Item as Item_Model,
+    Item,
     Admin as Admin_Model,
     Meal as Meal_Model,
     Stripe_Checkout_Session,
@@ -37,7 +37,7 @@ class State(rx.State):
 
     admin_data: Dict[str, Any] = {}
     users: List[User] = []
-    items: Dict[str, Item_Model] = {}
+    items: Dict[str, Item] = {}
     todays_breakfast_meals: List[Meal_Model] = []
     todays_dinner_meals: List[Meal_Model] = []
     current_user: Optional[User] = None
@@ -312,7 +312,7 @@ class State(rx.State):
             )
             items = {}
 
-            for row in session.exec(Item_Model.select()).all():
+            for row in session.exec(Item.select()).all():
                 if row.name == "":
                     continue
                 items[row.name] = row
