@@ -954,9 +954,7 @@ def late_dinner_signup_page() -> rx.Component:
                         rx.redirect("/admin/dinner"),
                     ],
                     size=default_button_size,
-                    **{
-                                        "data-testid": "late-signup-cancel-button"
-                                    }
+                    **{"data-testid": "late-signup-cancel-button"},
                 ),
             )
         )
