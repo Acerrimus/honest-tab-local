@@ -2,7 +2,7 @@ from datetime import datetime
 import reflex as rx
 from fastapi import FastAPI, status
 from obhonesty.models import User, Order, Stripe_Checkout_Session, Payment, Meal
-from obhonesty.aux import short_uid
+from obhonesty.aux import short_uid, get_madrid_datetime_now
 
 fastapi_app = FastAPI(title="Honesty Bar API")
 
@@ -123,7 +123,7 @@ async def create_dinner_meal_for_today(username: str, receiver: str):
                 order_id=str(short_uid()),
                 user_nick_name=username,
                 receiver=receiver,
-                order_time=datetime.now(),
+                order_time=get_madrid_datetime_now(),
                 meal_type="dinner",
                 diet="Meat",
                 allergies="",

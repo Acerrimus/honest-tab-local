@@ -5,6 +5,7 @@ from typing import Any, Optional
 import socket
 from datetime import datetime
 from reflex.vars import NumberVar, var_operation, var_operation_return
+from zoneinfo import ZoneInfo
 
 
 @var_operation
@@ -44,7 +45,7 @@ def check_internet_connection():
     try:
         socket.create_connection(("www.google.com", 443), timeout=3)
     except OSError:
-        print(f"No internet connection - {datetime.now()}", flush=True)
+        print(f"No internet connection - {get_madrid_datetime_now()}", flush=True)
         raise
 
 
@@ -71,3 +72,7 @@ def sanitise_record_strings(string_type_columns, record):
 
 def generate_receiver_from_names(first_name, last_name):
     return f"{first_name.upper().strip()} {last_name.upper().strip()}"
+
+
+def get_madrid_datetime_now():
+    return datetime.now(ZoneInfo("Europe/Madrid"))

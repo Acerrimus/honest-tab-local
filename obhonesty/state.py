@@ -12,6 +12,7 @@ from obhonesty.aux import (
     short_uid,
     generate_receiver_from_names,
     check_internet_connection,
+    get_madrid_datetime_now,
 )
 from obhonesty.constants import true_values, DATETIME_FORMAT
 from obhonesty.user import User
@@ -207,7 +208,7 @@ class State(rx.State):
                     not in str(e)
                 ):
                     print(
-                        f"Error expiring Stripe session: {e} - {datetime.now()}",
+                        f"Error expiring Stripe session: {e} - {get_madrid_datetime_now()}",
                         flush=True,
                     )
 
@@ -446,7 +447,7 @@ class State(rx.State):
         except BaseException:
             return rx.toast.error("Failed to register. Quantity must be a number")
 
-        now = datetime.now().strftime(DATETIME_FORMAT)
+        now = get_madrid_datetime_now().strftime(DATETIME_FORMAT)
 
         with rx.session() as session:
             session.add(
@@ -492,7 +493,7 @@ class State(rx.State):
 
     @rx.event
     def order_custom_item(self, form_data: dict):
-        now = datetime.now().strftime(DATETIME_FORMAT)
+        now = get_madrid_datetime_now().strftime(DATETIME_FORMAT)
         price = float(form_data["custom_item_price"])
         item_name = form_data["custom_item_name"]
 
@@ -538,7 +539,7 @@ class State(rx.State):
 
     @rx.event
     def order_dinner(self):
-        now = datetime.now().strftime(DATETIME_FORMAT)
+        now = get_madrid_datetime_now().strftime(DATETIME_FORMAT)
 
         with rx.session() as session:
             session.add(
@@ -685,7 +686,7 @@ class State(rx.State):
             ]
 
         with rx.session() as session:
-            now = datetime.now().strftime(DATETIME_FORMAT)
+            now = get_madrid_datetime_now().strftime(DATETIME_FORMAT)
             price = self.admin_data.get("dinner_price", 0)
             session.add(
                 Order_Model(
@@ -722,7 +723,7 @@ class State(rx.State):
     @rx.event
     def order_breakfast(self):
         price = self.get_breakfast_price if not self.current_user.volunteer else 0.0
-        now = datetime.now().strftime(DATETIME_FORMAT)
+        now = get_madrid_datetime_now().strftime(DATETIME_FORMAT)
 
         with rx.session() as session:
             session.add(
@@ -838,7 +839,7 @@ class State(rx.State):
 
     @rx.event
     def pay_current_tab(self):
-        now = datetime.now().strftime(DATETIME_FORMAT)
+        now = get_madrid_datetime_now().strftime(DATETIME_FORMAT)
 
         with rx.session() as session:
             for order in self.current_user_orders:
@@ -1008,7 +1009,7 @@ class State(rx.State):
                 return
 
         else:
-            datetime_requested = datetime.now().strftime(DATETIME_FORMAT)
+            datetime_requested = get_madrid_datetime_now().strftime(DATETIME_FORMAT)
 
             async with self:
                 self.current_stripe_session_id = f"TEST-STRIPE-ID-{short_uid()}"
@@ -1081,7 +1082,7 @@ class State(rx.State):
                     if stripe_error_message != str(e):
                         stripe_error_message = str(e)
                         print(
-                            f"Stripe Error: {stripe_error_message} - {datetime.now()}",
+                            f"Stripe Error: {stripe_error_message} - {get_madrid_datetime_now()}",
                             flush=True,
                         )
 
@@ -1181,6 +1182,9 @@ class State(rx.State):
             except BaseException:
                 pass
 
+        orders.sort(
+            key=lambda order: datetime.strptime(order.time, "%d/%m/%Y %H:%M:%S")
+        )
         return orders
 
     @rx.var(cache=False)
@@ -1209,7 +1213,7 @@ class State(rx.State):
             )
         except BaseException:
             deadline = datetime.strptime("22:59", "%H:%M")
-        now = datetime.now()
+        now = get_madrid_datetime_now()
         deadline_minutes = deadline.hour * 60 + deadline.minute
         now_minutes = now.hour * 60 + now.minute
         return now_minutes < deadline_minutes
@@ -1222,7 +1226,7 @@ class State(rx.State):
             )
         except BaseException:
             deadline = datetime.strptime("22:59", "%H:%M")
-        now = datetime.now()
+        now = get_madrid_datetime_now()
         deadline_minutes = deadline.hour * 60 + deadline.minute
         now_minutes = now.hour * 60 + now.minute
         return now_minutes < deadline_minutes

@@ -29,6 +29,7 @@ from obhonesty.aux import (
     sanitise_record_strings,
     short_uid,
     generate_receiver_from_names,
+    get_madrid_datetime_now,
 )
 from obhonesty.constants import DATETIME_FORMAT
 from obhonesty.api.test_setup import fastapi_app
@@ -325,7 +326,7 @@ def update_meals_table():
             .all()
         )
         orders: list[Order_Model] = session.exec(Order_Model.select()).all()
-        now = datetime.now()
+        now = get_madrid_datetime_now()
         todays_meals: list[Meal_Model] = (
             session.execute(Meal_Model.select_todays_meals()).scalars().all()
         )

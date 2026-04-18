@@ -1,6 +1,7 @@
 import reflex as rx
 from datetime import datetime, timedelta
 from sqlalchemy import select, func
+from obhonesty.aux import get_madrid_datetime_now
 
 # These classes specify the table info for the SQL database, storing google sheets data offline.
 # They must be updated if any new columns are added.
@@ -89,7 +90,7 @@ class Meal(rx.Model, table=True):
 
     @classmethod
     def select_todays_meals(cls, meal_type: str | None = None):
-        now = datetime.now()
+        now = get_madrid_datetime_now()
         today = now.date()
         start = datetime.combine(today, datetime.min.time())
         end = start + timedelta(days=1)
@@ -114,7 +115,7 @@ class Meal(rx.Model, table=True):
 
     @classmethod
     def get_todays_meal_counts(cls):
-        start = datetime.combine(datetime.now().date(), datetime.min.time())
+        start = datetime.combine(get_madrid_datetime_now().date(), datetime.min.time())
         end = start + timedelta(days=1)
         query_args = [
             cls.volunteer,
