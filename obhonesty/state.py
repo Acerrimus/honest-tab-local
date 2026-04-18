@@ -666,10 +666,29 @@ class State(rx.State):
         ):
             return rx.toast.error("Please fill in all the details!")
 
-        now = datetime.now().strftime(DATETIME_FORMAT)
-        price = self.admin_data.get("dinner_price", 0)
+        receiver = form_data["full_name"].upper().strip()
+
+        if (
+            rx.session()
+            .exec(
+                Meal_Model.select_todays_dinner_meals().where(
+                    Meal_Model.receiver == receiver
+                )
+            )
+            .first()
+            is not None
+        ):
+            return [
+                rx.set_value("full-name", form_data["full_name"]),
+                rx.set_value("allergies", form_data["allergies"]),
+                rx.toast.error(
+                    f"A guest with this full name ({receiver}) is already signed up for dinner! Change the full name to sign this guest up. The full name is not case sensitive."
+                ),
+            ]
 
         with rx.session() as session:
+            now = datetime.now().strftime(DATETIME_FORMAT)
+            price = self.admin_data.get("dinner_price", 0)
             session.add(
                 Order_Model(
                     order_id=str(short_uid()),
@@ -679,7 +698,7 @@ class State(rx.State):
                     quantity=1,
                     price=price,
                     total=price,
-                    receiver=form_data["full_name"].upper().strip(),
+                    receiver=receiver,
                     diet=form_data["diet"],
                     allergies=form_data["allergies"] if form_data["allergies"] else "",
                     served="",
