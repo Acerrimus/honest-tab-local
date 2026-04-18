@@ -244,9 +244,25 @@ def stripe_payment_dialog(name, amount) -> rx.Component:
                                 rx.spinner(size="3"),
                             ),
                             rx.text(f"Scan to pay via Stripe"),
-                            rx.text(
-                                "Total: €", two_decimal_points(amount), weight="bold"
+                            rx.vstack(
+                                rx.text(
+                                    f"Paying with Stripe incurs a System Provider Handling Fee of {SYSTEM_PROVIDER_HANDLING_FEE * 100}%"
+                                ),
+                                rx.text(
+                                    f"Subtotal: €{two_decimal_points(amount)}",
+                                    weight="bold",
+                                ),
+                                rx.text(
+                                    f"System Provider Handling Fee: €{two_decimal_points(State.stripe_system_provider_handling_fee_amount)}",
+                                    weight="bold",
+                                ),
+                                rx.text(
+                                    f"Total: €{two_decimal_points(State.stripe_total)}",
+                                    weight="bold",
+                                ),
+                                spacing="1",
                             ),
+                            rx.text("For other payment methods please see reception."),
                             spacing="4",
                         ),
                     ),

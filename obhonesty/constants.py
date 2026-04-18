@@ -1,14 +1,13 @@
 from enum import StrEnum
 
 true_values = ["yes", "true", "1", "y"]
-
 default_button_text_size = "4"
 default_heading_size = "7"
 default_text_size = "4"
 default_button_size = "4"
 ERROR_MESSAGE_COLOUR = "var(--red-11)"
-
 DATETIME_FORMAT = "%d/%m/%Y %H:%M:%S"
+SYSTEM_PROVIDER_HANDLING_FEE = 0.0325
 
 
 class Diet(StrEnum):

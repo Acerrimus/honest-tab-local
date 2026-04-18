@@ -14,7 +14,7 @@ from obhonesty.aux import (
     check_internet_connection,
     get_madrid_datetime_now,
 )
-from obhonesty.constants import true_values, DATETIME_FORMAT
+from obhonesty.constants import true_values, DATETIME_FORMAT, SYSTEM_PROVIDER_HANDLING_FEE
 from obhonesty.user import User
 from obhonesty.order import Order
 from obhonesty.sheet import user_sheet
@@ -89,6 +89,8 @@ class State(rx.State):
     is_stripe_session_paid: bool = False
     is_stripe_dialog_active: bool = False
     is_payment_status_written_to_db: bool = False
+    stripe_system_provider_handling_fee_amount: float = 0
+    stripe_total: float = 0
     # ------------------------------------
 
     # --- Item Payment State ---
@@ -918,12 +920,13 @@ class State(rx.State):
 
                         # stripe cannot accept more than 100 line items in a checkout session.
                         # if there are more than 100 items then it should display a total with a note to see reception for a full receipt
-                        if len(line_items) == 99:
+                        # the number of receipt items is capped at 99 to give room for the system provider handling fee
+                        if len(line_items) == 98:
                             last_item_total = (
                                 summarised_item_price_point * summarised_item_quantity
                             )
 
-                        if len(line_items) == 100:
+                        if len(line_items) == 99:
                             extra_line_item_total += (
                                 summarised_item_price_point * summarised_item_quantity
                             )
@@ -939,11 +942,13 @@ class State(rx.State):
 
                 if extra_line_item_total:
                     extra_line_item_total += last_item_total
-                    line_items[99] = generate_line_item(
+                    line_items[98] = generate_line_item(
                         "Remaining item total - see reception for full receipt",
                         extra_line_item_total,
                         1,
                     )
+
+                line_items.append(generate_line_item("System Provider Handling Fee", int(self.stripe_system_provider_handling_fee_amount * 100), 1))
 
             else:
                 quantity = (
@@ -964,6 +969,9 @@ class State(rx.State):
                 line_items.append(
                     generate_line_item(item_name, int(unit_price * 100), int(quantity))
                 )
+
+                line_items.append(generate_line_item("System Provider Handling Fee", int(self.stripe_system_provider_handling_fee_amount * 100), 1))
+
 
             # 1. Create Stripe Checkout Session
 
@@ -1123,7 +1131,9 @@ class State(rx.State):
     def show_stripe_item_payment_dialog(self, item_name: str, amount: float):
         if self.current_order_request_id != self.order_request_id:
             return
-
+        
+        self.stripe_system_provider_handling_fee_amount = amount * SYSTEM_PROVIDER_HANDLING_FEE
+        self.stripe_total = amount + self.stripe_system_provider_handling_fee_amount
         self.is_stripe_dialog_active = True
         return State.generate_item_payment_qr(item_name, amount)
 
