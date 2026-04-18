@@ -1,6 +1,9 @@
+from datetime import datetime
+
 import reflex as rx
 from fastapi import FastAPI, status
-from obhonesty.models import User, Order, Stripe_Checkout_Session, Payment
+from obhonesty.models import User, Order, Stripe_Checkout_Session, Payment, Meal
+from obhonesty.aux import short_uid
 
 fastapi_app = FastAPI(title="Honesty Bar API")
 
@@ -99,3 +102,36 @@ async def get_payment(order_id: str):
         payment = session.query(Payment).filter(Payment.order_id == order_id).first()
 
     return {"payment": payment.model_dump() if payment else "None found"}
+
+
+@fastapi_app.get("/api/test/meals/dinner/today")
+async def get_todays_dinner_meals():
+    with rx.session() as session:
+        todays_dinner_meals = (
+            session.execute(Meal.select_todays_dinner_meals()).scalars().all()
+        )
+
+        return {"meals": [row.model_dump() for row in todays_dinner_meals]}
+
+
+@fastapi_app.post("/api/test/meals/dinner/today", status_code=status.HTTP_201_CREATED)
+async def create_dinner_meal_for_today(username: str, receiver: str):
+    meal_id = str(short_uid())
+    with rx.session() as session:
+        session.add(
+            Meal(
+                meal_id=meal_id,
+                order_id=str(short_uid()),
+                user_nick_name=username,
+                receiver=receiver,
+                order_time=datetime.now(),
+                meal_type="dinner",
+                diet="Meat",
+                allergies="",
+                volunteer=False,
+                served=False,
+            )
+        )
+        session.commit()
+
+    return {"meal_id": meal_id, "message": "Test meal created successfully"}
