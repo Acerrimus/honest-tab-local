@@ -15,7 +15,6 @@ from obhonesty.aux import (
 )
 from obhonesty.constants import true_values, DATETIME_FORMAT
 from obhonesty.user import User
-from obhonesty.item import Item
 from obhonesty.order import Order
 from obhonesty.sheet import user_sheet
 from obhonesty.models import (
@@ -38,7 +37,7 @@ class State(rx.State):
 
     admin_data: Dict[str, Any] = {}
     users: List[User] = []
-    items: Dict[str, Item] = {}
+    items: Dict[str, Item_Model] = {}
     todays_breakfast_meals: List[Meal_Model] = []
     todays_dinner_meals: List[Meal_Model] = []
     current_user: Optional[User] = None
@@ -316,8 +315,7 @@ class State(rx.State):
             for row in session.exec(Item_Model.select()).all():
                 if row.name == "":
                     continue
-
-                items[row.name] = Item.from_dict(row.model_dump())
+                items[row.name] = row
 
             orders = [
                 Order.from_dict(row.model_dump())
