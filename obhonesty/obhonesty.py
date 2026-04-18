@@ -35,9 +35,7 @@ from obhonesty.api.test_setup import fastapi_app
 import os
 
 is_test_environment = True if os.getenv("TEST") else False
-
 app = rx.App() if not is_test_environment else rx.App(api_transformer=fastapi_app)
-
 app.add_page(
     index,
     route="/",
@@ -130,7 +128,6 @@ def sync_new_orders(unsynced_orders):
 def sync_new_users(unsynced_users):
     new_rows = []
     for user in unsynced_users:
-
         new_rows.append(
             [
                 user.nick_name,
