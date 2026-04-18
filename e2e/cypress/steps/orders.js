@@ -102,3 +102,7 @@ export function getUserOrdersApi(username) {
     qs: { username },
   });
 }
+
+export function generateReceiver(username){
+  return `${username.toUpperCase()} TEST`;
+}

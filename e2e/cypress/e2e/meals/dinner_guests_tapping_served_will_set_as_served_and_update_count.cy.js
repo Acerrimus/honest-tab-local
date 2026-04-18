@@ -3,12 +3,12 @@ import {
   getTotalServedInt,
   waitForReceiverServedStatusAndTotalCountToRender,
 } from "../../steps/meals";
-import { createDinnerOrderApi } from "../../steps/orders";
+import { createDinnerOrderApi, generateReceiver } from "../../steps/orders";
 import { createGuestUserApi, generateUsername } from "../../steps/users";
 
 describe("When an admin user clicks served for a guest's dinner meal", () => {
   const username = generateUsername();
-  const receiver = `${username.toUpperCase()} TEST`;
+  const receiver = generateReceiver(username)
 
   it("it will show as served and increment the guests served count with the volunteers served count staying the same", function () {
     createGuestUserApi(username);

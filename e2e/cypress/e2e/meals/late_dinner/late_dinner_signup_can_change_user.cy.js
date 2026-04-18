@@ -1,11 +1,11 @@
 import { getDataTestIdElement } from "../../../helpers";
-import { getUserOrdersApi } from "../../../steps/orders";
+import { generateReceiver, getUserOrdersApi } from "../../../steps/orders";
 import { createGuestUserApi, generateUsername } from "../../../steps/users";
 
 describe("When an admin user signs a guest up for late dinner but changes the user", () => {
   const username = generateUsername();
   const secondUsername = generateUsername();
-  const receiver = `${secondUsername.toUpperCase()} TEST`;
+  const receiver = generateReceiver(secondUsername)
 
   it("they will appear in the dinner list", function () {
     createGuestUserApi(username);

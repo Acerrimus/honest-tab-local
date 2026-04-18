@@ -1,5 +1,5 @@
 import { getDataTestIdElement } from "../../../helpers";
-import { getUserOrdersApi } from "../../../steps/orders";
+import { generateReceiver, getUserOrdersApi } from "../../../steps/orders";
 import { createGuestUserApi, generateUsername } from "../../../steps/users";
 
 describe("When an admin user signs a guest up for late dinner using register and add another", () => {
@@ -49,7 +49,7 @@ describe("When an admin user signs a guest up for late dinner using register and
       cy.contains(`${username} Test added successfully!`);
     });
     cy.wrap([firstUsername, secondUsername]).each((username) => {
-      const receiver = `${username.toUpperCase()} TEST`;
+      const receiver = generateReceiver(username)
       getDataTestIdElement("meal-row")
         .filter(`:contains(${receiver})`)
         .should("have.length", 1);
