@@ -14,7 +14,11 @@ from obhonesty.aux import (
     check_internet_connection,
     get_madrid_datetime_now,
 )
-from obhonesty.constants import true_values, DATETIME_FORMAT, SYSTEM_PROVIDER_HANDLING_FEE
+from obhonesty.constants import (
+    true_values,
+    DATETIME_FORMAT,
+    SYSTEM_PROVIDER_HANDLING_FEE,
+)
 from obhonesty.user import User
 from obhonesty.order import Order
 from obhonesty.sheet import user_sheet
@@ -630,6 +634,13 @@ class State(rx.State):
 
         if is_guest_paying_now:
             self.ordered_item = "breakfast"
+            self.stripe_system_provider_handling_fee_amount = (
+                self.get_breakfast_price * SYSTEM_PROVIDER_HANDLING_FEE
+            )
+            self.stripe_total = (
+                self.get_breakfast_price
+                + self.stripe_system_provider_handling_fee_amount
+            )
             return State.generate_item_payment_qr
 
         return State.order_breakfast
@@ -650,6 +661,14 @@ class State(rx.State):
 
         if is_guest_paying_now:
             self.ordered_item = "dinner"
+            dinner_price = self.admin_data.get("dinner_price", 0)
+            self.stripe_system_provider_handling_fee_amount = (
+                dinner_price * SYSTEM_PROVIDER_HANDLING_FEE
+            )
+            self.stripe_total = (
+                dinner_price + self.stripe_system_provider_handling_fee_amount
+            )
+
             return State.generate_item_payment_qr
 
         return State.order_dinner
@@ -789,6 +808,12 @@ class State(rx.State):
 
     @rx.event
     def handle_checkout_choice(self, form_data: dict):
+        self.stripe_system_provider_handling_fee_amount = (
+            self.get_user_debt * SYSTEM_PROVIDER_HANDLING_FEE
+        )
+        self.stripe_total = (
+            self.get_user_debt + self.stripe_system_provider_handling_fee_amount
+        )
         self.is_closing_account = form_data["is_closing_account"] == "Yes"
 
     @rx.event
@@ -948,8 +973,6 @@ class State(rx.State):
                         1,
                     )
 
-                line_items.append(generate_line_item("System Provider Handling Fee", int(self.stripe_system_provider_handling_fee_amount * 100), 1))
-
             else:
                 quantity = (
                     self.temp_quantity
@@ -970,8 +993,13 @@ class State(rx.State):
                     generate_line_item(item_name, int(unit_price * 100), int(quantity))
                 )
 
-                line_items.append(generate_line_item("System Provider Handling Fee", int(self.stripe_system_provider_handling_fee_amount * 100), 1))
-
+            line_items.append(
+                generate_line_item(
+                    "System Provider Handling Fee",
+                    int(self.stripe_system_provider_handling_fee_amount * 100),
+                    1,
+                )
+            )
 
             # 1. Create Stripe Checkout Session
 
@@ -1044,6 +1072,7 @@ class State(rx.State):
                         ob_payment_id=ob_payment_id,
                         order_id=order_id,
                         user=self.current_user.nick_name,
+                        system_provider_handling_fee_amount=self.stripe_system_provider_handling_fee_amount,
                         synced=False,
                     )
                 )
@@ -1131,8 +1160,10 @@ class State(rx.State):
     def show_stripe_item_payment_dialog(self, item_name: str, amount: float):
         if self.current_order_request_id != self.order_request_id:
             return
-        
-        self.stripe_system_provider_handling_fee_amount = amount * SYSTEM_PROVIDER_HANDLING_FEE
+
+        self.stripe_system_provider_handling_fee_amount = (
+            amount * SYSTEM_PROVIDER_HANDLING_FEE
+        )
         self.stripe_total = amount + self.stripe_system_provider_handling_fee_amount
         self.is_stripe_dialog_active = True
         return State.generate_item_payment_qr(item_name, amount)

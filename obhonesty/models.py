@@ -62,6 +62,7 @@ class Stripe_Checkout_Session(rx.Model, table=True):
     order_id: str
     user: str
     synced: bool
+    system_provider_handling_fee_amount: float
 
 
 class Item(rx.Model, table=True):

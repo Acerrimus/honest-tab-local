@@ -15,7 +15,7 @@ import {
 } from "../../steps/users";
 
 describe("When a user pays for an item", () => {
-  it("the item will be registered but not appear in the user's orders", () => {
+  it("will showm with the correct total, the item will be registered but not appear in the user's orders", () => {
     const username = generateUsername();
     createGuestUserApi(username);
     cy.visit("/");
@@ -24,6 +24,15 @@ describe("When a user pays for an item", () => {
       .filter(":contains(TEST ITEM (€1.00))")
       .click();
     getDataTestIdElement("item_pay_now").click();
+    getDataTestIdElement("stripe-subtotal").should(
+      "have.text",
+      "Subtotal: €1.00",
+    );
+    getDataTestIdElement("stripe-handling-fee").should(
+      "have.text",
+      "System Provider Handling Fee: €0.03",
+    );
+    getDataTestIdElement("stripe-total").should("have.text", "Total: €1.03");
     getDataTestIdElement("stripe_qr_code_image");
     getDataTestIdElement("stripe_payment_successful_text").should("be.visible");
     cy.contains("'TEST ITEM' registered succesfully. Thank you!");

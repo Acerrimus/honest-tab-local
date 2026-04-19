@@ -26,13 +26,22 @@ describe("When a current guest successfully pays their tab and chooses to not ch
     logUserOn(username);
     getDataTestIdElement("pay-tab-button").click();
     getDataTestIdElement("ordered_item").should("have.lengthOf", 3);
+    getDataTestIdElement("pay-tab-button").click();
+    getDataTestIdElement("radio-input-no").click();
+    getDataTestIdElement("submit-button").click();
     getDataTestIdElement("total-amount-due").should(
       "have.text",
       "Total amount due: €3.00",
     );
-    getDataTestIdElement("pay-tab-button").click();
-    getDataTestIdElement("radio-input-no").click();
-    getDataTestIdElement("submit-button").click();
+    getDataTestIdElement("stripe-subtotal").should(
+      "have.text",
+      "Subtotal: €3.00",
+    );
+    getDataTestIdElement("stripe-handling-fee").should(
+      "have.text",
+      "System Provider Handling Fee: €0.10",
+    );
+    getDataTestIdElement("stripe-total").should("have.text", "Total: €3.10");
     getDataTestIdElement("stripe_qr_code_image");
     getDataTestIdElement("stripe_payment_successful_text").should("be.visible");
     getDataTestIdElement("stripe_dialog_close").click();

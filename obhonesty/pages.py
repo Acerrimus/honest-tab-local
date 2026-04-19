@@ -251,14 +251,17 @@ def stripe_payment_dialog(name, amount) -> rx.Component:
                                 rx.text(
                                     f"Subtotal: €{two_decimal_points(amount)}",
                                     weight="bold",
+                                    **{"data-testid": "stripe-subtotal"},
                                 ),
                                 rx.text(
                                     f"System Provider Handling Fee: €{two_decimal_points(State.stripe_system_provider_handling_fee_amount)}",
                                     weight="bold",
+                                    **{"data-testid": "stripe-handling-fee"},
                                 ),
                                 rx.text(
                                     f"Total: €{two_decimal_points(State.stripe_total)}",
                                     weight="bold",
+                                    **{"data-testid": "stripe-total"},
                                 ),
                                 spacing="1",
                             ),
@@ -1136,9 +1139,6 @@ def user_info_page() -> rx.Component:
                                     size=default_button_text_size,
                                     weight="bold",
                                 ),
-                                on_click=lambda: State.generate_item_payment_qr(
-                                    "tab", State.get_user_debt
-                                ),
                                 size=default_button_size,
                                 color_scheme="yellow",
                                 disabled=is_user_debt_0,
@@ -1192,7 +1192,12 @@ def user_info_page() -> rx.Component:
                                             ),
                                         ),
                                     ),
-                                    on_submit=State.handle_checkout_choice,
+                                    on_submit=[
+                                        State.handle_checkout_choice,
+                                        lambda: State.generate_item_payment_qr(
+                                            "tab", State.get_user_debt
+                                        ),
+                                    ],
                                 )
                             ),
                             stripe_payment_dialog("tab", State.get_user_debt),

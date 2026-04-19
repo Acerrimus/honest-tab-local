@@ -33,6 +33,15 @@ describe("When a current guest successfully pays their tab and chooses to check 
     getDataTestIdElement("pay-tab-button").click();
     getDataTestIdElement("radio-input-yes").click();
     getDataTestIdElement("submit-button").click();
+    getDataTestIdElement("stripe-subtotal").should(
+      "have.text",
+      "Subtotal: €3.00",
+    );
+    getDataTestIdElement("stripe-handling-fee").should(
+      "have.text",
+      "System Provider Handling Fee: €0.10",
+    );
+    getDataTestIdElement("stripe-total").should("have.text", "Total: €3.10");
     getDataTestIdElement("stripe_qr_code_image");
     getDataTestIdElement("checkout-complete-text").should("be.visible");
     getDataTestIdElement("stripe_dialog_close").click();
