@@ -76,3 +76,14 @@ def generate_receiver_from_names(first_name, last_name):
 
 def get_madrid_datetime_now():
     return datetime.now(ZoneInfo("Europe/Madrid"))
+
+
+def generate_line_item(name: str, unit_amount: int, quantity: int):
+    return {
+        "price_data": {
+            "currency": "eur",
+            "product_data": {"name": name},
+            "unit_amount": unit_amount,
+        },
+        "quantity": quantity,
+    }

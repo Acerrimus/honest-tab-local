@@ -13,6 +13,7 @@ from obhonesty.aux import (
     generate_receiver_from_names,
     check_internet_connection,
     get_madrid_datetime_now,
+    generate_line_item,
 )
 from obhonesty.constants import (
     true_values,
@@ -890,16 +891,6 @@ class State(rx.State):
     async def generate_item_payment_qr(
         self, item_name: str = "", unit_price: float = 0
     ):
-        def generate_line_item(name: str, unit_amount: int, quantity: int):
-            return {
-                "price_data": {
-                    "currency": "eur",
-                    "product_data": {"name": name},
-                    "unit_amount": unit_amount,
-                },
-                "quantity": quantity,
-            }
-
         async with self:
             self.show_stripe_timeout_message = False
             self.is_payment_status_written_to_db = False
