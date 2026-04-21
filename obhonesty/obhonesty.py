@@ -424,6 +424,10 @@ def sync_new_stripe_checkout_sessions():
             "order_id",
             "user",
             "system_provider_handling_fee_amount",
+            "item",
+            "quantity",
+            "price",
+            "total",
         ],
     )
     stripe_checkout_session_record_payment_ids: list[str] = [
@@ -465,6 +469,10 @@ def sync_new_stripe_checkout_sessions():
                 remaining_unsynced_session.order_id,
                 remaining_unsynced_session.user,
                 remaining_unsynced_session.system_provider_handling_fee_amount,
+                remaining_unsynced_session.item,
+                remaining_unsynced_session.quantity,
+                remaining_unsynced_session.price,
+                remaining_unsynced_session.total,
             ]
             for remaining_unsynced_session in remaining_unsynced_sessions
         ],

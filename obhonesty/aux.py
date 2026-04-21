@@ -6,6 +6,7 @@ import socket
 from datetime import datetime
 from reflex.vars import NumberVar, var_operation, var_operation_return
 from zoneinfo import ZoneInfo
+from obhonesty.constants import SYSTEM_PROVIDER_HANDLING_FEE
 
 
 @var_operation
@@ -87,3 +88,7 @@ def generate_line_item(name: str, unit_amount: int, quantity: int):
         },
         "quantity": quantity,
     }
+
+
+def get_system_provider_handling_fee_rounded_to_two_digits(amount):
+    return round(amount * SYSTEM_PROVIDER_HANDLING_FEE, 2)

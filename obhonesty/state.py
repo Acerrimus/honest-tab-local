@@ -14,12 +14,9 @@ from obhonesty.aux import (
     check_internet_connection,
     get_madrid_datetime_now,
     generate_line_item,
+    get_system_provider_handling_fee_rounded_to_two_digits,
 )
-from obhonesty.constants import (
-    true_values,
-    DATETIME_FORMAT,
-    SYSTEM_PROVIDER_HANDLING_FEE,
-)
+from obhonesty.constants import true_values, DATETIME_FORMAT
 from obhonesty.user import User
 from obhonesty.order import Order
 from obhonesty.sheet import user_sheet
@@ -32,6 +29,7 @@ from obhonesty.models import (
     Stripe_Checkout_Session,
     Payment,
 )
+from zoneinfo import ZoneInfo
 
 load_dotenv()
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
@@ -636,7 +634,9 @@ class State(rx.State):
         if is_guest_paying_now:
             self.ordered_item = "breakfast"
             self.stripe_system_provider_handling_fee_amount = (
-                self.get_breakfast_price * SYSTEM_PROVIDER_HANDLING_FEE
+                get_system_provider_handling_fee_rounded_to_two_digits(
+                    self.get_breakfast_price
+                )
             )
             self.stripe_total = (
                 self.get_breakfast_price
@@ -664,7 +664,7 @@ class State(rx.State):
             self.ordered_item = "dinner"
             dinner_price = self.admin_data.get("dinner_price", 0)
             self.stripe_system_provider_handling_fee_amount = (
-                dinner_price * SYSTEM_PROVIDER_HANDLING_FEE
+                get_system_provider_handling_fee_rounded_to_two_digits(dinner_price)
             )
             self.stripe_total = (
                 dinner_price + self.stripe_system_provider_handling_fee_amount
@@ -810,7 +810,7 @@ class State(rx.State):
     @rx.event
     def handle_checkout_choice(self, form_data: dict):
         self.stripe_system_provider_handling_fee_amount = (
-            self.get_user_debt * SYSTEM_PROVIDER_HANDLING_FEE
+            get_system_provider_handling_fee_rounded_to_two_digits(self.get_user_debt)
         )
         self.stripe_total = (
             self.get_user_debt + self.stripe_system_provider_handling_fee_amount
@@ -896,13 +896,39 @@ class State(rx.State):
             self.is_payment_status_written_to_db = False
             self.is_stripe_session_paid = False
             self.payment_qr_code = ""
-
         ob_payment_id = str(short_uid())
+        individual_item_request: dict[str, str | float] = {}
+
+        if item_name != "tab":
+            async with self:
+                self.item_uuid = str(short_uid())
+            quantity = (
+                self.temp_quantity
+                if self.temp_quantity > 0
+                and self.ordered_item not in ["breakfast", "dinner"]
+                else 1.0
+            )
+            if self.ordered_item == "breakfast":
+                item_name = self.breakfast_signup_item
+                unit_price = self.get_breakfast_price
+            if self.ordered_item == "dinner":
+                item_name = "dinner"
+                unit_price = self.admin_data["dinner_price"]
+            individual_item_request = {
+                "order_id": self.item_uuid,
+                "item": item_name,
+                "quantity": quantity,
+                "price": unit_price,
+                "total": quantity * unit_price,
+            }
 
         if not is_test_environment:
             line_items = []
-
-            if item_name == "tab":
+            if item_name != "tab":
+                line_items.append(
+                    generate_line_item(item_name, int(unit_price * 100), int(quantity))
+                )
+            else:
                 # sums up each item in the tab for a total quantity per item per price point to account for any price changes
                 # eg. dinner x 3 @ €10 and dinner x 2 @ €12
                 summarised_item_quantities = {}
@@ -964,26 +990,6 @@ class State(rx.State):
                         1,
                     )
 
-            else:
-                quantity = (
-                    self.temp_quantity
-                    if self.temp_quantity > 0
-                    and self.ordered_item not in ["breakfast", "dinner"]
-                    else 1.0
-                )
-
-                if self.ordered_item == "breakfast":
-                    item_name = self.breakfast_signup_item
-                    unit_price = self.get_breakfast_price
-
-                if self.ordered_item == "dinner":
-                    item_name = "dinner"
-                    unit_price = self.admin_data["dinner_price"]
-
-                line_items.append(
-                    generate_line_item(item_name, int(unit_price * 100), int(quantity))
-                )
-
             line_items.append(
                 generate_line_item(
                     "System Provider Handling Fee",
@@ -1015,9 +1021,9 @@ class State(rx.State):
                         (datetime.now(UTC) + timedelta(minutes=30)).timestamp()
                     ),
                 )
-                datetime_requested = datetime.fromtimestamp(session.created).strftime(
-                    DATETIME_FORMAT
-                )
+                datetime_requested = datetime.fromtimestamp(
+                    session.created, ZoneInfo("Europe/Madrid")
+                ).strftime(DATETIME_FORMAT)
 
                 async with self:
                     # 2. Generate QR Code pointing to that Stripe URL
@@ -1042,32 +1048,32 @@ class State(rx.State):
                 self.current_stripe_session_id = f"TEST-STRIPE-ID-{short_uid()}"
                 self.payment_qr_code = "TEST_URL"
 
-        order_ids = []
-
-        if item_name == "tab":
-            order_ids = [order.order_id for order in self.current_user_orders]
-
-        else:
-            async with self:
-                self.item_uuid = str(short_uid())
-
-            order_ids.append(self.item_uuid)
-
         with rx.session() as session:
-            for order_id in order_ids:
+            for order in (
+                self.current_user_orders
+                if item_name == "tab"
+                else [individual_item_request]
+            ):
                 session.add(
                     Stripe_Checkout_Session(
                         payment_order_id=str(short_uid()),
                         datetime_requested=datetime_requested,
                         stripe_payment_id=self.current_stripe_session_id,
                         ob_payment_id=ob_payment_id,
-                        order_id=order_id,
+                        order_id=order.order_id
+                        if item_name == "tab"
+                        else order["order_id"],
                         user=self.current_user.nick_name,
                         system_provider_handling_fee_amount=self.stripe_system_provider_handling_fee_amount,
+                        item=order.item if item_name == "tab" else order["item"],
+                        quantity=order.quantity
+                        if item_name == "tab"
+                        else order["quantity"],
+                        price=order.price if item_name == "tab" else order["price"],
+                        total=order.total if item_name == "tab" else order["total"],
                         synced=False,
                     )
                 )
-
             session.commit()
 
         return State.check_stripe_payment_status
@@ -1153,7 +1159,7 @@ class State(rx.State):
             return
 
         self.stripe_system_provider_handling_fee_amount = (
-            amount * SYSTEM_PROVIDER_HANDLING_FEE
+            get_system_provider_handling_fee_rounded_to_two_digits(amount)
         )
         self.stripe_total = amount + self.stripe_system_provider_handling_fee_amount
         self.is_stripe_dialog_active = True
