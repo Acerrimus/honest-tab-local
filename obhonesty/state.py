@@ -922,7 +922,12 @@ class State(rx.State):
                 "total": quantity * unit_price,
             }
 
-        if not is_test_environment:
+        if is_test_environment:
+            datetime_requested = get_madrid_datetime_now().strftime(DATETIME_FORMAT)
+            async with self:
+                self.current_stripe_session_id = f"TEST-STRIPE-ID-{short_uid()}"
+                self.payment_qr_code = "TEST_URL"
+        else:
             line_items = []
             if item_name != "tab":
                 line_items.append(
@@ -932,25 +937,20 @@ class State(rx.State):
                 # sums up each item in the tab for a total quantity per item per price point to account for any price changes
                 # eg. dinner x 3 @ €10 and dinner x 2 @ €12
                 summarised_item_quantities = {}
+                extra_line_item_total = 0
+                last_item_total = 0
 
                 for order in self.current_user_orders:
                     name = order.item
                     unit_amount = int(order.price * 100)
-
                     if order.order_id in self.prepaid_dinner_ids:
                         name += " (Prepaid)"
                         unit_amount = 0
-
                     if name not in summarised_item_quantities:
                         summarised_item_quantities[name] = {}
-
                     if unit_amount not in summarised_item_quantities[name]:
                         summarised_item_quantities[name][unit_amount] = 0
-
                     summarised_item_quantities[name][unit_amount] += int(order.quantity)
-
-                extra_line_item_total = 0
-                last_item_total = 0
 
                 for summarised_item in summarised_item_quantities:
                     for summarised_item_price_point in summarised_item_quantities[
@@ -959,7 +959,6 @@ class State(rx.State):
                         summarised_item_quantity = summarised_item_quantities[
                             summarised_item
                         ][summarised_item_price_point]
-
                         # stripe cannot accept more than 100 line items in a checkout session.
                         # if there are more than 100 items then it should display a total with a note to see reception for a full receipt
                         # the number of receipt items is capped at 99 to give room for the system provider handling fee
@@ -967,13 +966,11 @@ class State(rx.State):
                             last_item_total = (
                                 summarised_item_price_point * summarised_item_quantity
                             )
-
                         if len(line_items) == 99:
                             extra_line_item_total += (
                                 summarised_item_price_point * summarised_item_quantity
                             )
                             continue
-
                         line_items.append(
                             generate_line_item(
                                 summarised_item,
@@ -999,7 +996,6 @@ class State(rx.State):
             )
 
             # 1. Create Stripe Checkout Session
-
             try:
                 # This creates a payment page hosted by Stripe
                 session = stripe.checkout.Session.create(
@@ -1015,7 +1011,7 @@ class State(rx.State):
                     cancel_url=os.getenv("CANCEL_URL")
                     if os.getenv("CANCEL_URL")
                     else "https://example.com/cancel",
-                    # our stripe session are set to expire after 30 minutes, this is the minimum expiry time for a checkout session, see https://docs.stripe.com/api/checkout/sessions/create
+                    # the stripe session is set to expire after 30 minutes, this is the minimum expiry time for a checkout session, see https://docs.stripe.com/api/checkout/sessions/create
                     # this is to have the maximum frequency that the app can poll the stripe api without hitting the rate limit, see https://docs.stripe.com/rate-limits#api-read-request-allocations
                     expires_at=int(
                         (datetime.now(UTC) + timedelta(minutes=30)).timestamp()
@@ -1024,29 +1020,18 @@ class State(rx.State):
                 datetime_requested = datetime.fromtimestamp(
                     session.created, ZoneInfo("Europe/Madrid")
                 ).strftime(DATETIME_FORMAT)
-
                 async with self:
                     # 2. Generate QR Code pointing to that Stripe URL
                     self.current_stripe_session_id = session.id
                     self.payment_qr_code = f"https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={quote(session.url)}"
-
             except Exception as e:
                 print(f"Stripe Error: {e}", flush=True)
-
                 async with self:
                     self.has_stripe_qr_generation_failed = True
-
                 return
 
             if self.current_stripe_session_id == "":
                 return
-
-        else:
-            datetime_requested = get_madrid_datetime_now().strftime(DATETIME_FORMAT)
-
-            async with self:
-                self.current_stripe_session_id = f"TEST-STRIPE-ID-{short_uid()}"
-                self.payment_qr_code = "TEST_URL"
 
         with rx.session() as session:
             for order in (
