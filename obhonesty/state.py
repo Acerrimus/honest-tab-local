@@ -48,7 +48,6 @@ class State(rx.State):
     new_nick_name: str = ""
     custom_item_price: str = ""
     orders: List[Order] = []
-    cancel_redirect: bool = False
     is_item_button_dialog_active: bool = False
     ordered_item: str = ""
     is_closing_account: Optional[bool] = None
@@ -61,6 +60,8 @@ class State(rx.State):
     should_late_dinner_signup_form_reload = False
     item_uuid: str = ""
     is_logging_user_in: bool = False
+    is_user_activity_check_running: bool = False
+    latest_user_activity_datetime: datetime = None
 
     # --- Meal Counts ---
 
@@ -128,6 +129,7 @@ class State(rx.State):
 
     @rx.event
     def set_order_request_id(self):
+        self.update_last_user_activity_datetime()
         request_id = str(short_uid())
         self.order_request_id = request_id
 
@@ -288,16 +290,49 @@ class State(rx.State):
         self.late_dinner_diet = ""
 
     @rx.event
-    def cancel_timeout(self):
-        self.cancel_redirect = True
+    def handle_user_reset(self):
+        self.current_user = None
+
+    @rx.event
+    def update_last_user_activity_datetime(self):
+        self.latest_user_activity_datetime = get_madrid_datetime_now()
 
     @rx.event(background=True)
-    async def on_user_login(self):
+    async def check_user_is_still_active(self):
         async with self:
-            self.cancel_redirect = False
-        await asyncio.sleep(120)
-        if not self.cancel_redirect:
-            yield rx.redirect("/")
+            self.update_last_user_activity_datetime()
+            if self.is_user_activity_check_running:
+                return
+            self.is_user_activity_check_running = True
+        has_timeout_toast_displayed = False
+
+        while self.is_user_activity_check_running:
+            time_since_last_user_activity = (
+                get_madrid_datetime_now() - self.latest_user_activity_datetime
+            )
+            should_user_be_shown_timeout_warning_toast = (
+                time_since_last_user_activity >= timedelta(minutes=1, seconds=40)
+            )
+            if (
+                should_user_be_shown_timeout_warning_toast
+                and not has_timeout_toast_displayed
+            ):
+                yield rx.toast.warning(
+                    "Are you still there? You will be logged out due to inactivity in twenty seconds.",
+                    close_button=True,
+                    position="bottom-center",
+                    duration=20000,
+                )
+            has_timeout_toast_displayed = should_user_be_shown_timeout_warning_toast
+            is_user_inactive_for_two_minutes = (
+                time_since_last_user_activity >= timedelta(minutes=2)
+            )
+            if self.current_user is None or is_user_inactive_for_two_minutes:
+                async with self:
+                    self.is_user_activity_check_running = False
+                if is_user_inactive_for_two_minutes:
+                    yield rx.redirect("/")
+            await asyncio.sleep(1)
 
     @rx.event(background=True)
     async def reload_sheet_data(self):
@@ -429,6 +464,7 @@ class State(rx.State):
             return
 
         self.current_user = User.from_dict(user.model_dump())
+        self.is_user_activity_check_running = False
         self.is_email_login_incorrect = False
         self.is_logging_user_in = True
         return rx.redirect("/user")
@@ -436,6 +472,10 @@ class State(rx.State):
     @rx.event
     def handle_user_login_dialog_open_change(self):
         self.is_email_login_incorrect = False
+
+    @rx.event
+    def handle_user_logout(self):
+        return rx.redirect("/")
 
     @rx.event
     def redirect_no_user(self):
@@ -1074,6 +1114,9 @@ class State(rx.State):
         while True:
             if self.current_stripe_session_id == "" or self.is_stripe_session_paid:
                 return
+            
+            async with self:
+                self.update_last_user_activity_datetime()
 
             if not is_test_environment:
                 request_count += 1
@@ -1135,11 +1178,13 @@ class State(rx.State):
             return [State.pay_current_tab, State.close_guest_account]
 
     def open_item_dialog(self, item_name: str):
+        self.update_last_user_activity_datetime()
         self.temp_quantity = 1
         self.ordered_item = item_name
 
     @rx.event
     def show_stripe_item_payment_dialog(self, item_name: str, amount: float):
+        self.update_last_user_activity_datetime()
         if self.current_order_request_id != self.order_request_id:
             return
 
@@ -1152,6 +1197,7 @@ class State(rx.State):
 
     @rx.event
     def close_item_dialog(self):
+        self.update_last_user_activity_datetime()
         temp_ordered_item = self.ordered_item
         temp_is_stripe_session_paid = self.is_stripe_session_paid
         self.payment_qr_code = ""

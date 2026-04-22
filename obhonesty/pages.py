@@ -15,7 +15,9 @@ def user_button_dialog(user: User) -> rx.Component:
     return rx.dialog.root(
         rx.dialog.trigger(
             user_button(
-                user.nick_name, **{"data-testid": f"user-button-{user.nick_name}"}
+                user.nick_name,
+                **{"data-testid": f"user-button-{user.nick_name}"},
+                disabled=State.current_user != None,
             )
         ),
         rx.dialog.content(
@@ -156,7 +158,7 @@ def logout_button() -> rx.Component:
             rx.icon("door-open"),
             rx.text("Log out", size=default_button_text_size),
             color_scheme="red",
-            on_click=rx.redirect("/"),
+            on_click=State.handle_user_logout,
             size=default_button_size,
         ),
     )

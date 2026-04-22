@@ -41,6 +41,7 @@ app.add_page(
     index,
     route="/",
     on_load=[
+        State.handle_user_reset,
         State.reset_stripe_dialog_active_state,
         State.clear_temp_state_values,
         State.reload_sheet_data,
@@ -51,18 +52,32 @@ app.add_page(
     route="/user",
     on_load=[
         State.clear_temp_state_values,
-        State.on_user_login,
+        State.check_user_is_still_active,
         State.reload_sheet_data,
     ],
 )
-app.add_page(user_signup_page, route="/signup", on_load=State.cancel_timeout)
-app.add_page(dinner_signup_page, route="/dinner", on_load=State.cancel_timeout)
-app.add_page(breakfast_signup_page, route="/breakfast", on_load=State.cancel_timeout)
-app.add_page(custom_item_page, route="/custom_item", on_load=State.cancel_timeout)
+app.add_page(
+    user_signup_page, route="/signup", on_load=State.update_last_user_activity_datetime
+)
+app.add_page(
+    dinner_signup_page,
+    route="/dinner",
+    on_load=State.update_last_user_activity_datetime,
+)
+app.add_page(
+    breakfast_signup_page,
+    route="/breakfast",
+    on_load=State.update_last_user_activity_datetime,
+)
+app.add_page(
+    custom_item_page,
+    route="/custom_item",
+    on_load=State.update_last_user_activity_datetime,
+)
 app.add_page(
     user_info_page,
     route="/info",
-    on_load=[State.reload_sheet_data, State.cancel_timeout],
+    on_load=[State.reload_sheet_data, State.update_last_user_activity_datetime],
 )
 app.add_page(
     admin,
