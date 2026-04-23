@@ -14,7 +14,7 @@ import {
   logUserOn,
 } from "../../steps/users";
 
-describe("When a user pays for an item", () => {
+describe("When a user pays for an item", { tags: "@payments" }, () => {
   it("will showm with the correct total, the item will be registered but not appear in the user's orders", () => {
     const username = generateUsername();
     createGuestUserApi(username);

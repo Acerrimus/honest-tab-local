@@ -11,7 +11,7 @@ import {
   logUserOn,
 } from "../../steps/users";
 
-describe("When a user pays for their breakfast", () => {
+describe("When a user pays for their breakfast", { tags: "@payments" }, () => {
   it("the breakfast does not appear in the user's orders", () => {
     const username = generateUsername();
     createGuestUserApi(username);
