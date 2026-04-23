@@ -230,9 +230,7 @@ def get_records(sheet, headers: list[str] = [], add_synced: bool = False):
         if "" in record:
             del record[""]
 
-    if not add_synced:
-        return records
-    return [{**record, "synced": True} for record in records]
+    return [{**record, "synced": True} for record in records] if add_synced else records
 
 
 def sync_new_orders(unsynced_orders):
