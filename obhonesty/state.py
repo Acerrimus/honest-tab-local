@@ -929,6 +929,64 @@ class State(rx.State):
 
         return [rx.toast.success("Tab paid successfully!"), State.reload_sheet_data]
 
+    @rx.event
+    def generate_line_items(self):
+        line_items = []
+        # sums up each item in the tab for a total quantity per item per price point to account for any price changes
+        # eg. dinner x 3 @ €10 and dinner x 2 @ €12
+        summarised_item_quantities = {}
+        extra_line_item_total = 0
+        last_item_total = 0
+
+        for order in self.current_user_orders:
+            name = order.item
+            unit_amount = int(order.price * 100)
+            if order.order_id in self.prepaid_dinner_ids:
+                name += " (Prepaid)"
+                unit_amount = 0
+            if name not in summarised_item_quantities:
+                summarised_item_quantities[name] = {}
+            if unit_amount not in summarised_item_quantities[name]:
+                summarised_item_quantities[name][unit_amount] = 0
+            summarised_item_quantities[name][unit_amount] += int(order.quantity)
+
+        for summarised_item in summarised_item_quantities:
+            for summarised_item_price_point in summarised_item_quantities[
+                summarised_item
+            ]:
+                summarised_item_quantity = summarised_item_quantities[summarised_item][
+                    summarised_item_price_point
+                ]
+                # stripe cannot accept more than 100 line items in a checkout session.
+                # if there are more than 100 items then it should display a total with a note to see reception for a full receipt
+                # the number of receipt items is capped at 99 to give room for the system provider handling fee
+                if len(line_items) == 98:
+                    last_item_total = (
+                        summarised_item_price_point * summarised_item_quantity
+                    )
+                if len(line_items) == 99:
+                    extra_line_item_total += (
+                        summarised_item_price_point * summarised_item_quantity
+                    )
+                    continue
+                line_items.append(
+                    generate_line_item(
+                        summarised_item,
+                        summarised_item_price_point,
+                        summarised_item_quantity,
+                    )
+                )
+
+        if extra_line_item_total:
+            extra_line_item_total += last_item_total
+            line_items[98] = generate_line_item(
+                "Remaining item total - see reception for full receipt",
+                extra_line_item_total,
+                1,
+            )
+
+        return line_items
+
     # --- Payment Logic Handlers ---
     @rx.event(background=True)
     async def generate_item_payment_qr(
@@ -972,65 +1030,13 @@ class State(rx.State):
                 self.current_stripe_session_id = f"TEST-STRIPE-ID-{short_uid()}"
                 self.payment_qr_code = "TEST_URL"
         else:
-            line_items = []
-            if item_name != "tab":
-                line_items.append(
+            line_items = (
+                self.generate_line_items()
+                if item_name == "tab"
+                else [
                     generate_line_item(item_name, int(unit_price * 100), int(quantity))
-                )
-            else:
-                # sums up each item in the tab for a total quantity per item per price point to account for any price changes
-                # eg. dinner x 3 @ €10 and dinner x 2 @ €12
-                summarised_item_quantities = {}
-                extra_line_item_total = 0
-                last_item_total = 0
-
-                for order in self.current_user_orders:
-                    name = order.item
-                    unit_amount = int(order.price * 100)
-                    if order.order_id in self.prepaid_dinner_ids:
-                        name += " (Prepaid)"
-                        unit_amount = 0
-                    if name not in summarised_item_quantities:
-                        summarised_item_quantities[name] = {}
-                    if unit_amount not in summarised_item_quantities[name]:
-                        summarised_item_quantities[name][unit_amount] = 0
-                    summarised_item_quantities[name][unit_amount] += int(order.quantity)
-
-                for summarised_item in summarised_item_quantities:
-                    for summarised_item_price_point in summarised_item_quantities[
-                        summarised_item
-                    ]:
-                        summarised_item_quantity = summarised_item_quantities[
-                            summarised_item
-                        ][summarised_item_price_point]
-                        # stripe cannot accept more than 100 line items in a checkout session.
-                        # if there are more than 100 items then it should display a total with a note to see reception for a full receipt
-                        # the number of receipt items is capped at 99 to give room for the system provider handling fee
-                        if len(line_items) == 98:
-                            last_item_total = (
-                                summarised_item_price_point * summarised_item_quantity
-                            )
-                        if len(line_items) == 99:
-                            extra_line_item_total += (
-                                summarised_item_price_point * summarised_item_quantity
-                            )
-                            continue
-                        line_items.append(
-                            generate_line_item(
-                                summarised_item,
-                                summarised_item_price_point,
-                                summarised_item_quantity,
-                            )
-                        )
-
-                if extra_line_item_total:
-                    extra_line_item_total += last_item_total
-                    line_items[98] = generate_line_item(
-                        "Remaining item total - see reception for full receipt",
-                        extra_line_item_total,
-                        1,
-                    )
-
+                ]
+            )
             line_items.append(
                 generate_line_item(
                     "System Provider Handling Fee",
