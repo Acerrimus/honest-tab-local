@@ -23,13 +23,13 @@ describe("When a user pays for their breakfast", { tags: "@payments" }, () => {
     getDataTestIdElement("breakfast-pay-now").click();
     getDataTestIdElement("stripe-subtotal").should(
       "have.text",
-      "Subtotal: €12.00",
+      "Subtotal: €8.00",
     );
     getDataTestIdElement("stripe-handling-fee").should(
       "have.text",
-      "System Provider Handling Fee: €0.39",
+      "System Provider Handling Fee: €0.26",
     );
-    getDataTestIdElement("stripe-total").should("have.text", "Total: €12.39");
+    getDataTestIdElement("stripe-total").should("have.text", "Total: €8.26");
     getDataTestIdElement("stripe_qr_code_image");
     cy.contains("Breakfast sign-up registration successful!");
     getUserOrdersApi(username).then((response) => {
