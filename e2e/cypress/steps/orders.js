@@ -18,8 +18,7 @@ export function clickTestItemButton() {
     .click();
 }
 
-function generateFormattedTime() {
-  const now = new Date();
+export function generateFormattedTime(now = new Date()) {
   const pad = (n) => n.toString().padStart(2, "0");
   const day = pad(now.getDate());
   const month = pad(now.getMonth() + 1);
@@ -103,6 +102,6 @@ export function getUserOrdersApi(username) {
   });
 }
 
-export function generateReceiver(username){
+export function generateReceiver(username) {
   return `${username.toUpperCase()} TEST`;
 }
