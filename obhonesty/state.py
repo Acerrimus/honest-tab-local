@@ -1009,10 +1009,10 @@ class State(rx.State):
                 else 1.0
             )
             if self.ordered_item == "breakfast":
-                item_name = self.breakfast_signup_item
+                item_name = f"{self.breakfast_signup_item} (Breakfast sign-up)"
                 unit_price = self.get_breakfast_price
             if self.ordered_item == "dinner":
-                item_name = "dinner"
+                item_name = "Dinner sign-up"
                 unit_price = self.admin_data["dinner_price"]
             individual_item_request = {
                 "order_id": self.item_uuid,
