@@ -5,6 +5,7 @@ import {
   getUserOrdersApi,
 } from "../../steps/orders";
 import { getPaymentApi } from "../../steps/payments";
+import { triggerSuccessfulStripePayment } from "../../steps/stripe";
 import {
   createGuestUserApi,
   generateUsername,
@@ -46,6 +47,7 @@ describe(
       );
       getDataTestIdElement("stripe-total").should("have.text", "Total: €3.10");
       getDataTestIdElement("stripe_qr_code_image");
+      triggerSuccessfulStripePayment()
       getDataTestIdElement("checkout-complete-text").should("be.visible");
       getDataTestIdElement("stripe_dialog_close").click();
       getDataTestIdElement("title").should("be.visible");

@@ -1,6 +1,7 @@
 import { getDataTestIdElement } from "../../helpers";
 import { getUserOrdersApi } from "../../steps/orders";
 import { getPaymentApi } from "../../steps/payments";
+import { triggerSuccessfulStripePayment } from "../../steps/stripe";
 import {
   createGuestUserApi,
   generateUsername,
@@ -21,6 +22,7 @@ describe(
         .click();
       getDataTestIdElement("item_pay_now").click();
       getDataTestIdElement("stripe_qr_code_image");
+      triggerSuccessfulStripePayment();
       getDataTestIdElement("stripe_payment_successful_text").should(
         "be.visible",
       );
@@ -31,6 +33,7 @@ describe(
         .click();
       getDataTestIdElement("item_pay_now").click();
       getDataTestIdElement("stripe_qr_code_image");
+      triggerSuccessfulStripePayment();
       getDataTestIdElement("stripe_payment_successful_text").should(
         "be.visible",
       );

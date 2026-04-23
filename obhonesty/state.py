@@ -63,6 +63,9 @@ class State(rx.State):
     is_user_activity_check_running: bool = False
     latest_user_activity_datetime: datetime = None
 
+    # --- Test Environment State ---
+    stripe_test_state: Literal["success"] | None = None
+
     # --- Meal Counts ---
 
     breakfast_count: int = 0
@@ -932,6 +935,7 @@ class State(rx.State):
         self, item_name: str = "", unit_price: float = 0
     ):
         async with self:
+            self.stripe_test_state = None
             self.show_stripe_timeout_message = False
             self.is_payment_status_written_to_db = False
             self.is_stripe_session_paid = False
@@ -1114,11 +1118,15 @@ class State(rx.State):
         while True:
             if self.current_stripe_session_id == "" or self.is_stripe_session_paid:
                 return
-            
+
             async with self:
                 self.update_last_user_activity_datetime()
 
-            if not is_test_environment:
+            if is_test_environment:
+                if not self.stripe_test_state:
+                    await asyncio.sleep(1)
+                    continue
+            else:
                 request_count += 1
                 result = False
 

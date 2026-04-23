@@ -220,6 +220,13 @@ async def create_dinner_meal_for_today(username: str, receiver: str):
     return {"meal_id": meal_id, "message": "Test meal created successfully"}
 
 
+@fastapi_app.post("/api/test/stripe/trigger")
+async def trigger_stripe_session_response(stripe_test_state: str, token: str):
+    async with app.modify_state(token) as root_state:
+        state = await root_state.get_state(State)
+        state.stripe_test_state = stripe_test_state
+
+
 def get_records(sheet, headers: list[str] = [], add_synced: bool = False):
     check_internet_connection()
     if sheet is None:

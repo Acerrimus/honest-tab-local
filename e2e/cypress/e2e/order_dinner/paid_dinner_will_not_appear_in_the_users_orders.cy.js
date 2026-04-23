@@ -5,6 +5,7 @@ import {
   getUserOrdersApi,
 } from "../../steps/orders";
 import { getPaymentApi } from "../../steps/payments";
+import { triggerSuccessfulStripePayment } from "../../steps/stripe";
 import {
   createGuestUserApi,
   generateUsername,
@@ -20,6 +21,7 @@ describe("When a user pays for their dinner", { tags: "@payments" }, () => {
     getDataTestIdElement("dinner-signup-button").click();
     getDataTestIdElement("dinner-signup-pay-now").click();
     getDataTestIdElement("stripe_qr_code_image");
+    triggerSuccessfulStripePayment()
     cy.contains("Dinner sign-up registration successful!");
     getUserOrdersApi(username).then((response) => {
       expect(response.body.orders).to.have.lengthOf(1);

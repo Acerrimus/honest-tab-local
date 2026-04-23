@@ -8,6 +8,7 @@ import {
   getPaymentApi,
   getStripeCheckoutSessionsApi,
 } from "../../steps/payments";
+import { triggerSuccessfulStripePayment } from "../../steps/stripe";
 import {
   createGuestUserApi,
   generateUsername,
@@ -34,6 +35,7 @@ describe("When a user pays for an item", { tags: "@payments" }, () => {
     );
     getDataTestIdElement("stripe-total").should("have.text", "Total: €1.03");
     getDataTestIdElement("stripe_qr_code_image");
+    triggerSuccessfulStripePayment()
     getDataTestIdElement("stripe_payment_successful_text").should("be.visible");
     cy.contains("'TEST ITEM' registered succesfully. Thank you!");
     getUserOrdersApi(username).then((userOrdersresponse) => {
