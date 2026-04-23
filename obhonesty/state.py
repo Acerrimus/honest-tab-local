@@ -1135,19 +1135,14 @@ class State(rx.State):
                     session = stripe.checkout.Session.retrieve(
                         self.current_stripe_session_id
                     )
-
                     if session.status == "expired":
                         async with self:
                             self.show_stripe_timeout_message = True
-
                         return
-
                     result = session.payment_status == "paid"
                     stripe_error_message = ""
-
                     async with self:
                         self.show_stripe_connection_failure_message = False
-
                 except Exception as e:
                     if stripe_error_message != str(e):
                         stripe_error_message = str(e)
@@ -1155,7 +1150,6 @@ class State(rx.State):
                             f"Stripe Error: {stripe_error_message} - {get_madrid_datetime_now()}",
                             flush=True,
                         )
-
                     async with self:
                         self.show_stripe_connection_failure_message = True
 
@@ -1164,24 +1158,18 @@ class State(rx.State):
                         # 500 requests spread over 30 minutes is 3.607 secs/request, rounded up to 3.7
                         await asyncio.sleep(3.7)
                         continue
-
                     async with self:
                         self.show_stripe_timeout_message = True
-
                     return
 
             async with self:
                 self.is_stripe_session_paid = True
-
             if self.ordered_item != "":
                 if self.ordered_item == "dinner":
                     return State.order_dinner
-
                 if self.ordered_item == "breakfast":
                     return State.order_breakfast
-
                 return State.order_item
-
             # if no item has been ordered then it must be the entire tab.
             return [State.pay_current_tab, State.close_guest_account]
 
