@@ -6,7 +6,7 @@ import {
 } from "../../steps/orders";
 import { getPaymentApi } from "../../steps/payments";
 import {
-  assertStripeLineItemsMatchExpected,
+  assertBreakfastLineItemsMatchExpected,
   triggerSuccessfulStripePayment,
 } from "../../steps/stripe";
 import {
@@ -59,28 +59,7 @@ describe(
     });
 
     it("will record the line items correctly for Stripe", () => {
-      assertStripeLineItemsMatchExpected([
-        {
-          price_data: {
-            currency: "eur",
-            product_data: {
-              name: "Vegan (Breakfast sign-up)",
-            },
-            unit_amount: 800,
-          },
-          quantity: 1,
-        },
-        {
-          price_data: {
-            currency: "eur",
-            product_data: {
-              name: "System Provider Handling Fee",
-            },
-            unit_amount: 26,
-          },
-          quantity: 1,
-        },
-      ]);
+      assertBreakfastLineItemsMatchExpected();
     });
   },
 );

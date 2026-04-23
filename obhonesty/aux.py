@@ -92,3 +92,7 @@ def generate_line_item(name: str, unit_amount: int, quantity: int):
 
 def get_system_provider_handling_fee_rounded_to_two_digits(amount):
     return round(amount * SYSTEM_PROVIDER_HANDLING_FEE, 2)
+
+
+def get_full_breakfast_item(diet: str):
+    return f"Breakfast sign-up ({diet})"

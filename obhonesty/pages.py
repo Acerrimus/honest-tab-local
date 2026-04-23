@@ -1,6 +1,6 @@
 import reflex as rx
 import os
-from obhonesty.aux import two_decimal_points
+from obhonesty.aux import two_decimal_points, get_full_breakfast_item
 from obhonesty.constants import *
 from obhonesty.order import Order
 from obhonesty.state import State
@@ -1078,7 +1078,14 @@ def user_info_page() -> rx.Component:
     def show_row(order: Order):
         return rx.table.row(
             rx.table.cell(order.time),
-            rx.table.cell(order.item, **{"data-testid": f"ordered_item"}),
+            rx.table.cell(
+                rx.cond(
+                    order.item == "Breakfast sign-up",
+                    get_full_breakfast_item(order.diet),
+                    order.item,
+                ),
+                **{"data-testid": f"ordered_item"},
+            ),
             rx.table.cell(
                 rx.cond(
                     State.prepaid_dinner_ids.contains(order.order_id),

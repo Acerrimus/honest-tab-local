@@ -1,11 +1,12 @@
 import { getDataTestIdElement } from "../../helpers";
+import { assertBreakfastLineItemsMatchExpected } from "../../steps/stripe";
 import {
   createGuestUserApi,
   generateUsername,
   logUserOn,
 } from "../../steps/users";
 
-describe("When a user orders breakfast", () => {
+describe("When a user orders breakfast", { testIsolation: false }, () => {
   const username = generateUsername();
   it("it is successfully ordered", () => {
     createGuestUserApi(username);
@@ -28,7 +29,15 @@ describe("When a user orders breakfast", () => {
     );
     getDataTestIdElement("breakfast-signup-register").click();
     getDataTestIdElement("view-orders-button").click();
-    getDataTestIdElement("ordered_item").contains("Breakfast sign-up");
+    getDataTestIdElement("ordered_item").contains("Breakfast sign-up (Vegan)");
+  });
+
+  it("will appear correctly in the line items when paying the tab", () => {
+    getDataTestIdElement("pay-tab-button").click();
+    getDataTestIdElement("radio-input-yes").click();
+    getDataTestIdElement("submit-button").click();
+    getDataTestIdElement("stripe_qr_code_image");
+    assertBreakfastLineItemsMatchExpected();
   });
 
   it("the order appears in the breakfast list", () => {

@@ -23,17 +23,6 @@ export function triggerSuccessfulStripePayment() {
   });
 }
 
-// export function getStripeLineItems() {
-//   return cy.getAllSessionStorage().then((result) =>
-//     cy.request({
-//       url: "http://app:8000/api/test/stripe/line-items",
-//       qs: {
-//         token: result["http://app:3000"].token,
-//       },
-//     }),
-//   );
-// }
-
 function sortLineItemsByItemName(lineItems) {
   return lineItems.sort((a, b) =>
     a.price_data.product_data.name.localeCompare(
@@ -57,4 +46,29 @@ export function assertStripeLineItemsMatchExpected(expectedLineItems) {
         sortLineItemsByItemName(expectedLineItems),
       );
     });
+}
+
+export function assertBreakfastLineItemsMatchExpected() {
+  assertStripeLineItemsMatchExpected([
+    {
+      price_data: {
+        currency: "eur",
+        product_data: {
+          name: "Breakfast sign-up (Vegan)",
+        },
+        unit_amount: 800,
+      },
+      quantity: 1,
+    },
+    {
+      price_data: {
+        currency: "eur",
+        product_data: {
+          name: "System Provider Handling Fee",
+        },
+        unit_amount: 26,
+      },
+      quantity: 1,
+    },
+  ]);
 }

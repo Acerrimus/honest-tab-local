@@ -15,6 +15,7 @@ from obhonesty.aux import (
     get_madrid_datetime_now,
     generate_line_item,
     get_system_provider_handling_fee_rounded_to_two_digits,
+    get_full_breakfast_item,
 )
 from obhonesty.constants import true_values, DATETIME_FORMAT
 from obhonesty.user import User
@@ -940,7 +941,9 @@ class State(rx.State):
         for order in self.current_user_orders:
             name = order.item
             unit_amount = int(order.price * 100)
-            if order.order_id in self.prepaid_dinner_ids:
+            if order.item == "Breakfast sign-up":
+                name = get_full_breakfast_item(order.diet)
+            elif order.order_id in self.prepaid_dinner_ids:
                 name += " (Prepaid)"
                 unit_amount = 0
             if name not in summarised_item_quantities:
@@ -1010,7 +1013,7 @@ class State(rx.State):
                 else 1.0
             )
             if self.ordered_item == "breakfast":
-                item_name = f"{self.breakfast_signup_item} (Breakfast sign-up)"
+                item_name = get_full_breakfast_item(self.breakfast_signup_item)
                 unit_price = self.get_breakfast_price
             if self.ordered_item == "dinner":
                 item_name = "Dinner sign-up"
