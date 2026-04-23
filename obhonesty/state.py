@@ -922,11 +922,9 @@ class State(rx.State):
                         checkout_staff="",
                     )
                 )
-
             session.commit()
 
         self.is_payment_status_written_to_db = True
-
         return [rx.toast.success("Tab paid successfully!"), State.reload_sheet_data]
 
     @rx.event
