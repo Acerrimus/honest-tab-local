@@ -5,7 +5,10 @@ import {
   getUserOrdersApi,
 } from "../../steps/orders";
 import { getPaymentApi } from "../../steps/payments";
-import { triggerSuccessfulStripePayment } from "../../steps/stripe";
+import {
+  assertStripeLineItemsMatchExpected,
+  triggerSuccessfulStripePayment,
+} from "../../steps/stripe";
 import {
   createGuestUserApi,
   generateUsername,
@@ -14,7 +17,7 @@ import {
 
 describe(
   "When a current guest successfully pays their tab and chooses to check out",
-  { tags: "@payments" },
+  { testIsolation: false, tags: "@payments" },
   () => {
     const username = generateUsername();
     it("they will no longer be seen on the login screen", () => {
@@ -47,7 +50,7 @@ describe(
       );
       getDataTestIdElement("stripe-total").should("have.text", "Total: €3.10");
       getDataTestIdElement("stripe_qr_code_image");
-      triggerSuccessfulStripePayment()
+      triggerSuccessfulStripePayment();
       getDataTestIdElement("checkout-complete-text").should("be.visible");
       getDataTestIdElement("stripe_dialog_close").click();
       getDataTestIdElement("title").should("be.visible");
@@ -66,6 +69,51 @@ describe(
           });
         }),
       );
+    });
+
+    it("will record the line items correctly for Stripe", () => {
+      assertStripeLineItemsMatchExpected([
+        {
+          price_data: {
+            currency: "eur",
+            product_data: {
+              name: "REGISTERED TEST ITEM1",
+            },
+            unit_amount: 100,
+          },
+          quantity: 1,
+        },
+        {
+          price_data: {
+            currency: "eur",
+            product_data: {
+              name: "REGISTERED TEST ITEM2",
+            },
+            unit_amount: 100,
+          },
+          quantity: 1,
+        },
+        {
+          price_data: {
+            currency: "eur",
+            product_data: {
+              name: "REGISTERED TEST ITEM3",
+            },
+            unit_amount: 100,
+          },
+          quantity: 1,
+        },
+        {
+          price_data: {
+            currency: "eur",
+            product_data: {
+              name: "System Provider Handling Fee",
+            },
+            unit_amount: 10,
+          },
+          quantity: 1,
+        },
+      ]);
     });
   },
 );

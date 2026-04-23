@@ -65,6 +65,7 @@ class State(rx.State):
 
     # --- Test Environment State ---
     stripe_test_state: Literal["success"] | None = None
+    test_line_items = []
 
     # --- Meal Counts ---
 
@@ -1022,27 +1023,26 @@ class State(rx.State):
                 "total": quantity * unit_price,
             }
 
+        line_items = (
+            self.generate_line_items()
+            if item_name == "tab"
+            else [generate_line_item(item_name, int(unit_price * 100), int(quantity))]
+        )
+        line_items.append(
+            generate_line_item(
+                "System Provider Handling Fee",
+                int(self.stripe_system_provider_handling_fee_amount * 100),
+                1,
+            )
+        )
+
         if is_test_environment:
             datetime_requested = get_madrid_datetime_now().strftime(DATETIME_FORMAT)
             async with self:
                 self.current_stripe_session_id = f"TEST-STRIPE-ID-{short_uid()}"
                 self.payment_qr_code = "TEST_URL"
+                self.test_line_items = line_items
         else:
-            line_items = (
-                self.generate_line_items()
-                if item_name == "tab"
-                else [
-                    generate_line_item(item_name, int(unit_price * 100), int(quantity))
-                ]
-            )
-            line_items.append(
-                generate_line_item(
-                    "System Provider Handling Fee",
-                    int(self.stripe_system_provider_handling_fee_amount * 100),
-                    1,
-                )
-            )
-
             # 1. Create Stripe Checkout Session
             try:
                 # This creates a payment page hosted by Stripe

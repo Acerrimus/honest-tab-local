@@ -227,6 +227,13 @@ async def trigger_stripe_session_response(stripe_test_state: str, token: str):
         state.stripe_test_state = stripe_test_state
 
 
+@fastapi_app.get("/api/test/stripe/line-items")
+async def get_stripe_line_items(token: str):
+    async with app.modify_state(token) as root_state:
+        state = await root_state.get_state(State)
+        return {"line_items": state.test_line_items}
+
+
 def get_records(sheet, headers: list[str] = [], add_synced: bool = False):
     check_internet_connection()
     if sheet is None:
