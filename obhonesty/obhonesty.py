@@ -15,11 +15,11 @@ from obhonesty.sheet import (
     payments_sheet,
 )
 from obhonesty.models import (
-    User as User_Model,
-    Order as Order_Model,
+    User,
+    Order,
     Item,
-    Admin as Admin_Model,
-    Meal as Meal_Model,
+    Admin,
+    Meal,
     Stripe_Checkout_Session,
     Payment,
 )
@@ -103,7 +103,7 @@ app.add_page(
 async def create_test_user(username: str, volunteer: str = ""):
     with rx.session() as session:
         session.add(
-            User_Model.model_validate(
+            User.model_validate(
                 {
                     "nick_name": username,
                     "first_name": username,
@@ -142,7 +142,7 @@ async def create_test_order(
 ):
     with rx.session() as session:
         session.add(
-            Order_Model(
+            Order(
                 order_id=order_id,
                 user_nick_name=user_nick_name,
                 time=time,
@@ -167,11 +167,7 @@ async def create_test_order(
 @fastapi_app.get("/api/test/orders")
 async def get_test_orders(username: str):
     with rx.session() as session:
-        orders = (
-            session.query(Order_Model)
-            .filter(Order_Model.user_nick_name == username)
-            .all()
-        )
+        orders = session.query(Order).filter(Order.user_nick_name == username).all()
         return {"orders": [order.model_dump() for order in orders]}
 
 
@@ -203,7 +199,7 @@ async def get_payment(order_id: str):
 async def get_todays_dinner_meals():
     with rx.session() as session:
         todays_dinner_meals = (
-            session.execute(Meal_Model.select_todays_dinner_meals()).scalars().all()
+            session.execute(Meal.select_todays_dinner_meals()).scalars().all()
         )
 
         return {"meals": [row.model_dump() for row in todays_dinner_meals]}
@@ -214,7 +210,7 @@ async def create_dinner_meal_for_today(username: str, receiver: str):
     meal_id = str(short_uid())
     with rx.session() as session:
         session.add(
-            Meal_Model(
+            Meal(
                 meal_id=meal_id,
                 order_id=str(short_uid()),
                 user_nick_name=username,
@@ -301,7 +297,7 @@ def sync_new_users(unsynced_users):
 
 
 def sync_orders():
-    order_string_columns = get_model_string_type_columns(Order_Model)
+    order_string_columns = get_model_string_type_columns(Order)
 
     with rx.session() as session:
         order_data = get_records(
@@ -322,9 +318,7 @@ def sync_orders():
             ],
             True,
         )
-        current_unsynced_orders = (
-            session.query(Order_Model).filter(~Order_Model.synced).all()
-        )
+        current_unsynced_orders = session.query(Order).filter(~Order.synced).all()
 
         if not len(current_unsynced_orders):
             for order in order_data:
@@ -332,10 +326,10 @@ def sync_orders():
                 del order["user"]
                 sanitise_record_strings(order_string_columns, order)
 
-            for row in session.exec(Order_Model.select()).all():
+            for row in session.exec(Order.select()).all():
                 session.delete(row)
 
-            session.add_all(Order_Model.model_validate(order) for order in order_data)
+            session.add_all(Order.model_validate(order) for order in order_data)
 
         google_sheet_order_ids = [order["order_id"] for order in order_data]
         remaining_unsynced_orders = []
@@ -355,7 +349,7 @@ def sync_orders():
 
 
 def sync_users():
-    user_string_columns = get_model_string_type_columns(User_Model)
+    user_string_columns = get_model_string_type_columns(User)
 
     with rx.session() as session:
         user_data = get_records(
@@ -377,9 +371,7 @@ def sync_users():
             ],
             True,
         )
-        current_unsynced_users = (
-            session.query(User_Model).filter(~User_Model.synced).all()
-        )
+        current_unsynced_users = session.query(User).filter(~User.synced).all()
 
         for user in user_data:
             del user["owes"]
@@ -394,10 +386,10 @@ def sync_users():
             )
 
         if not len(current_unsynced_users):
-            for row in session.exec(User_Model.select()).all():
+            for row in session.exec(User.select()).all():
                 session.delete(row)
 
-            session.add_all(User_Model.model_validate(user) for user in user_data)
+            session.add_all(User.model_validate(user) for user in user_data)
 
         google_sheet_user_nick_names = [user["nick_name"] for user in user_data]
         remaining_unsynced_users = []
@@ -456,11 +448,11 @@ def sync_admin_data():
     with rx.session() as session:
         admin_data = get_records(admin_sheet)[0]
 
-        for row in session.exec(Admin_Model.select()).all():
+        for row in session.exec(Admin.select()).all():
             session.delete(row)
 
         session.add_all(
-            Admin_Model.model_validate({"key": key, "value": str(admin_data[key])})
+            Admin.model_validate({"key": key, "value": str(admin_data[key])})
             for key in admin_data
         )
 
@@ -469,18 +461,16 @@ def sync_admin_data():
 
 def update_meals_table():
     with rx.session() as session:
-        volunteers: list[User_Model] = (
-            session.exec(select(User_Model).where(User_Model.volunteer == True))
-            .scalars()
-            .all()
+        volunteers: list[User] = (
+            session.exec(select(User).where(User.volunteer == True)).scalars().all()
         )
-        orders: list[Order_Model] = session.exec(Order_Model.select()).all()
+        orders: list[Order] = session.exec(Order.select()).all()
         now = get_madrid_datetime_now()
-        todays_meals: list[Meal_Model] = (
-            session.execute(Meal_Model.select_todays_meals()).scalars().all()
+        todays_meals: list[Meal] = (
+            session.execute(Meal.select_todays_meals()).scalars().all()
         )
-        dinner_meals_today: list[Meal_Model] = (
-            session.execute(Meal_Model.select_todays_dinner_meals()).scalars().all()
+        dinner_meals_today: list[Meal] = (
+            session.execute(Meal.select_todays_dinner_meals()).scalars().all()
         )
         signups_in_todays_orders = list(
             filter(
@@ -520,7 +510,7 @@ def update_meals_table():
                 continue
 
             session.add(
-                Meal_Model(
+                Meal(
                     meal_id=str(short_uid()),
                     order_id="N/A",
                     user_nick_name=volunteer.nick_name,
@@ -542,7 +532,7 @@ def update_meals_table():
                 continue
 
             session.add(
-                Meal_Model(
+                Meal(
                     meal_id=str(short_uid()),
                     order_id=order.order_id,
                     user_nick_name=order.user_nick_name,
