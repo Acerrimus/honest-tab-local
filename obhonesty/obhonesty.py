@@ -118,7 +118,6 @@ async def create_test_user(username: str, volunteer: str = ""):
             )
         )
         session.commit()
-
     return {"username": username, "message": "Test user created successfully"}
 
 
@@ -158,7 +157,6 @@ async def create_test_order(
             )
         )
         session.commit()
-
     return {"order_id": order_id, "message": "Test order created successfully"}
 
 
@@ -177,7 +175,6 @@ async def get_stripe_checkout_sessions(username: str):
             .filter(Stripe_Checkout_Session.user == username)
             .all()
         )
-
         return {
             "checkout_sessions": [
                 checkout_session.model_dump() for checkout_session in checkout_sessions
@@ -189,7 +186,6 @@ async def get_stripe_checkout_sessions(username: str):
 async def get_payment(order_id: str):
     with rx.session() as session:
         payment = session.query(Payment).filter(Payment.order_id == order_id).first()
-
     return {"payment": payment.model_dump() if payment else "None found"}
 
 
@@ -199,8 +195,7 @@ async def get_todays_dinner_meals():
         todays_dinner_meals = (
             session.execute(Meal.select_todays_dinner_meals()).scalars().all()
         )
-
-        return {"meals": [row.model_dump() for row in todays_dinner_meals]}
+    return {"meals": [row.model_dump() for row in todays_dinner_meals]}
 
 
 @fastapi_app.post("/api/test/meals/dinner/today", status_code=status.HTTP_201_CREATED)
@@ -222,16 +217,13 @@ async def create_dinner_meal_for_today(username: str, receiver: str):
             )
         )
         session.commit()
-
     return {"meal_id": meal_id, "message": "Test meal created successfully"}
 
 
 def get_records(sheet, headers: list[str] = [], add_synced: bool = False):
     check_internet_connection()
-
     if sheet is None:
         return []
-
     records = sheet.get_all_records(expected_headers=headers)
 
     for record in records:
@@ -240,7 +232,6 @@ def get_records(sheet, headers: list[str] = [], add_synced: bool = False):
 
     if not add_synced:
         return records
-
     return [{**record, "synced": True} for record in records]
 
 
@@ -317,7 +308,6 @@ def sync_orders():
             True,
         )
         current_unsynced_orders = session.query(Order).filter(~Order.synced).all()
-
         if not len(current_unsynced_orders):
             for order in order_data:
                 order["user_nick_name"] = order["user"]
@@ -336,12 +326,10 @@ def sync_orders():
             if order.order_id in google_sheet_order_ids:
                 order.synced = True
                 continue
-
             remaining_unsynced_orders.append(order)
 
         if len(session.new) or len(session.dirty):
             session.commit()
-
         if len(remaining_unsynced_orders):
             sync_new_orders(remaining_unsynced_orders)
 
@@ -373,6 +361,7 @@ def sync_users():
 
         for user in user_data:
             del user["owes"]
+
             for key in ["volunteer", "away", "current_guest", "active_tab"]:
                 user[key] = user[key].lower() in ["yes", "true"]
 
@@ -388,7 +377,6 @@ def sync_users():
                 session.delete(row)
 
             session.add_all(User.model_validate(user) for user in user_data)
-
         google_sheet_user_nick_names = [user["nick_name"] for user in user_data]
         remaining_unsynced_users = []
 
@@ -396,12 +384,10 @@ def sync_users():
             if user.nick_name in google_sheet_user_nick_names:
                 user.synced = True
                 continue
-
             remaining_unsynced_users.append(user)
 
         if len(session.new) or len(session.dirty):
             session.commit()
-
         if len(remaining_unsynced_users):
             sync_new_users(remaining_unsynced_users)
 
@@ -420,6 +406,7 @@ def sync_items():
         # seeds a test item for e2e testing if it doesn't already exist
         if is_test_environment:
             test_item_exists = False
+
             for item in item_data:
                 if item["name"] != "TEST ITEM":
                     continue
@@ -453,7 +440,6 @@ def sync_admin_data():
             Admin.model_validate({"key": key, "value": str(admin_data[key])})
             for key in admin_data
         )
-
         session.commit()
 
 
@@ -491,7 +477,6 @@ def update_meals_table():
                 or meal.order_id == "N/A"
             ):
                 continue
-
             session.delete(meal)
 
         dinner_meals_today_as_receivers = list(
@@ -503,10 +488,8 @@ def update_meals_table():
             volunteer_receiver_name = generate_receiver_from_names(
                 volunteer.first_name, volunteer.last_name
             )
-
             if volunteer_receiver_name in dinner_meals_today_as_receivers:
                 continue
-
             session.add(
                 Meal(
                     meal_id=str(short_uid()),
@@ -528,7 +511,6 @@ def update_meals_table():
         for order in signups_in_todays_orders:
             if order.order_id in todays_meals_as_order_ids:
                 continue
-
             session.add(
                 Meal(
                     meal_id=str(short_uid()),
@@ -587,7 +569,6 @@ def sync_new_stripe_checkout_sessions():
             ):
                 unsynced_session.synced = True
                 continue
-
             remaining_unsynced_sessions.append(unsynced_session)
 
         if len(session.new) or len(session.dirty) or len(session.deleted):
@@ -636,7 +617,6 @@ def sync_payments():
             .filter(Payment.order_id.not_in(payment_order_ids))
             .all()
         )
-
         if len(unsynced_payments):
             session.close()
             payments_sheet.append_rows(
@@ -680,7 +660,6 @@ async def run_loop_tasks():
         try:
             update_meals_table()
             await sync_google_sheet_and_local_db()
-
         except Exception as e:
             print(e)
 
