@@ -6,7 +6,7 @@ from obhonesty.aux import get_madrid_datetime_now
 # These classes specify the table info for the SQL database, storing google sheets data offline.
 # They must be updated if any new columns are added.
 
-# synced is a prop only in the sqlite db.
+# synced is a prop only in the postgres db.
 
 
 class User(rx.Model, table=True):
