@@ -6,7 +6,7 @@ describe("When POST /api/test/orders is called with valid details", () => {
     const orderDetails = generateOrderDetails(generateUsername());
     cy.request({
       method: "POST",
-      url: "http://app:8000/api/test/orders",
+      url: "http://localhost:8000/api/test/orders",
       qs: orderDetails,
     }).then((response) => {
       expect(response.status).to.eq(201);

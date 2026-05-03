@@ -1,7 +1,7 @@
 import { getDataTestIdElement } from "../helpers";
 
 export function generateUsername() {
-  return `CypressUser${Date.now()}${Math.floor(Math.random()*90000) + 10000}`;
+  return `CypressUser${Date.now()}${Math.floor(Math.random() * 90000) + 10000}`;
 }
 
 export function createUser(username) {
@@ -26,13 +26,20 @@ export function logUserOn(username, password = "test@") {
 function createUserApi(qs) {
   return cy.request({
     method: "POST",
-    url: "http://app:8000/api/test/user",
+    url: "http://localhost:8000/api/test/user",
     qs,
   });
 }
 
 export function createGuestUserApi(username) {
   return createUserApi({ username });
+}
+
+export function createGuestUserWithPrepaidDinnersApi(
+  username,
+  prepaid_dinners_quantity,
+) {
+  return createUserApi({ username, prepaid_dinners_quantity });
 }
 
 export function createVolunteerUserApi(username) {

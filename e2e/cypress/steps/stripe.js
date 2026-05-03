@@ -14,10 +14,10 @@ export function triggerSuccessfulStripePayment() {
   cy.getAllSessionStorage().then((result) => {
     cy.request({
       method: "POST",
-      url: "http://app:8000/api/test/stripe/trigger",
+      url: "http://localhost:8000/api/test/stripe/trigger",
       qs: {
         stripe_test_state: "success",
-        token: result["http://app:3000"].token,
+        token: result["http://localhost:3000"].token,
       },
     });
   });
@@ -35,9 +35,9 @@ export function assertStripeLineItemsMatchExpected(expectedLineItems) {
   cy.getAllSessionStorage()
     .then((result) =>
       cy.request({
-        url: "http://app:8000/api/test/stripe/line-items",
+        url: "http://localhost:8000/api/test/stripe/line-items",
         qs: {
-          token: result["http://app:3000"].token,
+          token: result["http://localhost:3000"].token,
         },
       }),
     )
