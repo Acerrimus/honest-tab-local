@@ -55,9 +55,7 @@ app.add_page(
         State.reload_sheet_data,
     ],
 )
-app.add_page(
-    user_signup_page, route="/signup", on_load=State.update_last_user_activity_datetime
-)
+app.add_page(user_signup_page, route="/signup")
 app.add_page(
     dinner_signup_page,
     route="/dinner",
