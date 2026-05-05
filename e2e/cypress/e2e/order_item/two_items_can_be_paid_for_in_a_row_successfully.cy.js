@@ -21,6 +21,7 @@ describe(
         .filter(":contains(TEST ITEM (€1.00))")
         .click();
       getDataTestIdElement("item_pay_now").click();
+      getDataTestIdElement("stripe_dialog_title");
       getDataTestIdElement("stripe_qr_code_image");
       triggerSuccessfulStripePayment();
       getDataTestIdElement("stripe_payment_successful_text").should(
@@ -32,6 +33,7 @@ describe(
         .filter(":contains(TEST ITEM (€1.00))")
         .click();
       getDataTestIdElement("item_pay_now").click();
+      getDataTestIdElement("stripe_dialog_title");
       getDataTestIdElement("stripe_qr_code_image");
       triggerSuccessfulStripePayment();
       getDataTestIdElement("stripe_payment_successful_text").should(
