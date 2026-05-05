@@ -32,6 +32,14 @@ from obhonesty.aux import (
 from obhonesty.constants import DATETIME_FORMAT
 import os
 from fastapi import FastAPI, status
+from typing import TypedDict
+from gspread import Cell
+
+
+class UnsyncedUserWithRow(TypedDict):
+    row: int
+    user: User
+
 
 is_test_environment = True if os.getenv("TEST") else False
 fastapi_app = FastAPI(title="Honesty Bar API")
@@ -96,7 +104,9 @@ app.add_page(
 
 
 @fastapi_app.post("/api/test/user", status_code=status.HTTP_201_CREATED)
-async def create_test_user(username: str, volunteer: str = ""):
+async def create_test_user(
+    username: str, volunteer: str = "", prepaid_dinners_quantity=0
+):
     with rx.session() as session:
         session.add(
             User.model_validate(
@@ -112,11 +122,20 @@ async def create_test_user(username: str, volunteer: str = ""):
                     "synced": False,
                     "volunteer": len(volunteer) > 0,
                     "away": False,
+                    "prepaid_dinners_quantity": prepaid_dinners_quantity,
                 }
             )
         )
         session.commit()
     return {"username": username, "message": "Test user created successfully"}
+
+
+@fastapi_app.get("/api/test/user")
+async def get_user(
+    username: str,
+):
+    user = rx.session().query(User).filter(User.nick_name == username).first()
+    return {"user": user.model_dump()}
 
 
 @fastapi_app.post("/api/test/orders", status_code=status.HTTP_201_CREATED)
@@ -270,7 +289,7 @@ def sync_new_orders(unsynced_orders):
     )
 
 
-def sync_new_users(unsynced_users):
+def sync_new_users(unsynced_users: list[User]):
     new_rows = []
     for user in unsynced_users:
         new_rows.append(
@@ -287,12 +306,32 @@ def sync_new_users(unsynced_users):
                 "",
                 user.current_guest,
                 user.active_tab,
-                "",
+                user.prepaid_dinners_quantity if user.prepaid_dinners_quantity else "",
             ]
         )
     user_sheet.append_rows(
         new_rows, value_input_option="USER_ENTERED", table_range="A1"
     )
+
+
+def sync_updated_users(unsynced_users_with_rows: list[UnsyncedUserWithRow]):
+    updated_cells: list[Cell] = []
+    for unsynced_user_with_row in unsynced_users_with_rows:
+        for column_number, column_name in [
+            [12, "active_tab"],
+            [13, "prepaid_dinners_quantity"],
+        ]:
+            value = getattr(unsynced_user_with_row["user"], column_name)
+            if column_name == "prepaid_dinners_quantity" and not value:
+                value = ""
+            updated_cells.append(
+                Cell(
+                    row=unsynced_user_with_row["row"],
+                    col=column_number,
+                    value=value,
+                )
+            )
+    user_sheet.update_cells(updated_cells, value_input_option="USER_ENTERED")
 
 
 def sync_orders():
@@ -345,10 +384,8 @@ def sync_orders():
 
 
 def sync_users():
-    user_string_columns = get_model_string_type_columns(User)
-
     with rx.session() as session:
-        user_data = get_records(
+        google_sheets_user_data = get_records(
             user_sheet,
             [
                 "nick_name",
@@ -367,39 +404,73 @@ def sync_users():
             ],
             True,
         )
-        current_unsynced_users = session.query(User).filter(~User.synced).all()
+        current_unsynced_users: list[User] = (
+            session.query(User).filter(~User.synced).all()
+        )
+        new_unsynced_users_to_sync: list[User] = []
+        updated_unsynced_users_to_sync: list[UnsyncedUserWithRow] = []
 
-        for user in user_data:
-            del user["owes"]
-
+        for google_sheets_user in google_sheets_user_data:
+            del google_sheets_user["owes"]
             for key in ["volunteer", "away", "current_guest", "active_tab"]:
-                user[key] = user[key].lower() in ["yes", "true"]
-
-            user = sanitise_record_strings(user_string_columns, user)
-            user["prepaid_dinners_quantity"] = (
+                google_sheets_user[key] = google_sheets_user[key].lower() in [
+                    "yes",
+                    "true",
+                ]
+            google_sheets_user = sanitise_record_strings(
+                get_model_string_type_columns(User), google_sheets_user
+            )
+            google_sheets_user["prepaid_dinners_quantity"] = (
                 0
-                if user["prepaid_dinners_quantity"] == ""
-                else int(user["prepaid_dinners_quantity"])
+                if google_sheets_user["prepaid_dinners_quantity"] == ""
+                else int(google_sheets_user["prepaid_dinners_quantity"])
             )
 
         if not len(current_unsynced_users):
             for row in session.exec(User.select()).all():
                 session.delete(row)
+            session.add_all(
+                User.model_validate(google_sheets_user)
+                for google_sheets_user in google_sheets_user_data
+            )
+        else:
+            google_sheet_user_nick_names: list[str] = [
+                google_sheets_user["nick_name"]
+                for google_sheets_user in google_sheets_user_data
+            ]
 
-            session.add_all(User.model_validate(user) for user in user_data)
-        google_sheet_user_nick_names = [user["nick_name"] for user in user_data]
-        remaining_unsynced_users = []
-
-        for user in current_unsynced_users:
-            if user.nick_name in google_sheet_user_nick_names:
-                user.synced = True
-                continue
-            remaining_unsynced_users.append(user)
+            for unsynced_user in current_unsynced_users:
+                if unsynced_user.nick_name not in google_sheet_user_nick_names:
+                    new_unsynced_users_to_sync.append(unsynced_user)
+                    continue
+                matching_google_sheet_user_index = google_sheet_user_nick_names.index(
+                    unsynced_user.nick_name
+                )
+                matching_google_sheet_user = google_sheets_user_data[
+                    matching_google_sheet_user_index
+                ]
+                if not all(
+                    matching_google_sheet_user[column] == getattr(unsynced_user, column)
+                    for column in [
+                        "active_tab",
+                        "prepaid_dinners_quantity",
+                    ]
+                ):
+                    updated_unsynced_users_to_sync.append(
+                        {
+                            "row": matching_google_sheet_user_index + 2,
+                            "user": unsynced_user,
+                        }
+                    )
+                    continue
+                unsynced_user.synced = True
 
         if len(session.new) or len(session.dirty):
             session.commit()
-        if len(remaining_unsynced_users):
-            sync_new_users(remaining_unsynced_users)
+        if len(new_unsynced_users_to_sync):
+            sync_new_users(new_unsynced_users_to_sync)
+        if len(updated_unsynced_users_to_sync):
+            sync_updated_users(updated_unsynced_users_to_sync)
 
 
 def sync_items():

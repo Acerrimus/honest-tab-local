@@ -767,7 +767,8 @@ def dinner_signup_page() -> rx.Component:
                     rx.cond(
                         State.remaining_prepaid_dinners_count > 0,
                         rx.text.strong(
-                            f"You currently have {State.remaining_prepaid_dinners_count} prepaid dinner{prepaid_dinners_plural} remaining."
+                            f"You currently have {State.remaining_prepaid_dinners_count} prepaid dinner{prepaid_dinners_plural} remaining.",
+                            **{"data-testid": "prepaid-dinners-message"},
                         ),
                     ),
                     rx.button(

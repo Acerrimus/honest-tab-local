@@ -7,7 +7,6 @@ import stripe
 from sqlalchemy import update, select, exists
 from dotenv import load_dotenv
 import os
-from gspread import Cell
 from obhonesty.aux import (
     short_uid,
     generate_receiver_from_names,
@@ -369,18 +368,15 @@ class State(rx.State):
                 if row.name == "":
                     continue
                 items[row.name] = row
-
             orders = [
                 Order.from_dict(row.model_dump())
                 for row in session.exec(Order_Model.select()).all()
             ]
             admin_data = {}
-
             for row in session.exec(Admin_Model.select()).all():
                 admin_data[row.key] = (
                     row.value if "deadline" in row.key else float(row.value)
                 )
-
         async with self:
             self.items = items
             self.orders = orders
@@ -875,50 +871,27 @@ class State(rx.State):
     @rx.event
     def close_guest_account(self):
         with rx.session() as session:
-            user_sheet_row_number: int
-            all_users = session.exec(User_Model.select()).all()
-            user_model: User_Model
-
-            for index, user in enumerate(all_users):
-                if user.nick_name != self.current_user.nick_name:
-                    continue
-
-                user_model = user
-                user_sheet_row_number = index + 2
-                break
-
-            values = []
-
-            if self.current_user.prepaid_dinners_quantity:
-                # reduce prepaid dinners quantity (col 13) by the number of dinners paid for.
-                # if no more dinners remain, clear the value
-                prepaid_dinners_value = (
-                    self.remaining_prepaid_dinners_count
-                    if self.remaining_prepaid_dinners_count
-                    else ""
-                )
-                values.append([13, prepaid_dinners_value])
-
-            if self.is_closing_account:
-                # if closing their account make this no longer an active tab (col 12)
-                values.append([12, False])
-                # updating the SQL row directly immediately removes the user from the user list on the welcome page.
-                user_model.active_tab = False
-                session.commit()
-
-            if not len(values):
+            if (
+                not self.current_user.prepaid_dinners_quantity
+                and not self.is_closing_account
+            ):
                 return
 
-            cells = []
-
-            for col_num, value in values:
-                cells.append(Cell(row=user_sheet_row_number, col=col_num, value=value))
-
-            try:
-                user_sheet.update_cells(cells, value_input_option="USER_ENTERED")
-
-            except Exception as e:
-                return rx.toast.error(f"Error updating cells: {e}")
+            user: User_Model = (
+                session.query(User_Model)
+                .filter(User_Model.nick_name == self.current_user.nick_name)
+                .scalar()
+            )
+            if not user:
+                return rx.toast.error("Error checking guest out, please see reception.")
+            if self.current_user.prepaid_dinners_quantity:
+                user.prepaid_dinners_quantity = (
+                    self.get_remaining_prepaid_dinner_quantity()
+                )
+            if self.is_closing_account:
+                user.active_tab = False
+            user.synced = False
+            session.commit()
 
     @rx.event
     def pay_current_tab(self):
@@ -1382,7 +1355,7 @@ class State(rx.State):
         signups.sort(key=lambda x: x.comment)
         return signups
 
-    @rx.var(cache=False)
+    @rx.var
     def get_user_debt(self) -> float:
         return sum(
             [
@@ -1392,27 +1365,38 @@ class State(rx.State):
             ]
         )
 
-    @rx.var(cache=False)
+    @rx.var
     def get_all_nick_names(self) -> List[str]:
         return [user.nick_name for user in self.users]
 
-    @rx.var
+    @rx.event
+    def get_remaining_prepaid_dinner_quantity(self):
+        return max(
+            self.current_user.prepaid_dinners_quantity
+            - rx.session()
+            .query(Order_Model)
+            .filter(
+                Order_Model.user_nick_name == self.current_user.nick_name,
+                Order_Model.item == "Dinner sign-up",
+            )
+            .count(),
+            0,
+        )
+
+    @rx.var(cache=False)
     def remaining_prepaid_dinners_count(self) -> int:
         if not self.current_user:
             return 0
-
-        prepaid_dinner_count: int = self.current_user.prepaid_dinners_quantity
-
-        for order in self.current_user_orders:
-            if not prepaid_dinner_count:
-                return prepaid_dinner_count
-
-            if order.item != "Dinner sign-up":
-                continue
-
-            prepaid_dinner_count -= 1
-
-        return prepaid_dinner_count
+        # ordered_dinner_quantity: int = (
+        #     rx.session()
+        #     .query(Order_Model)
+        #     .filter(
+        #         Order_Model.user_nick_name == self.current_user.nick_name,
+        #         Order_Model.item == "Dinner sign-up",
+        #     )
+        #     .count()
+        # )
+        return self.get_remaining_prepaid_dinner_quantity()
 
     @rx.var
     def prepaid_dinner_ids(self) -> List[str]:
