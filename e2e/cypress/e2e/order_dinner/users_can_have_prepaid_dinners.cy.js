@@ -114,8 +114,6 @@ describe("When a user has prepaid dinners", { testIsolation: false }, () => {
   it("when they pay their tab their prepaid dinner quantity will be decremented", () => {
     triggerSuccessfulStripePayment();
     getDataTestIdElement("checkout-complete-text").should("be.visible");
-    // cy.waitUntil(
-    //   () => {
     cy.request({
       method: "GET",
       url: "http://app:8000/api/test/user",
@@ -123,8 +121,5 @@ describe("When a user has prepaid dinners", { testIsolation: false }, () => {
     }).then((response) => {
       cy.wrap(response.body.user.prepaid_dinners_quantity).should("eq", 0);
     });
-    //   },
-    //   { timeout: 20000 },
-    // );
   });
 });
