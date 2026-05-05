@@ -40,6 +40,7 @@ is_test_environment = True if os.getenv("TEST") else False
 class State(rx.State):
     """The app state."""
 
+    has_homepage_load_completed: bool = False
     admin_data: Dict[str, Any] = {}
     users: List[User] = []
     items: Dict[str, Item] = {}
@@ -121,6 +122,11 @@ class State(rx.State):
     dinner_signup_dietary_preference: str = ""
     dinner_signup_allergies: str = ""
     # -----------------------------
+
+    @rx.event
+    def redirect_to_homepage(self):
+        self.has_homepage_load_completed = False
+        return rx.redirect("/")
 
     def set_temp_quantity(self, value: str):
         try:
@@ -320,7 +326,8 @@ class State(rx.State):
                 async with self:
                     self.is_user_activity_check_running = False
                 if is_user_inactive_for_two_minutes:
-                    yield rx.redirect("/")
+                    yield State.redirect_to_homepage
+                    break
             await asyncio.sleep(1)
 
     @rx.event(background=True)
@@ -464,12 +471,12 @@ class State(rx.State):
 
     @rx.event
     def handle_user_logout(self):
-        return rx.redirect("/")
+        return State.redirect_to_homepage
 
     @rx.event
     def redirect_no_user(self):
         if self.current_user is None:
-            return rx.redirect("/")
+            return State.redirect_to_homepage
 
     @rx.event
     def order_item(self):
@@ -834,7 +841,7 @@ class State(rx.State):
                 )
             )
             session.commit()
-        return rx.redirect("/")
+        return State.redirect_to_homepage
 
     @rx.event
     def handle_checkout_choice(self, form_data: dict):

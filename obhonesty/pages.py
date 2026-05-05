@@ -117,34 +117,41 @@ def index() -> rx.Component:
                     justify="center",
                     width="100%",
                 ),
-                rx.hstack(
-                    rx.text("New here?", size="3"),
-                    rx.button(
-                        rx.icon("user-plus"),
-                        rx.text(
-                            "Sign up for self-service",
-                            size=default_button_text_size,
-                            **{"data-testid": "sign-up-user-button"},
+                rx.cond(
+                    State.has_homepage_load_completed,
+                    rx.hstack(
+                        rx.text("New here?", size="3"),
+                        rx.button(
+                            rx.icon("user-plus"),
+                            rx.text(
+                                "Sign up for self-service",
+                                size=default_button_text_size,
+                                **{"data-testid": "sign-up-user-button"},
+                            ),
+                            color_scheme="green",
+                            on_click=rx.redirect("/signup"),
+                            size="3",
                         ),
-                        color_scheme="green",
-                        on_click=rx.redirect("/signup"),
-                        size="3",
+                        align="center",
+                        justify="center",
+                        width="100%",
                     ),
-                    align="center",
-                    justify="center",
-                    width="100%",
+                    rx.text("Loading..."),
                 ),
-                rx.scroll_area(
-                    rx.flex(
-                        rx.foreach(State.users, user_button_dialog),
-                        padding="8px",
-                        spacing="5",
-                        style={"width": "max"},
-                        wrap="wrap",
+                rx.cond(
+                    State.has_homepage_load_completed,
+                    rx.scroll_area(
+                        rx.flex(
+                            rx.foreach(State.users, user_button_dialog),
+                            padding="8px",
+                            spacing="5",
+                            style={"width": "max"},
+                            wrap="wrap",
+                        ),
+                        type="always",
+                        scrollbars="vertical",
+                        style={"height": "80vh"},
                     ),
-                    type="always",
-                    scrollbars="vertical",
-                    style={"height": "80vh"},
                 ),
             ),
             align="center",
@@ -172,7 +179,7 @@ def error_page() -> rx.Component:
         rx.button(
             rx.icon("door-open"),
             "Return",
-            on_click=rx.redirect("/"),
+            on_click=State.redirect_to_homepage,
             size=default_button_size,
         ),
     )
@@ -699,7 +706,7 @@ def user_signup_page() -> rx.Component:
                 ),
                 rx.button(
                     rx.text("Cancel", size=default_button_text_size),
-                    on_click=rx.redirect("/"),
+                    on_click=State.redirect_to_homepage,
                     size=default_button_size,
                     color_scheme="red",
                 ),
