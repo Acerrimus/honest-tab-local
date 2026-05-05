@@ -1435,6 +1435,7 @@ def admin_breakfast() -> rx.Component:
                         ),
                         flex="1",
                     ),
+                    rx.text("Loading..."),
                 ),
                 rx.scroll_area(
                     rx.table.root(
