@@ -90,14 +90,14 @@ export function createDinnerOrderApi(username, receiver) {
 export function createUserOrderApi(qs) {
   return cy.request({
     method: "POST",
-    url: "http://localhost:8000/api/test/orders",
+    url: "http://app:8000/api/test/orders",
     qs,
   });
 }
 
 export function getUserOrdersApi(username) {
   return cy.request({
-    url: "http://localhost:8000/api/test/orders",
+    url: "http://app:8000/api/test/orders",
     qs: { username },
   });
 }

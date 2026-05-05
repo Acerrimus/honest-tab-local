@@ -26,7 +26,7 @@ export function logUserOn(username, password = "test@") {
 function createUserApi(qs) {
   return cy.request({
     method: "POST",
-    url: "http://localhost:8000/api/test/user",
+    url: "http://app:8000/api/test/user",
     qs,
   });
 }

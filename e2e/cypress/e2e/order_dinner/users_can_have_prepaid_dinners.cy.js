@@ -118,7 +118,7 @@ describe("When a user has prepaid dinners", { testIsolation: false }, () => {
     //   () => {
     cy.request({
       method: "GET",
-      url: "http://localhost:8000/api/test/user",
+      url: "http://app:8000/api/test/user",
       qs: { username },
     }).then((response) => {
       cy.wrap(response.body.user.prepaid_dinners_quantity).should("eq", 0);
