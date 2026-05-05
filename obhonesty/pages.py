@@ -1308,9 +1308,7 @@ def show_signup(meal: Meal_Model):
         rx.table.cell(
             rx.button(
                 rx.text(rx.cond(meal.served, "✅", "✖️"), size="8"),
-                on_click=lambda: State.set_served(
-                    meal.meal_id, ~meal.served, meal.meal_type
-                ),
+                on_click=lambda: State.set_served(meal.meal_id, ~meal.served),
                 color_scheme=rx.cond(meal.served, "green", "red"),
                 size="4",
                 **{"data-testid": "served-button"},

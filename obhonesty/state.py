@@ -255,24 +255,8 @@ class State(rx.State):
 
         self.is_logging_user_in = False
 
-    @rx.event(background=True)
-    async def set_served(
-        self, meal_id: str, value: bool, meal_type: Literal["breakfast", "dinner"]
-    ):
-        meal_state = (
-            self.todays_breakfast_meals
-            if meal_type == "breakfast"
-            else self.todays_dinner_meals
-        )
-
-        for index, meal in enumerate(meal_state):
-            if meal.meal_id != meal_id:
-                continue
-
-            async with self:
-                meal_state[index].served = value
-            break
-
+    @rx.event
+    def set_served(self, meal_id: str, value: bool):
         with rx.session() as session:
             session.exec(
                 update(Meal_Model)
@@ -280,7 +264,7 @@ class State(rx.State):
                 .values(served=value)
             )
             session.commit()
-        return State.update_meal_totals
+        self.update_meal_totals()
 
     def set_dinner_as_ordered_item(self):
         self.ordered_item = "dinner"
