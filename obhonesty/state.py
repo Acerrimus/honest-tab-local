@@ -93,6 +93,8 @@ class State(rx.State):
     dinner_count_volunteers_vegetarian: int = 0
     dinner_count_volunteers_meat: int = 0
 
+    is_loading_admin_meal_table: bool = True
+
     # --- Payment State Variables ---
     current_stripe_session_id: str = ""
     payment_qr_code: str = ""
@@ -330,25 +332,39 @@ class State(rx.State):
                     break
             await asyncio.sleep(1)
 
+    @rx.event
+    def get_users_with_active_tabs(self):
+        return [
+            User.from_dict(row.model_dump())
+            for row in rx.session()
+            .exec(User_Model.select_users_with_an_active_tab())
+            .scalars()
+            .all()
+        ]
+
+    @rx.event
+    def get_todays_breakfast_meals(self):
+        return (
+            rx.session()
+            .execute(Meal_Model.select_todays_breakfast_meals())
+            .scalars()
+            .all()
+        )
+
+    @rx.event
+    def get_todays_dinner_meals(self):
+        return (
+            rx.session()
+            .execute(Meal_Model.select_todays_dinner_meals())
+            .scalars()
+            .all()
+        )
+
     @rx.event(background=True)
     async def reload_sheet_data(self):
+        users = self.get_users_with_active_tabs()
         with rx.session() as session:
-            users = [
-                User.from_dict(row.model_dump())
-                for row in session.exec(User_Model.select_users_with_an_active_tab())
-                .scalars()
-                .all()
-            ]
-            todays_breakfast_meals = (
-                session.execute(Meal_Model.select_todays_breakfast_meals())
-                .scalars()
-                .all()
-            )
-            todays_dinner_meals = (
-                session.execute(Meal_Model.select_todays_dinner_meals()).scalars().all()
-            )
             items = {}
-
             for row in session.exec(Item.select()).all():
                 if row.name == "":
                     continue
@@ -370,11 +386,8 @@ class State(rx.State):
             self.orders = orders
             self.users = users
             self.admin_data = admin_data
-            self.todays_dinner_meals = todays_dinner_meals
-            self.todays_breakfast_meals = todays_breakfast_meals
-
-            if self.router.page.path in ["/admin/breakfast", "/admin/dinner"]:
-                return State.update_meal_totals
+            if not self.has_homepage_load_completed:
+                self.has_homepage_load_completed = True
 
     @rx.event
     def update_meal_totals(self):
@@ -425,7 +438,13 @@ class State(rx.State):
     @rx.event(background=True)
     async def reload_admin_dinner_data(self):
         while self.router.page.path in ["/admin/breakfast", "/admin/dinner"]:
-            yield State.reload_sheet_data  # , State.update_meal_totals]
+            async with self:
+                self.update_meal_totals()
+                self.users = self.get_users_with_active_tabs()
+                self.todays_breakfast_meals = self.get_todays_breakfast_meals()
+                self.todays_dinner_meals = self.get_todays_dinner_meals()
+                if self.is_loading_admin_meal_table:
+                    self.is_loading_admin_meal_table = False
             await asyncio.sleep(3)
 
     @rx.event

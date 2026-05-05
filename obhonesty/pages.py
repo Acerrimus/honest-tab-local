@@ -1297,6 +1297,7 @@ def admin_refresh_top_bar() -> rx.Component:
             on_click=State.reload_sheet_data,
             color_scheme="green",
             size=default_button_size,
+            disabled=State.is_loading_admin_meal_table,
         ),
         spacing="2",
     )
@@ -1338,54 +1339,63 @@ def admin_dinner() -> rx.Component:
                         rx.text("Late sign-up", size=default_button_text_size),
                         on_click=State.redirect_to_later_dinner_signup,
                         size=default_button_size,
+                        disabled=State.is_loading_admin_meal_table,
                         **{"data-testid": "late-signup-button"},
                     ),
                     spacing="2",
                 ),
                 # Make the two columns share the available space evenly
-                rx.hstack(
-                    rx.vstack(
-                        rx.text.strong(f"Total eating dinner: {State.dinner_count}"),
-                        rx.text.strong(
-                            f"Total served: {State.dinner_count_served}",
-                            **{"data-testid": "total-served"},
+                rx.cond(
+                    ~State.is_loading_admin_meal_table,
+                    rx.hstack(
+                        rx.vstack(
+                            rx.text.strong(
+                                f"Total eating dinner: {State.dinner_count}"
+                            ),
+                            rx.text.strong(
+                                f"Total served: {State.dinner_count_served}",
+                                **{"data-testid": "total-served"},
+                            ),
+                            rx.text(f"Meat: {State.dinner_count_meat}"),
+                            rx.text(f"Vegetarian: {State.dinner_count_vegetarian}"),
+                            rx.text(f"Vegan: {State.dinner_count_vegan}"),
+                            flex="1",
                         ),
-                        rx.text(f"Meat: {State.dinner_count_meat}"),
-                        rx.text(f"Vegetarian: {State.dinner_count_vegetarian}"),
-                        rx.text(f"Vegan: {State.dinner_count_vegan}"),
-                        flex="1",
+                        rx.vstack(
+                            rx.text.strong(
+                                f"Guests eating dinner: {State.dinner_count_guests}"
+                            ),
+                            rx.text.strong(
+                                f"Total served: {State.dinner_count_guests_served}",
+                                **{"data-testid": "total-guests-served"},
+                            ),
+                            rx.text(f"Meat: {State.dinner_count_guests_meat}"),
+                            rx.text(
+                                f"Vegetarian: {State.dinner_count_guests_vegetarian}"
+                            ),
+                            rx.text(f"Vegan: {State.dinner_count_guests_vegan}"),
+                            flex="1",
+                        ),
+                        rx.vstack(
+                            rx.text.strong(
+                                f"Volunteers eating dinner: {State.dinner_count_volunteers}"
+                            ),
+                            rx.text.strong(
+                                f"Total served: {State.dinner_count_volunteers_served}",
+                                **{"data-testid": "total-volunteers-served"},
+                            ),
+                            rx.text(f"Meat: {State.dinner_count_volunteers_meat}"),
+                            rx.text(
+                                f"Vegetarian: {State.dinner_count_volunteers_vegetarian}"
+                            ),
+                            rx.text(f"Vegan: {State.dinner_count_volunteers_vegan}"),
+                            flex="1",
+                        ),
+                        spacing="4",
+                        justify="between",
+                        width="100%",
                     ),
-                    rx.vstack(
-                        rx.text.strong(
-                            f"Guests eating dinner: {State.dinner_count_guests}"
-                        ),
-                        rx.text.strong(
-                            f"Total served: {State.dinner_count_guests_served}",
-                            **{"data-testid": "total-guests-served"},
-                        ),
-                        rx.text(f"Meat: {State.dinner_count_guests_meat}"),
-                        rx.text(f"Vegetarian: {State.dinner_count_guests_vegetarian}"),
-                        rx.text(f"Vegan: {State.dinner_count_guests_vegan}"),
-                        flex="1",
-                    ),
-                    rx.vstack(
-                        rx.text.strong(
-                            f"Volunteers eating dinner: {State.dinner_count_volunteers}"
-                        ),
-                        rx.text.strong(
-                            f"Total served: {State.dinner_count_volunteers_served}",
-                            **{"data-testid": "total-volunteers-served"},
-                        ),
-                        rx.text(f"Meat: {State.dinner_count_volunteers_meat}"),
-                        rx.text(
-                            f"Vegetarian: {State.dinner_count_volunteers_vegetarian}"
-                        ),
-                        rx.text(f"Vegan: {State.dinner_count_volunteers_vegan}"),
-                        flex="1",
-                    ),
-                    spacing="4",
-                    justify="between",
-                    width="100%",
+                    rx.text("Loading..."),
                 ),
                 rx.table.root(
                     rx.table.header(
@@ -1412,13 +1422,18 @@ def admin_breakfast() -> rx.Component:
             rx.vstack(
                 rx.heading("Breakfast", size=default_heading_size),
                 admin_refresh_top_bar(),
-                rx.vstack(
-                    rx.text.strong(f"Total eating breakfast: {State.breakfast_count}"),
-                    rx.text(
-                        f"Total served: {State.breakfast_count_served}",
-                        **{"data-testid": "total-served"},
+                rx.cond(
+                    ~State.is_loading_admin_meal_table,
+                    rx.vstack(
+                        rx.text.strong(
+                            f"Total eating breakfast: {State.breakfast_count}"
+                        ),
+                        rx.text(
+                            f"Total served: {State.breakfast_count_served}",
+                            **{"data-testid": "total-served"},
+                        ),
+                        flex="1",
                     ),
-                    flex="1",
                 ),
                 rx.scroll_area(
                     rx.table.root(
