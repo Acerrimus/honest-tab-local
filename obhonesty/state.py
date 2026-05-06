@@ -17,10 +17,9 @@ from obhonesty.aux import (
     get_full_breakfast_item,
 )
 from obhonesty.constants import true_values, DATETIME_FORMAT
-from obhonesty.user import User
 from obhonesty.order import Order
 from obhonesty.models import (
-    User as User_Model,
+    User,
     Order as Order_Model,
     Item,
     Admin as Admin_Model,
@@ -349,13 +348,7 @@ class State(rx.State):
 
     @rx.event
     def get_users_with_active_tabs(self):
-        return [
-            User.from_dict(row.model_dump())
-            for row in rx.session()
-            .exec(User_Model.select_users_with_an_active_tab())
-            .scalars()
-            .all()
-        ]
+        return rx.session().exec(User.select_users_with_an_active_tab()).scalars().all()
 
     @rx.event
     def get_todays_breakfast_meals(self):
@@ -470,17 +463,13 @@ class State(rx.State):
 
     @rx.event
     def handle_user_login_form_submit(self, form_data):
-        user: Optional[User_Model] = None
+        user: Optional[User] = None
         error_message: Optional[str] = None
 
         try:
             user = (
                 rx.session()
-                .exec(
-                    select(User_Model).where(
-                        User_Model.nick_name == form_data["user_nick_name"]
-                    )
-                )
+                .exec(select(User).where(User.nick_name == form_data["user_nick_name"]))
                 .scalar()
             )
 
@@ -499,7 +488,7 @@ class State(rx.State):
             self.is_email_login_incorrect = True
             return
 
-        self.current_user = User.from_dict(user.model_dump())
+        self.current_user = user
         self.is_user_activity_check_running = False
         self.is_email_login_incorrect = False
         self.is_logging_user_in = True
@@ -871,7 +860,7 @@ class State(rx.State):
     def submit_signup(self, form_data: dict):
         with rx.session() as session:
             session.add(
-                User_Model.model_validate(
+                User.model_validate(
                     {
                         **{key: str(form_data[key]) for key in form_data},
                         "synced": False,
@@ -902,9 +891,9 @@ class State(rx.State):
             ):
                 return
 
-            user: User_Model = (
-                session.query(User_Model)
-                .filter(User_Model.nick_name == self.current_user.nick_name)
+            user: User = (
+                session.query(User)
+                .filter(User.nick_name == self.current_user.nick_name)
                 .scalar()
             )
             if not user:
