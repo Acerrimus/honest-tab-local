@@ -1306,6 +1306,7 @@ def admin_refresh_top_bar() -> rx.Component:
 
 def show_signup(meal: Meal_Model):
     has_allergies = meal.allergies != ""
+    is_served = State.optimistic_served_states[meal.meal_id]
     return rx.table.row(
         rx.table.cell(meal.receiver, **{"data-testid": "meal-receiver"}),
         rx.table.cell(meal.diet, **{"data-testid": "diet"}),
@@ -1316,9 +1317,9 @@ def show_signup(meal: Meal_Model):
         ),
         rx.table.cell(
             rx.button(
-                rx.text(rx.cond(meal.served, "✅", "✖️"), size="8"),
-                on_click=lambda: State.set_served(meal.meal_id, ~meal.served),
-                color_scheme=rx.cond(meal.served, "green", "red"),
+                rx.text(rx.cond(is_served, "✅", "✖️"), size="8"),
+                on_click=lambda: State.set_served(meal.meal_id, ~is_served),
+                color_scheme=rx.cond(is_served, "green", "red"),
                 size="4",
                 **{"data-testid": "served-button"},
             )

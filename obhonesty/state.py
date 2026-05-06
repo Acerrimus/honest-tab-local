@@ -93,6 +93,7 @@ class State(rx.State):
     dinner_count_volunteers_meat: int = 0
 
     is_loading_admin_meal_table: bool = True
+    optimistic_served_states: dict[str, bool] = {}
 
     # --- Payment State Variables ---
     current_stripe_session_id: str = ""
@@ -267,16 +268,26 @@ class State(rx.State):
 
         self.is_logging_user_in = False
 
-    @rx.event
-    def set_served(self, meal_id: str, value: bool):
-        with rx.session() as session:
-            session.exec(
-                update(Meal_Model)
-                .where(Meal_Model.meal_id == meal_id)
-                .values(served=value)
+    @rx.event(background=True)
+    async def set_served(self, meal_id: str, value: bool):
+        async with self:
+            self.optimistic_served_states[meal_id] = value
+        try:
+            with rx.session() as session:
+                session.exec(
+                    update(Meal_Model)
+                    .where(Meal_Model.meal_id == meal_id)
+                    .values(served=value)
+                )
+                session.commit()
+            async with self:
+                self.update_meal_totals()
+        except:
+            async with self:
+                self.optimistic_served_states[meal_id] = not value
+            return rx.toast.error(
+                "Could not mark this meal as served, please try again."
             )
-            session.commit()
-        self.update_meal_totals()
 
     def set_dinner_as_ordered_item(self):
         self.ordered_item = "dinner"
@@ -450,6 +461,8 @@ class State(rx.State):
                 self.users = self.get_users_with_active_tabs()
                 self.todays_breakfast_meals = self.get_todays_breakfast_meals()
                 self.todays_dinner_meals = self.get_todays_dinner_meals()
+                for meal in self.todays_breakfast_meals + self.todays_dinner_meals:
+                    self.optimistic_served_states[meal.meal_id] = meal.served
                 self.admin_data = self.get_admin_data()
                 if self.is_loading_admin_meal_table:
                     self.is_loading_admin_meal_table = False
