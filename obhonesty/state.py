@@ -1264,7 +1264,7 @@ class State(rx.State):
     def invalid_new_user_name(self) -> bool:
         return self.new_nick_name in [x.nick_name for x in self.users]
 
-    @rx.var(cache=False)
+    @rx.var
     def invalid_custom_item_price(self) -> bool:
         try:
             float_val = float(self.custom_item_price)
