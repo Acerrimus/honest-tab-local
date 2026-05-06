@@ -1326,10 +1326,6 @@ class State(rx.State):
         return signups
 
     @rx.var(cache=False)
-    def tonights_dinner_signups(self) -> List[Meal_Model]:
-        return self.todays_dinner_meals
-
-    @rx.var(cache=False)
     def dinner_signups(self) -> List[Order]:
         signups: List[Order] = []
         for order in self.orders:
