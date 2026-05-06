@@ -19,7 +19,6 @@ from obhonesty.aux import (
 from obhonesty.constants import true_values, DATETIME_FORMAT
 from obhonesty.user import User
 from obhonesty.order import Order
-from obhonesty.sheet import user_sheet
 from obhonesty.models import (
     User as User_Model,
     Order as Order_Model,
