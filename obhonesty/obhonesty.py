@@ -340,389 +340,415 @@ def add_google_sheet_data_to_session(session, google_sheet_data, model, id_colum
 
 
 def sync_orders():
-    order_string_columns = get_model_string_type_columns(Order)
+    try:
+        order_string_columns = get_model_string_type_columns(Order)
 
-    with rx.session() as session:
-        order_data = get_records(
-            order_sheet,
+        with rx.session() as session:
+            order_data = get_records(
+                order_sheet,
+                [
+                    "order_id",
+                    "user",
+                    "time",
+                    "item",
+                    "quantity",
+                    "price",
+                    "total",
+                    "diet",
+                    "allergies",
+                    "served",
+                    "tax_category",
+                    "comment",
+                ],
+                True,
+            )
+            current_unsynced_orders = session.query(Order).filter(~Order.synced).all()
+            if not len(current_unsynced_orders):
+                for order in order_data:
+                    order["user_nick_name"] = order["user"]
+                    del order["user"]
+                    sanitise_record_strings(order_string_columns, order)
+                for row in session.exec(Order.select()).all():
+                    session.delete(row)
+                add_google_sheet_data_to_session(session, order_data, Order, "order_id")
+
+            google_sheet_order_ids = [order["order_id"] for order in order_data]
+            remaining_unsynced_orders = []
+
+            for order in current_unsynced_orders:
+                if order.order_id in google_sheet_order_ids:
+                    order.synced = True
+                    continue
+                remaining_unsynced_orders.append(order)
+
+            if len(session.new) or len(session.dirty):
+                session.commit()
+            if len(remaining_unsynced_orders):
+                sync_new_orders(remaining_unsynced_orders)
+    except Exception as e:
+        print(f"sync_orders error: {e}")
+
+
+def sync_users():
+    try:
+        with rx.session() as session:
+            google_sheets_user_data = get_records(
+                user_sheet,
+                [
+                    "nick_name",
+                    "first_name",
+                    "last_name",
+                    "phone_number",
+                    "email",
+                    "diet",
+                    "allergies",
+                    "volunteer",
+                    "away",
+                    "owes",
+                    "current_guest",
+                    "active_tab",
+                    "prepaid_dinners_quantity",
+                ],
+                True,
+            )
+            current_unsynced_users: list[User] = (
+                session.query(User).filter(~User.synced).all()
+            )
+            new_unsynced_users_to_sync: list[User] = []
+            updated_unsynced_users_to_sync: list[UnsyncedUserWithRow] = []
+
+            for google_sheets_user in google_sheets_user_data:
+                del google_sheets_user["owes"]
+                for key in ["volunteer", "away", "current_guest", "active_tab"]:
+                    google_sheets_user[key] = google_sheets_user[key].lower() in [
+                        "yes",
+                        "true",
+                    ]
+                google_sheets_user = sanitise_record_strings(
+                    get_model_string_type_columns(User), google_sheets_user
+                )
+                google_sheets_user["prepaid_dinners_quantity"] = (
+                    0
+                    if google_sheets_user["prepaid_dinners_quantity"] == ""
+                    else int(google_sheets_user["prepaid_dinners_quantity"])
+                )
+
+            if not len(current_unsynced_users):
+                for row in session.exec(User.select()).all():
+                    session.delete(row)
+                add_google_sheet_data_to_session(
+                    session, google_sheets_user_data, User, "nick_name"
+                )
+
+            else:
+                google_sheet_user_nick_names: list[str] = [
+                    google_sheets_user["nick_name"]
+                    for google_sheets_user in google_sheets_user_data
+                ]
+
+                for unsynced_user in current_unsynced_users:
+                    if unsynced_user.nick_name not in google_sheet_user_nick_names:
+                        new_unsynced_users_to_sync.append(unsynced_user)
+                        continue
+                    matching_google_sheet_user_index = (
+                        google_sheet_user_nick_names.index(unsynced_user.nick_name)
+                    )
+                    matching_google_sheet_user = google_sheets_user_data[
+                        matching_google_sheet_user_index
+                    ]
+                    if not all(
+                        matching_google_sheet_user[column]
+                        == getattr(unsynced_user, column)
+                        for column in [
+                            "active_tab",
+                            "prepaid_dinners_quantity",
+                        ]
+                    ):
+                        updated_unsynced_users_to_sync.append(
+                            {
+                                "row": matching_google_sheet_user_index + 2,
+                                "user": unsynced_user,
+                            }
+                        )
+                        continue
+                    unsynced_user.synced = True
+
+            if len(session.new) or len(session.dirty):
+                session.commit()
+            if len(new_unsynced_users_to_sync):
+                sync_new_users(new_unsynced_users_to_sync)
+            if len(updated_unsynced_users_to_sync):
+                sync_updated_users(updated_unsynced_users_to_sync)
+    except Exception as e:
+        print(f"sync_users error: {e}")
+
+
+def sync_items():
+    try:
+        with rx.session() as session:
+            item_data = get_records(
+                item_sheet, ["name", "price", "description", "tax_category"]
+            )
+
+            for row in session.exec(Item.select()).all():
+                session.delete(row)
+
+            add_google_sheet_data_to_session(session, item_data, Item, "name")
+
+            # seeds a test item for e2e testing if it doesn't already exist
+            if is_test_environment:
+                test_item_exists = False
+
+                for item in item_data:
+                    if item["name"] != "TEST ITEM":
+                        continue
+                    test_item_exists = True
+                    break
+
+                if not test_item_exists:
+                    session.add(
+                        Item.model_validate(
+                            {
+                                "name": "TEST ITEM",
+                                "price": 1.0,
+                                "description": "",
+                                "tax_category": "Miscellaneous",
+                                "icon": "",
+                            }
+                        )
+                    )
+
+            session.commit()
+    except Exception as e:
+        print(f"sync items error: {e}")
+
+
+def sync_admin_data():
+    try:
+        with rx.session() as session:
+            admin_data = get_records(admin_sheet)[0]
+
+            for row in session.exec(Admin.select()).all():
+                session.delete(row)
+
+            session.add_all(
+                Admin.model_validate({"key": key, "value": str(admin_data[key])})
+                for key in admin_data
+            )
+            add_google_sheet_data_to_session(session, admin_sheet, Admin, "key")
+            session.commit()
+    except Exception as e:
+        print(f"sync_admin_data error: {e}")
+
+
+def update_meals_table():
+    try:
+        with rx.session() as session:
+            volunteers: list[User] = (
+                session.exec(select(User).where(User.volunteer == True)).scalars().all()
+            )
+            orders: list[Order] = session.exec(Order.select()).all()
+            now = get_madrid_datetime_now()
+            todays_meals: list[Meal] = (
+                session.execute(Meal.select_todays_meals()).scalars().all()
+            )
+            dinner_meals_today: list[Meal] = (
+                session.execute(Meal.select_todays_dinner_meals()).scalars().all()
+            )
+            signups_in_todays_orders = list(
+                filter(
+                    lambda order: (
+                        order.item == "Breakfast sign-up"
+                        or order.item == "Dinner sign-up"
+                    )
+                    and datetime.strptime(order.time, DATETIME_FORMAT).date()
+                    == now.date(),
+                    orders,
+                )
+            )
+            signups_in_todays_orders_as_order_ids = list(
+                map(lambda order: order.order_id, signups_in_todays_orders)
+            )
+
+            # remove guest meals from today's signups if they've been removed from orders
+            for meal in todays_meals:
+                # if order_id is "N/A" they are a volunteer getting dinner automatically, so this meal will not appear in the order table
+                if (
+                    meal.order_id in signups_in_todays_orders_as_order_ids
+                    or meal.order_id == "N/A"
+                ):
+                    continue
+                session.delete(meal)
+
+            dinner_meals_today_as_receivers = list(
+                map(lambda meal: meal.receiver, dinner_meals_today)
+            )
+
+            # add volunteers to today's dinner meals if not already added
+            for volunteer in volunteers:
+                volunteer_receiver_name = generate_receiver_from_names(
+                    volunteer.first_name, volunteer.last_name
+                )
+                if volunteer_receiver_name in dinner_meals_today_as_receivers:
+                    continue
+                session.add(
+                    Meal(
+                        meal_id=str(short_uid()),
+                        order_id="N/A",
+                        user_nick_name=volunteer.nick_name,
+                        receiver=volunteer_receiver_name,
+                        order_time=now,
+                        meal_type="dinner",
+                        diet=volunteer.diet,
+                        allergies=volunteer.allergies,
+                        volunteer=True,
+                        served=False,
+                    )
+                )
+
+            todays_meals_as_order_ids = list(
+                map(lambda meal: meal.order_id, todays_meals)
+            )
+
+            # add new orders to today's meals if not already added
+            for order in signups_in_todays_orders:
+                if order.order_id in todays_meals_as_order_ids:
+                    continue
+                session.add(
+                    Meal(
+                        meal_id=str(short_uid()),
+                        order_id=order.order_id,
+                        user_nick_name=order.user_nick_name,
+                        receiver=order.receiver,
+                        order_time=datetime.strptime(order.time, DATETIME_FORMAT),
+                        meal_type="breakfast"
+                        if order.item == "Breakfast sign-up"
+                        else "dinner",
+                        diet=order.diet,
+                        allergies=order.allergies,
+                        volunteer=False,
+                        served=False,
+                    )
+                )
+
+            if len(session.new) or len(session.dirty) or len(session.deleted):
+                session.commit()
+    except Exception as e:
+        print(f"update_meal_table error: {e}")
+
+
+def sync_new_stripe_checkout_sessions():
+    try:
+        stripe_checkout_session_records = get_records(
+            stripe_payments_sheet,
             [
+                "payment_order_id",
+                "datetime_requested",
+                "stripe_payment_id",
+                "ob_payment_id",
                 "order_id",
                 "user",
-                "time",
+                "system_provider_handling_fee_amount",
                 "item",
                 "quantity",
                 "price",
                 "total",
-                "diet",
-                "allergies",
-                "served",
-                "tax_category",
-                "comment",
             ],
-            True,
         )
-        current_unsynced_orders = session.query(Order).filter(~Order.synced).all()
-        if not len(current_unsynced_orders):
-            for order in order_data:
-                order["user_nick_name"] = order["user"]
-                del order["user"]
-                sanitise_record_strings(order_string_columns, order)
-            for row in session.exec(Order.select()).all():
-                session.delete(row)
-            add_google_sheet_data_to_session(session, order_data, Order, "order_id")
+        stripe_checkout_session_record_payment_ids: list[str] = [
+            checkout_session["payment_order_id"]
+            for checkout_session in stripe_checkout_session_records
+        ]
+        remaining_unsynced_sessions: list[Stripe_Checkout_Session] = []
 
-        google_sheet_order_ids = [order["order_id"] for order in order_data]
-        remaining_unsynced_orders = []
-
-        for order in current_unsynced_orders:
-            if order.order_id in google_sheet_order_ids:
-                order.synced = True
-                continue
-            remaining_unsynced_orders.append(order)
-
-        if len(session.new) or len(session.dirty):
-            session.commit()
-        if len(remaining_unsynced_orders):
-            sync_new_orders(remaining_unsynced_orders)
-
-
-def sync_users():
-    with rx.session() as session:
-        google_sheets_user_data = get_records(
-            user_sheet,
-            [
-                "nick_name",
-                "first_name",
-                "last_name",
-                "phone_number",
-                "email",
-                "diet",
-                "allergies",
-                "volunteer",
-                "away",
-                "owes",
-                "current_guest",
-                "active_tab",
-                "prepaid_dinners_quantity",
-            ],
-            True,
-        )
-        current_unsynced_users: list[User] = (
-            session.query(User).filter(~User.synced).all()
-        )
-        new_unsynced_users_to_sync: list[User] = []
-        updated_unsynced_users_to_sync: list[UnsyncedUserWithRow] = []
-
-        for google_sheets_user in google_sheets_user_data:
-            del google_sheets_user["owes"]
-            for key in ["volunteer", "away", "current_guest", "active_tab"]:
-                google_sheets_user[key] = google_sheets_user[key].lower() in [
-                    "yes",
-                    "true",
-                ]
-            google_sheets_user = sanitise_record_strings(
-                get_model_string_type_columns(User), google_sheets_user
-            )
-            google_sheets_user["prepaid_dinners_quantity"] = (
-                0
-                if google_sheets_user["prepaid_dinners_quantity"] == ""
-                else int(google_sheets_user["prepaid_dinners_quantity"])
+        with rx.session() as session:
+            unsynced_stripe_checkout_session_rows = (
+                session.query(Stripe_Checkout_Session)
+                .filter(~Stripe_Checkout_Session.synced)
+                .all()
             )
 
-        if not len(current_unsynced_users):
-            for row in session.exec(User.select()).all():
-                session.delete(row)
-            add_google_sheet_data_to_session(
-                session, google_sheets_user_data, User, "nick_name"
-            )
-
-        else:
-            google_sheet_user_nick_names: list[str] = [
-                google_sheets_user["nick_name"]
-                for google_sheets_user in google_sheets_user_data
-            ]
-
-            for unsynced_user in current_unsynced_users:
-                if unsynced_user.nick_name not in google_sheet_user_nick_names:
-                    new_unsynced_users_to_sync.append(unsynced_user)
-                    continue
-                matching_google_sheet_user_index = google_sheet_user_nick_names.index(
-                    unsynced_user.nick_name
-                )
-                matching_google_sheet_user = google_sheets_user_data[
-                    matching_google_sheet_user_index
-                ]
-                if not all(
-                    matching_google_sheet_user[column] == getattr(unsynced_user, column)
-                    for column in [
-                        "active_tab",
-                        "prepaid_dinners_quantity",
-                    ]
+            for unsynced_session in unsynced_stripe_checkout_session_rows:
+                if (
+                    unsynced_session.payment_order_id
+                    in stripe_checkout_session_record_payment_ids
                 ):
-                    updated_unsynced_users_to_sync.append(
-                        {
-                            "row": matching_google_sheet_user_index + 2,
-                            "user": unsynced_user,
-                        }
-                    )
+                    unsynced_session.synced = True
                     continue
-                unsynced_user.synced = True
+                remaining_unsynced_sessions.append(unsynced_session)
 
-        if len(session.new) or len(session.dirty):
-            session.commit()
-        if len(new_unsynced_users_to_sync):
-            sync_new_users(new_unsynced_users_to_sync)
-        if len(updated_unsynced_users_to_sync):
-            sync_updated_users(updated_unsynced_users_to_sync)
+            if len(session.new) or len(session.dirty) or len(session.deleted):
+                session.commit()
 
+        if not len(remaining_unsynced_sessions):
+            return
 
-def sync_items():
-    with rx.session() as session:
-        item_data = get_records(
-            item_sheet, ["name", "price", "description", "tax_category"]
-        )
-
-        for row in session.exec(Item.select()).all():
-            session.delete(row)
-
-        add_google_sheet_data_to_session(session, item_data, Item, "name")
-
-        # seeds a test item for e2e testing if it doesn't already exist
-        if is_test_environment:
-            test_item_exists = False
-
-            for item in item_data:
-                if item["name"] != "TEST ITEM":
-                    continue
-                test_item_exists = True
-                break
-
-            if not test_item_exists:
-                session.add(
-                    Item.model_validate(
-                        {
-                            "name": "TEST ITEM",
-                            "price": 1.0,
-                            "description": "",
-                            "tax_category": "Miscellaneous",
-                            "icon": "",
-                        }
-                    )
-                )
-
-        session.commit()
-
-
-def sync_admin_data():
-    with rx.session() as session:
-        admin_data = get_records(admin_sheet)[0]
-
-        for row in session.exec(Admin.select()).all():
-            session.delete(row)
-
-        session.add_all(
-            Admin.model_validate({"key": key, "value": str(admin_data[key])})
-            for key in admin_data
-        )
-        add_google_sheet_data_to_session(session, admin_sheet, Admin, "key")
-        session.commit()
-
-
-def update_meals_table():
-    with rx.session() as session:
-        volunteers: list[User] = (
-            session.exec(select(User).where(User.volunteer == True)).scalars().all()
-        )
-        orders: list[Order] = session.exec(Order.select()).all()
-        now = get_madrid_datetime_now()
-        todays_meals: list[Meal] = (
-            session.execute(Meal.select_todays_meals()).scalars().all()
-        )
-        dinner_meals_today: list[Meal] = (
-            session.execute(Meal.select_todays_dinner_meals()).scalars().all()
-        )
-        signups_in_todays_orders = list(
-            filter(
-                lambda order: (
-                    order.item == "Breakfast sign-up" or order.item == "Dinner sign-up"
-                )
-                and datetime.strptime(order.time, DATETIME_FORMAT).date() == now.date(),
-                orders,
-            )
-        )
-        signups_in_todays_orders_as_order_ids = list(
-            map(lambda order: order.order_id, signups_in_todays_orders)
-        )
-
-        # remove guest meals from today's signups if they've been removed from orders
-        for meal in todays_meals:
-            # if order_id is "N/A" they are a volunteer getting dinner automatically, so this meal will not appear in the order table
-            if (
-                meal.order_id in signups_in_todays_orders_as_order_ids
-                or meal.order_id == "N/A"
-            ):
-                continue
-            session.delete(meal)
-
-        dinner_meals_today_as_receivers = list(
-            map(lambda meal: meal.receiver, dinner_meals_today)
-        )
-
-        # add volunteers to today's dinner meals if not already added
-        for volunteer in volunteers:
-            volunteer_receiver_name = generate_receiver_from_names(
-                volunteer.first_name, volunteer.last_name
-            )
-            if volunteer_receiver_name in dinner_meals_today_as_receivers:
-                continue
-            session.add(
-                Meal(
-                    meal_id=str(short_uid()),
-                    order_id="N/A",
-                    user_nick_name=volunteer.nick_name,
-                    receiver=volunteer_receiver_name,
-                    order_time=now,
-                    meal_type="dinner",
-                    diet=volunteer.diet,
-                    allergies=volunteer.allergies,
-                    volunteer=True,
-                    served=False,
-                )
-            )
-
-        todays_meals_as_order_ids = list(map(lambda meal: meal.order_id, todays_meals))
-
-        # add new orders to today's meals if not already added
-        for order in signups_in_todays_orders:
-            if order.order_id in todays_meals_as_order_ids:
-                continue
-            session.add(
-                Meal(
-                    meal_id=str(short_uid()),
-                    order_id=order.order_id,
-                    user_nick_name=order.user_nick_name,
-                    receiver=order.receiver,
-                    order_time=datetime.strptime(order.time, DATETIME_FORMAT),
-                    meal_type="breakfast"
-                    if order.item == "Breakfast sign-up"
-                    else "dinner",
-                    diet=order.diet,
-                    allergies=order.allergies,
-                    volunteer=False,
-                    served=False,
-                )
-            )
-
-        if len(session.new) or len(session.dirty) or len(session.deleted):
-            session.commit()
-
-
-def sync_new_stripe_checkout_sessions():
-    stripe_checkout_session_records = get_records(
-        stripe_payments_sheet,
-        [
-            "payment_order_id",
-            "datetime_requested",
-            "stripe_payment_id",
-            "ob_payment_id",
-            "order_id",
-            "user",
-            "system_provider_handling_fee_amount",
-            "item",
-            "quantity",
-            "price",
-            "total",
-        ],
-    )
-    stripe_checkout_session_record_payment_ids: list[str] = [
-        checkout_session["payment_order_id"]
-        for checkout_session in stripe_checkout_session_records
-    ]
-    remaining_unsynced_sessions: list[Stripe_Checkout_Session] = []
-
-    with rx.session() as session:
-        unsynced_stripe_checkout_session_rows = (
-            session.query(Stripe_Checkout_Session)
-            .filter(~Stripe_Checkout_Session.synced)
-            .all()
-        )
-
-        for unsynced_session in unsynced_stripe_checkout_session_rows:
-            if (
-                unsynced_session.payment_order_id
-                in stripe_checkout_session_record_payment_ids
-            ):
-                unsynced_session.synced = True
-                continue
-            remaining_unsynced_sessions.append(unsynced_session)
-
-        if len(session.new) or len(session.dirty) or len(session.deleted):
-            session.commit()
-
-    if not len(remaining_unsynced_sessions):
-        return
-
-    stripe_payments_sheet.append_rows(
-        [
+        stripe_payments_sheet.append_rows(
             [
-                remaining_unsynced_session.payment_order_id,
-                remaining_unsynced_session.datetime_requested,
-                remaining_unsynced_session.stripe_payment_id,
-                remaining_unsynced_session.ob_payment_id,
-                remaining_unsynced_session.order_id,
-                remaining_unsynced_session.user,
-                remaining_unsynced_session.system_provider_handling_fee_amount,
-                remaining_unsynced_session.item,
-                remaining_unsynced_session.quantity,
-                remaining_unsynced_session.price,
-                remaining_unsynced_session.total,
-            ]
-            for remaining_unsynced_session in remaining_unsynced_sessions
-        ],
-        value_input_option="USER_ENTERED",
-        table_range="A1",
-    )
+                [
+                    remaining_unsynced_session.payment_order_id,
+                    remaining_unsynced_session.datetime_requested,
+                    remaining_unsynced_session.stripe_payment_id,
+                    remaining_unsynced_session.ob_payment_id,
+                    remaining_unsynced_session.order_id,
+                    remaining_unsynced_session.user,
+                    remaining_unsynced_session.system_provider_handling_fee_amount,
+                    remaining_unsynced_session.item,
+                    remaining_unsynced_session.quantity,
+                    remaining_unsynced_session.price,
+                    remaining_unsynced_session.total,
+                ]
+                for remaining_unsynced_session in remaining_unsynced_sessions
+            ],
+            value_input_option="USER_ENTERED",
+            table_range="A1",
+        )
+    except Exception as e:
+        print(f"sync_new_stripe_checkout_sessions error: {e}")
 
 
 def sync_payments():
-    payment_data = get_records(
-        payments_sheet,
-        [
-            "order_id",
-            "paid_time",
-            "method",
-            "checkout_staff",
-        ],
-    )
-    payment_order_ids: list[str] = [payment["order_id"] for payment in payment_data]
-
-    with rx.session() as session:
-        unsynced_payments: list[Payment] = (
-            session.query(Payment)
-            .filter(Payment.order_id.not_in(payment_order_ids))
-            .all()
+    try:
+        payment_data = get_records(
+            payments_sheet,
+            [
+                "order_id",
+                "paid_time",
+                "method",
+                "checkout_staff",
+            ],
         )
-        if len(unsynced_payments):
-            session.close()
-            payments_sheet.append_rows(
-                [
-                    [
-                        unsynced_payment.order_id,
-                        unsynced_payment.paid_time,
-                        unsynced_payment.method,
-                        unsynced_payment.checkout_staff,
-                    ]
-                    for unsynced_payment in unsynced_payments
-                ],
-                value_input_option="USER_ENTERED",
-                table_range="A1",
-            )
-            return
+        payment_order_ids: list[str] = [payment["order_id"] for payment in payment_data]
 
-        for row in session.exec(Payment.select()).all():
-            session.delete(row)
-        add_google_sheet_data_to_session(session, payment_data, Payment, "order_id")
-        session.commit()
+        with rx.session() as session:
+            unsynced_payments: list[Payment] = (
+                session.query(Payment)
+                .filter(Payment.order_id.not_in(payment_order_ids))
+                .all()
+            )
+            if len(unsynced_payments):
+                session.close()
+                payments_sheet.append_rows(
+                    [
+                        [
+                            unsynced_payment.order_id,
+                            unsynced_payment.paid_time,
+                            unsynced_payment.method,
+                            unsynced_payment.checkout_staff,
+                        ]
+                        for unsynced_payment in unsynced_payments
+                    ],
+                    value_input_option="USER_ENTERED",
+                    table_range="A1",
+                )
+                return
+
+            for row in session.exec(Payment.select()).all():
+                session.delete(row)
+            add_google_sheet_data_to_session(session, payment_data, Payment, "order_id")
+            session.commit()
+    except Exception as e:
+        print(f"sync_payments error: {e}")
 
 
 async def sync_google_sheet_and_local_db():
@@ -740,7 +766,7 @@ async def run_loop_tasks():
             update_meals_table()
             await sync_google_sheet_and_local_db()
         except Exception as e:
-            print(e)
+            print(f"run_loop_tasks error: {e}")
         await asyncio.sleep(10)
 
 
