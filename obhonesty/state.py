@@ -62,6 +62,7 @@ class State(rx.State):
     is_user_activity_check_running: bool = False
     latest_user_activity_datetime: datetime = None
     is_reload_admin_dinner_data_running: bool = False
+    remaining_prepaid_dinners_count: int = 0
 
     # --- Test Environment State ---
     stripe_test_state: Literal["success"] | None = None
@@ -390,6 +391,7 @@ class State(rx.State):
         self.orders = orders
         self.users = self.get_users_with_active_tabs()
         self.admin_data = self.get_admin_data()
+        self.update_remaining_prepaid_dinners_count()
         if not self.has_homepage_load_completed:
             self.has_homepage_load_completed = True
 
@@ -1391,9 +1393,13 @@ class State(rx.State):
             0,
         )
 
-    @rx.var(cache=False)
-    def remaining_prepaid_dinners_count(self) -> int:
-        return self.get_remaining_prepaid_dinner_quantity() if self.current_user else 0
+    @rx.event
+    def update_remaining_prepaid_dinners_count(self):
+        if not self.current_user:
+            return
+        self.remaining_prepaid_dinners_count = (
+            self.get_remaining_prepaid_dinner_quantity()
+        )
 
     @rx.var
     def prepaid_dinner_ids(self) -> List[str]:
