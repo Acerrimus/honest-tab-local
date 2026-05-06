@@ -786,11 +786,12 @@ class State(rx.State):
             ]
 
         with rx.session() as session:
+            order_id = str(short_uid())
             now = get_madrid_datetime_now().strftime(DATETIME_FORMAT)
             price = self.admin_data.get("dinner_price", 0)
             session.add(
                 Order_Model(
-                    order_id=str(short_uid()),
+                    order_id=order_id,
                     user_nick_name=form_data["nick_name"],
                     time=now,
                     item="Dinner sign-up",
@@ -804,6 +805,20 @@ class State(rx.State):
                     tax_category="Food and beverage non-alcoholic",
                     comment="Late dinner signup",
                     synced=False,
+                )
+            )
+            session.add(
+                Meal_Model(
+                    meal_id=str(short_uid()),
+                    order_id=order_id,
+                    user_nick_name=form_data["nick_name"],
+                    receiver=receiver,
+                    order_time=datetime.strptime(now, DATETIME_FORMAT),
+                    meal_type="dinner",
+                    diet=form_data["diet"],
+                    allergies=form_data["allergies"] if form_data["allergies"] else "",
+                    volunteer=False,
+                    served=False,
                 )
             )
             session.commit()
