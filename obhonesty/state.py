@@ -125,6 +125,13 @@ class State(rx.State):
     # -----------------------------
 
     @rx.event
+    def load_index_page(self):
+        self.handle_user_reset()
+        self.reset_stripe_dialog_active_state()
+        self.clear_temp_state_values()
+        self.reload_sheet_data()
+
+    @rx.event
     def redirect_to_homepage(self):
         self.has_homepage_load_completed = False
         return rx.redirect("/")

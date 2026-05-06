@@ -47,12 +47,7 @@ app = rx.App() if not is_test_environment else rx.App(api_transformer=fastapi_ap
 app.add_page(
     index,
     route="/",
-    on_load=[
-        State.handle_user_reset,
-        State.reset_stripe_dialog_active_state,
-        State.clear_temp_state_values,
-        State.reload_sheet_data,
-    ],
+    on_load=State.load_index_page,
 )
 app.add_page(
     user_page,
