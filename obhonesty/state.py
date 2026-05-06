@@ -63,6 +63,7 @@ class State(rx.State):
     is_logging_user_in: bool = False
     is_user_activity_check_running: bool = False
     latest_user_activity_datetime: datetime = None
+    is_reload_admin_dinner_data_running: bool = False
 
     # --- Test Environment State ---
     stripe_test_state: Literal["success"] | None = None
@@ -440,12 +441,17 @@ class State(rx.State):
 
     @rx.event(background=True)
     async def reload_admin_dinner_data(self):
-        while self.router.page.path in ["/admin/breakfast", "/admin/dinner"]:
+        if self.is_reload_admin_dinner_data_running:
+            return
+        async with self:
+            self.is_reload_admin_dinner_data_running = True
+        while self.router.page.path.startswith("/admin"):
             async with self:
                 self.update_meal_totals()
                 self.users = self.get_users_with_active_tabs()
                 self.todays_breakfast_meals = self.get_todays_breakfast_meals()
                 self.todays_dinner_meals = self.get_todays_dinner_meals()
+                self.admin_data = self.get_admin_data()
                 if self.is_loading_admin_meal_table:
                     self.is_loading_admin_meal_table = False
             await asyncio.sleep(3)

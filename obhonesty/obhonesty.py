@@ -82,7 +82,7 @@ app.add_page(
 app.add_page(
     admin,
     route="/admin",
-    on_load=[State.clear_temp_state_values, State.reload_sheet_data],
+    on_load=[State.clear_temp_state_values, State.reload_admin_dinner_data],
 )
 app.add_page(
     admin_dinner, route="/admin/dinner", on_load=State.reload_admin_dinner_data
