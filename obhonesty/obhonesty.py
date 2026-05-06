@@ -93,7 +93,6 @@ app.add_page(
 app.add_page(
     late_dinner_signup_page,
     route="/admin/late",
-    on_load=State.reload_sheet_data,
 )
 
 
