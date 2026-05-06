@@ -748,8 +748,7 @@ async def run_loop_tasks():
             await sync_google_sheet_and_local_db()
         except Exception as e:
             print(e)
-
-        await asyncio.sleep(5)
+        await asyncio.sleep(10)
 
 
 app.register_lifespan_task(run_loop_tasks)
