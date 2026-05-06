@@ -609,13 +609,11 @@ class State(rx.State):
     @rx.event
     def order_dinner(self):
         now = get_madrid_datetime_now().strftime(DATETIME_FORMAT)
-
+        order_id = self.item_uuid if self.is_stripe_session_paid else str(short_uid())
         with rx.session() as session:
             session.add(
                 Order_Model(
-                    order_id=self.item_uuid
-                    if self.is_stripe_session_paid
-                    else str(short_uid()),
+                    order_id=order_id,
                     user_nick_name=self.current_user.nick_name,
                     time=now,
                     item="Dinner sign-up",
@@ -631,7 +629,20 @@ class State(rx.State):
                     synced=False,
                 )
             )
-
+            session.add(
+                Meal_Model(
+                    meal_id=str(short_uid()),
+                    order_id=order_id,
+                    user_nick_name=self.current_user.nick_name,
+                    receiver=self.get_receiver,
+                    order_time=datetime.strptime(now, DATETIME_FORMAT),
+                    meal_type="dinner",
+                    diet=self.dinner_signup_dietary_preference,
+                    allergies=self.dinner_signup_allergies,
+                    volunteer=False,
+                    served=False,
+                )
+            )
             if self.is_stripe_session_paid:
                 session.add(
                     Payment(
@@ -641,7 +652,6 @@ class State(rx.State):
                         checkout_staff="",
                     )
                 )
-
             session.commit()
 
         events = [rx.toast.info("Dinner sign-up registration successful!")]
@@ -714,8 +724,15 @@ class State(rx.State):
     def sign_guest_up_for_dinner(self, is_guest_paying_now: bool):
         if self.order_request_id != self.current_order_request_id:
             return
-
-        if self.get_receiver in [order.receiver for order in self.dinner_signups]:
+        if (
+            rx.session()
+            .execute(
+                Meal_Model.select_todays_dinner_meals().where(
+                    Meal_Model.receiver == self.get_receiver
+                )
+            )
+            .scalar()
+        ):
             return [
                 State.reset_order_request_id,
                 rx.toast.error(
@@ -723,7 +740,6 @@ class State(rx.State):
                     "please provide different name if you want to sign up another person."
                 ),
             ]
-
         if is_guest_paying_now:
             self.ordered_item = "dinner"
             dinner_price = self.admin_data.get("dinner_price", 0)
@@ -733,9 +749,7 @@ class State(rx.State):
             self.stripe_total = (
                 dinner_price + self.stripe_system_provider_handling_fee_amount
             )
-
             return State.generate_item_payment_qr
-
         return State.order_dinner
 
     @rx.event
@@ -1326,46 +1340,6 @@ class State(rx.State):
                     pass
                 signups.append(order_alt)
         signups.sort(key=lambda x: x.time, reverse=True)
-        return signups
-
-    @rx.var(cache=False)
-    def dinner_signups(self) -> List[Order]:
-        signups: List[Order] = []
-        for order in self.orders:
-            try:
-                order_date = datetime.strptime(order.time, DATETIME_FORMAT).date()
-            except BaseException:
-                continue
-
-            if order.item == "Dinner sign-up" and order_date == datetime.today().date():
-                signups.append(order)
-
-        for user in self.users:
-            if user.volunteer:
-                full_name = f"{user.first_name.upper()} {user.last_name.upper()}"
-                signups.append(
-                    Order(
-                        order_id="",
-                        user_nick_name=user.nick_name,
-                        time="",
-                        item="Dinner sign-up (volunteer)",
-                        quantity=1.0,
-                        price=0.0,
-                        total=0.0,
-                        receiver=full_name,
-                        diet=user.diet,
-                        allergies=user.allergies,
-                        served=False,
-                        tax_category="",
-                        comment=true_values[0],
-                        # Not synced but necessary to avoid reflex from crashing at runtime.
-                        # These order objects never interact with the db or google sheet so this is an arbitrary value.
-                        synced=True,
-                    )
-                )
-        signups.sort(key=lambda x: x.receiver)
-        signups.sort(key=lambda x: x.diet)
-        signups.sort(key=lambda x: x.comment)
         return signups
 
     @rx.var
