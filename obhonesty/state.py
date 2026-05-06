@@ -365,6 +365,15 @@ class State(rx.State):
         )
 
     @rx.event
+    def get_admin_data(self):
+        admin_data = {}
+        for row in rx.session().exec(Admin_Model.select()).all():
+            admin_data[row.key] = (
+                row.value if "deadline" in row.key else float(row.value)
+            )
+        return admin_data
+
+    @rx.event
     def reload_sheet_data(self):
         with rx.session() as session:
             items = {}
@@ -376,15 +385,10 @@ class State(rx.State):
                 Order.from_dict(row.model_dump())
                 for row in session.exec(Order_Model.select()).all()
             ]
-            admin_data = {}
-            for row in session.exec(Admin_Model.select()).all():
-                admin_data[row.key] = (
-                    row.value if "deadline" in row.key else float(row.value)
-                )
         self.items = items
         self.orders = orders
         self.users = self.get_users_with_active_tabs()
-        self.admin_data = admin_data
+        self.admin_data = self.get_admin_data()
         if not self.has_homepage_load_completed:
             self.has_homepage_load_completed = True
 
