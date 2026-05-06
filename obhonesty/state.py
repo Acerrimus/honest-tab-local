@@ -1393,18 +1393,7 @@ class State(rx.State):
 
     @rx.var(cache=False)
     def remaining_prepaid_dinners_count(self) -> int:
-        if not self.current_user:
-            return 0
-        # ordered_dinner_quantity: int = (
-        #     rx.session()
-        #     .query(Order_Model)
-        #     .filter(
-        #         Order_Model.user_nick_name == self.current_user.nick_name,
-        #         Order_Model.item == "Dinner sign-up",
-        #     )
-        #     .count()
-        # )
-        return self.get_remaining_prepaid_dinner_quantity()
+        return self.get_remaining_prepaid_dinner_quantity() if self.current_user else 0
 
     @rx.var
     def prepaid_dinner_ids(self) -> List[str]:
