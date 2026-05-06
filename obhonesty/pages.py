@@ -1460,23 +1460,3 @@ def admin_breakfast() -> rx.Component:
             )
         )
     )
-
-
-def admin_user_page() -> rx.Component:
-    return rx.container(
-        rx.center(
-            rx.vstack(
-                rx.heading("User information", size=default_heading_size),
-                rx.button(
-                    rx.text("Go back", size=default_button_text_size),
-                    on_click=rx.redirect("/admin"),
-                    size=default_button_size,
-                ),
-                rx.text(
-                    f"Full name: {State.current_user.first_name} {State.current_user.last_name}"
-                ),
-                rx.text(f"Nick name: {State.current_user.nick_name}"),
-                rx.text(f"Owes: {State.get_user_debt}€"),
-            )
-        )
-    )

@@ -90,7 +90,6 @@ app.add_page(
 app.add_page(
     admin_breakfast, route="/admin/breakfast", on_load=State.reload_admin_dinner_data
 )
-app.add_page(admin_user_page, route="/admin/user", on_load=State.reload_sheet_data)
 app.add_page(
     late_dinner_signup_page,
     route="/admin/late",
