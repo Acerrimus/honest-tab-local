@@ -520,7 +520,7 @@ def sync_items():
 
             session.commit()
     except Exception as e:
-        print(f"sync items error: {e}")
+        print(f"sync_items error: {e}")
 
 
 def sync_admin_data():
