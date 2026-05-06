@@ -527,15 +527,14 @@ def sync_admin_data():
     try:
         with rx.session() as session:
             admin_data = get_records(admin_sheet)[0]
-
             for row in session.exec(Admin.select()).all():
                 session.delete(row)
-
-            session.add_all(
-                Admin.model_validate({"key": key, "value": str(admin_data[key])})
-                for key in admin_data
+            add_google_sheet_data_to_session(
+                session,
+                [{"key": key, "value": str(admin_data[key])} for key in admin_data],
+                Admin,
+                "key",
             )
-            add_google_sheet_data_to_session(session, admin_sheet, Admin, "key")
             session.commit()
     except Exception as e:
         print(f"sync_admin_data error: {e}")
