@@ -366,9 +366,8 @@ class State(rx.State):
             .all()
         )
 
-    @rx.event(background=True)
-    async def reload_sheet_data(self):
-        users = self.get_users_with_active_tabs()
+    @rx.event
+    def reload_sheet_data(self):
         with rx.session() as session:
             items = {}
             for row in session.exec(Item.select()).all():
@@ -384,13 +383,12 @@ class State(rx.State):
                 admin_data[row.key] = (
                     row.value if "deadline" in row.key else float(row.value)
                 )
-        async with self:
-            self.items = items
-            self.orders = orders
-            self.users = users
-            self.admin_data = admin_data
-            if not self.has_homepage_load_completed:
-                self.has_homepage_load_completed = True
+        self.items = items
+        self.orders = orders
+        self.users = self.get_users_with_active_tabs()
+        self.admin_data = admin_data
+        if not self.has_homepage_load_completed:
+            self.has_homepage_load_completed = True
 
     @rx.event
     def update_meal_totals(self):
