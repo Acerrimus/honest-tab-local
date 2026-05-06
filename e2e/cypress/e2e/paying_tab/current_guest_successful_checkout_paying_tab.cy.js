@@ -17,7 +17,7 @@ import {
 
 describe(
   "When a current guest successfully pays their tab and chooses to check out",
-  { testIsolation: false, tags: "@payments" },
+  { testIsolation: false, tags: ["@payments", "@smoke"] },
   () => {
     const username = generateUsername();
     it("they will no longer be seen on the login screen", () => {

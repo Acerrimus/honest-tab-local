@@ -5,7 +5,7 @@ import { createVolunteerUserApi, generateUsername } from "../../steps/users";
 
 describe(
   "When an admin user clicks served for a volunteer's dinner meal",
-  { testIsolation: false },
+  { testIsolation: false, tags: "@smoke" },
   () => {
     const username = generateUsername();
     const receiver = generateReceiver(username);

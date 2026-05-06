@@ -3,7 +3,8 @@
   "private": true,
   "scripts": {
     "test": "docker run --network honest-tab-local_default -it -v $PWD:/e2e -w /e2e --rm cypress/included:cypress-15.12.0-node-24.14.0-chrome-146.0.7680.80-1-ff-148.0.2-edge-146.0.3856.62-1",
-    "test-payments": "npm run test -- --expose grepTags=\"@payments\",grepFilterSpecs=true"
+    "test-payments": "npm run test -- --expose grepTags=\"@payments\",grepFilterSpecs=true",
+    "test-smoke": "npm run test -- --expose grepTags=\"@smoke\",grepFilterSpecs=true"
   },
   "devDependencies": {
     "@cypress/grep": "^6.0.0",

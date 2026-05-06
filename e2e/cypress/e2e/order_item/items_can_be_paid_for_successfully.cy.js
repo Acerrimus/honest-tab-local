@@ -20,7 +20,7 @@ import {
 
 describe(
   "When a user pays for an item",
-  { testIsolation: false, tags: "@payments" },
+  { testIsolation: false, tags: ["@payments", "@smoke"] },
   () => {
     it("will showm with the correct total, the item will be registered but not appear in the user's orders", () => {
       const username = generateUsername();

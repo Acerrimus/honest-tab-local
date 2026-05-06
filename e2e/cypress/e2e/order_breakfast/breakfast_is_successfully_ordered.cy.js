@@ -6,7 +6,7 @@ import {
   logUserOn,
 } from "../../steps/users";
 
-describe("When a user orders breakfast", { testIsolation: false }, () => {
+describe("When a user orders breakfast", { testIsolation: false, tags: "@smoke" }, () => {
   const username = generateUsername();
   it("it is successfully ordered", () => {
     createGuestUserApi(username);

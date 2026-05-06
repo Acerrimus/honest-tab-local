@@ -1,6 +1,6 @@
 import { createUser, generateUsername, logUserOn } from "../steps/users";
 
-describe("When signing up a new user", () => {
+describe("When signing up a new user", { tags: "@smoke" }, () => {
   const username = generateUsername();
   it("they are created successfully and can log on", () => {
     cy.visit("/");
