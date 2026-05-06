@@ -1377,10 +1377,6 @@ class State(rx.State):
             ]
         )
 
-    @rx.var
-    def get_all_nick_names(self) -> List[str]:
-        return [user.nick_name for user in self.users]
-
     @rx.event
     def get_remaining_prepaid_dinner_quantity(self):
         return max(
