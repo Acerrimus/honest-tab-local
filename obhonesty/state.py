@@ -1260,9 +1260,12 @@ class State(rx.State):
     def no_user(self) -> bool:
         return self.current_user is None
 
-    @rx.var(cache=False)
+    @rx.var
     def invalid_new_user_name(self) -> bool:
-        return self.new_nick_name in [x.nick_name for x in self.users]
+        return (
+            self.new_nick_name in [x.nick_name for x in self.users]
+            and self.new_nick_name != ""
+        )
 
     @rx.var
     def invalid_custom_item_price(self) -> bool:
