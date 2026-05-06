@@ -148,13 +148,10 @@ class State(rx.State):
 
     @rx.event
     def set_order_request_id(self):
-        self.update_last_user_activity_datetime()
         request_id = str(short_uid())
         self.order_request_id = request_id
-
         if self.current_order_request_id != "":
             return
-
         self.current_order_request_id = request_id
 
     @rx.event
@@ -1182,18 +1179,19 @@ class State(rx.State):
         self.temp_quantity = 1
         self.ordered_item = item_name
 
-    @rx.event
-    def show_stripe_item_payment_dialog(self, item_name: str, amount: float):
-        self.update_last_user_activity_datetime()
+    @rx.event(background=True)
+    async def show_stripe_item_payment_dialog(self, item_name: str, amount: float):
         if self.current_order_request_id != self.order_request_id:
             return
-
-        self.stripe_system_provider_handling_fee_amount = (
-            get_system_provider_handling_fee_rounded_to_two_digits(amount)
-        )
-        self.stripe_total = amount + self.stripe_system_provider_handling_fee_amount
-        self.is_stripe_dialog_active = True
-        return State.generate_item_payment_qr(item_name, amount)
+        async with self:
+            self.stripe_system_provider_handling_fee_amount = (
+                get_system_provider_handling_fee_rounded_to_two_digits(amount)
+            )
+            self.stripe_total = amount + self.stripe_system_provider_handling_fee_amount
+            self.is_stripe_dialog_active = True
+        async with self:
+            self.update_last_user_activity_datetime()
+        yield State.generate_item_payment_qr(item_name, amount)
 
     @rx.event
     def close_item_dialog(self):
