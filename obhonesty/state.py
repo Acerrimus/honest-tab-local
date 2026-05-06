@@ -1256,7 +1256,7 @@ class State(rx.State):
         )
         return orders
 
-    @rx.var(cache=False)
+    @rx.var
     def no_user(self) -> bool:
         return self.current_user is None
 
