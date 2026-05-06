@@ -251,10 +251,8 @@ class State(rx.State):
         self.breakfast_signup_last_name = ""
         self.breakfast_signup_item = ""
         self.dinner_signup_allergies = ""
-
         if self.current_stripe_session_id != "":
-            yield State.expire_stripe_session
-
+            self.expire_stripe_session()
         self.payment_qr_code = ""
         self.is_stripe_session_paid = False
         self.is_payment_status_written_to_db = False
