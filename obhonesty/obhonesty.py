@@ -334,6 +334,18 @@ def sync_updated_users(unsynced_users_with_rows: list[UnsyncedUserWithRow]):
     user_sheet.update_cells(updated_cells, value_input_option="USER_ENTERED")
 
 
+def add_google_sheet_data_to_session(session, google_sheet_data, model, id_column_name):
+    for index, record in enumerate(google_sheet_data):
+        try:
+            session.add(model.model_validate(record))
+        except Exception as e:
+            id = record[id_column_name] if len(record[id_column_name]) else "N/A"
+            print(
+                f"Unable to add {model.__name__} {id} on row {index + 2}: {e}",
+                flush=True,
+            )
+
+
 def sync_orders():
     order_string_columns = get_model_string_type_columns(Order)
 
@@ -362,11 +374,9 @@ def sync_orders():
                 order["user_nick_name"] = order["user"]
                 del order["user"]
                 sanitise_record_strings(order_string_columns, order)
-
             for row in session.exec(Order.select()).all():
                 session.delete(row)
-
-            session.add_all(Order.model_validate(order) for order in order_data)
+            add_google_sheet_data_to_session(session, order_data, Order, "order_id")
 
         google_sheet_order_ids = [order["order_id"] for order in order_data]
         remaining_unsynced_orders = []
@@ -429,10 +439,10 @@ def sync_users():
         if not len(current_unsynced_users):
             for row in session.exec(User.select()).all():
                 session.delete(row)
-            session.add_all(
-                User.model_validate(google_sheets_user)
-                for google_sheets_user in google_sheets_user_data
+            add_google_sheet_data_to_session(
+                session, google_sheets_user_data, User, "nick_name"
             )
+
         else:
             google_sheet_user_nick_names: list[str] = [
                 google_sheets_user["nick_name"]
@@ -482,7 +492,7 @@ def sync_items():
         for row in session.exec(Item.select()).all():
             session.delete(row)
 
-        session.add_all(Item.model_validate(item) for item in item_data)
+        add_google_sheet_data_to_session(session, item_data, Item, "name")
 
         # seeds a test item for e2e testing if it doesn't already exist
         if is_test_environment:
@@ -521,6 +531,7 @@ def sync_admin_data():
             Admin.model_validate({"key": key, "value": str(admin_data[key])})
             for key in admin_data
         )
+        add_google_sheet_data_to_session(session, admin_sheet, Admin, "key")
         session.commit()
 
 
@@ -717,8 +728,7 @@ def sync_payments():
 
         for row in session.exec(Payment.select()).all():
             session.delete(row)
-
-        session.add_all(Payment.model_validate(payment) for payment in payment_data)
+        add_google_sheet_data_to_session(session, payment_data, Payment, "order_id")
         session.commit()
 
 
