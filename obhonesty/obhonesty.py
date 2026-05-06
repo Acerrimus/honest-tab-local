@@ -750,20 +750,22 @@ def sync_payments():
         print(f"sync_payments error: {e}")
 
 
-async def sync_google_sheet_and_local_db():
-    sync_orders()
-    sync_users()
-    sync_items()
-    sync_admin_data()
-    sync_new_stripe_checkout_sessions()
-    sync_payments()
-
-
 async def run_loop_tasks():
     while True:
         try:
             update_meals_table()
-            await sync_google_sheet_and_local_db()
+            await asyncio.sleep(5)
+            sync_orders()
+            await asyncio.sleep(5)
+            sync_users()
+            await asyncio.sleep(5)
+            sync_items()
+            await asyncio.sleep(5)
+            sync_admin_data()
+            await asyncio.sleep(5)
+            sync_new_stripe_checkout_sessions()
+            await asyncio.sleep(5)
+            sync_payments()
         except Exception as e:
             print(f"run_loop_tasks error: {e}")
         await asyncio.sleep(10)
