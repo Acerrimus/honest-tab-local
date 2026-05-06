@@ -734,15 +734,10 @@ def sync_payments():
 
 async def sync_google_sheet_and_local_db():
     sync_orders()
-    await asyncio.sleep(1)
     sync_users()
-    await asyncio.sleep(1)
     sync_items()
-    await asyncio.sleep(1)
     sync_admin_data()
-    await asyncio.sleep(1)
     sync_new_stripe_checkout_sessions()
-    await asyncio.sleep(1)
     sync_payments()
 
 
