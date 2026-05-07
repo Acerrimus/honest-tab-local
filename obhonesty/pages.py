@@ -592,7 +592,6 @@ def custom_item_page() -> rx.Component:
     )
 
 
-message_name_already_taken: str = "Already taken"
 
 
 def user_signup_page() -> rx.Component:
@@ -617,7 +616,7 @@ def user_signup_page() -> rx.Component:
                                 as_child=True,
                             ),
                             rx.form.message(
-                                message_name_already_taken,
+                                "Already taken",
                                 match="valueMissing",
                                 force_match=State.invalid_new_user_name,
                                 color=ERROR_MESSAGE_COLOUR,
