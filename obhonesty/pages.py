@@ -2,9 +2,8 @@ import reflex as rx
 import os
 from obhonesty.aux import two_decimal_points, get_full_breakfast_item
 from obhonesty.constants import *
-from obhonesty.order import Order
 from obhonesty.state import State
-from obhonesty.models import Meal, Item, User
+from obhonesty.models import Meal, Item, User, Order
 from obhonesty.elements import user_button
 
 is_test_environment = True if os.getenv("TEST") else False

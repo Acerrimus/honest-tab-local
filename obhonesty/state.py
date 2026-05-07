@@ -17,10 +17,9 @@ from obhonesty.aux import (
     get_full_breakfast_item,
 )
 from obhonesty.constants import DATETIME_FORMAT
-from obhonesty.order import Order
 from obhonesty.models import (
     User,
-    Order as Order_Model,
+    Order,
     Item,
     Admin,
     Meal,
@@ -46,7 +45,6 @@ class State(rx.State):
     current_user: Optional[User] = None
     new_nick_name: str = ""
     custom_item_price: str = ""
-    orders: List[Order] = []
     is_item_button_dialog_active: bool = False
     ordered_item: str = ""
     is_closing_account: Optional[bool] = None
@@ -64,7 +62,7 @@ class State(rx.State):
     is_reload_admin_dinner_data_running: bool = False
     remaining_prepaid_dinners_count: int = 0
     prepaid_dinner_ids: list[str] = []
-    current_user_orders: list[Order_Model] = []
+    current_user_orders: list[Order] = []
 
     # --- Test Environment State ---
     stripe_test_state: Literal["success"] | None = None
@@ -375,12 +373,7 @@ class State(rx.State):
                 if row.name == "":
                     continue
                 items[row.name] = row
-            orders = [
-                Order.from_dict(row.model_dump())
-                for row in session.exec(Order_Model.select()).all()
-            ]
         self.items = items
-        self.orders = orders
         self.users = self.get_users_with_active_tabs()
         self.admin_data = self.get_admin_data()
         self.update_remaining_prepaid_dinners_count()
@@ -514,7 +507,7 @@ class State(rx.State):
 
         with rx.session() as session:
             session.add(
-                Order_Model(
+                Order(
                     order_id=self.item_uuid
                     if self.is_stripe_session_paid
                     else str(short_uid()),
@@ -562,7 +555,7 @@ class State(rx.State):
 
         with rx.session() as session:
             session.add(
-                Order_Model(
+                Order(
                     order_id=str(short_uid()),
                     user_nick_name=self.current_user.nick_name,
                     time=now,
@@ -606,7 +599,7 @@ class State(rx.State):
         order_id = self.item_uuid if self.is_stripe_session_paid else str(short_uid())
         with rx.session() as session:
             session.add(
-                Order_Model(
+                Order(
                     order_id=order_id,
                     user_nick_name=self.current_user.nick_name,
                     time=now,
@@ -789,7 +782,7 @@ class State(rx.State):
             now = get_madrid_datetime_now().strftime(DATETIME_FORMAT)
             price = self.admin_data.get("dinner_price", 0)
             session.add(
-                Order_Model(
+                Order(
                     order_id=order_id,
                     user_nick_name=form_data["nick_name"],
                     time=now,
@@ -843,7 +836,7 @@ class State(rx.State):
         )
         with rx.session() as session:
             session.add(
-                Order_Model(
+                Order(
                     order_id=order_id,
                     user_nick_name=self.current_user.nick_name,
                     time=now,
@@ -1262,22 +1255,22 @@ class State(rx.State):
     # -----------------------------------
 
     @rx.var
-    def current_user_orders_in_reverse_chronological_order(self) -> List[Order_Model]:
+    def current_user_orders_in_reverse_chronological_order(self) -> List[Order]:
         current_user_orders_copy = self.current_user_orders.copy()
         current_user_orders_copy.reverse()
         return current_user_orders_copy
 
     @rx.event
-    def update_current_user_orders(self) -> List[Order_Model]:
+    def update_current_user_orders(self) -> List[Order]:
         if not self.current_user:
             return []
 
         orders = (
             rx.session()
-            .query(Order_Model)
+            .query(Order)
             .filter(
-                Order_Model.user_nick_name == self.current_user.nick_name,
-                ~exists().where(Payment.order_id == Order_Model.order_id),
+                Order.user_nick_name == self.current_user.nick_name,
+                ~exists().where(Payment.order_id == Order.order_id),
             )
             .all()
         )
@@ -1358,10 +1351,10 @@ class State(rx.State):
         return max(
             self.current_user.prepaid_dinners_quantity
             - rx.session()
-            .query(Order_Model)
+            .query(Order)
             .filter(
-                Order_Model.user_nick_name == self.current_user.nick_name,
-                Order_Model.item == "Dinner sign-up",
+                Order.user_nick_name == self.current_user.nick_name,
+                Order.item == "Dinner sign-up",
             )
             .count(),
             0,
