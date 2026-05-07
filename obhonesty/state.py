@@ -64,6 +64,7 @@ class State(rx.State):
     is_reload_admin_dinner_data_running: bool = False
     remaining_prepaid_dinners_count: int = 0
     prepaid_dinner_ids: list[str] = []
+    current_user_orders: list[Order_Model] = []
 
     # --- Test Environment State ---
     stripe_test_state: Literal["success"] | None = None
@@ -384,6 +385,7 @@ class State(rx.State):
         self.admin_data = self.get_admin_data()
         self.update_remaining_prepaid_dinners_count()
         self.update_prepaid_dinner_ids()
+        self.update_current_user_orders()
         if not self.has_homepage_load_completed:
             self.has_homepage_load_completed = True
 
@@ -1259,14 +1261,14 @@ class State(rx.State):
 
     # -----------------------------------
 
-    @rx.var(cache=False)
+    @rx.var
     def current_user_orders_in_reverse_chronological_order(self) -> List[Order_Model]:
         current_user_orders_copy = self.current_user_orders.copy()
         current_user_orders_copy.reverse()
         return current_user_orders_copy
 
-    @rx.var(cache=False)
-    def current_user_orders(self) -> List[Order_Model]:
+    @rx.event
+    def update_current_user_orders(self) -> List[Order_Model]:
         if not self.current_user:
             return []
 
@@ -1292,7 +1294,7 @@ class State(rx.State):
         orders.sort(
             key=lambda order: datetime.strptime(order.time, "%d/%m/%Y %H:%M:%S")
         )
-        return orders
+        self.current_user_orders = orders
 
     @rx.var
     def no_user(self) -> bool:
