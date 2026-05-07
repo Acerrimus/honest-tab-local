@@ -22,8 +22,8 @@ from obhonesty.models import (
     User,
     Order as Order_Model,
     Item,
-    Admin as Admin_Model,
-    Meal as Meal_Model,
+    Admin,
+    Meal,
     Stripe_Checkout_Session,
     Payment,
 )
@@ -41,8 +41,8 @@ class State(rx.State):
     admin_data: Dict[str, Any] = {}
     users: List[User] = []
     items: Dict[str, Item] = {}
-    todays_breakfast_meals: List[Meal_Model] = []
-    todays_dinner_meals: List[Meal_Model] = []
+    todays_breakfast_meals: List[Meal] = []
+    todays_dinner_meals: List[Meal] = []
     current_user: Optional[User] = None
     new_nick_name: str = ""
     custom_item_price: str = ""
@@ -273,9 +273,7 @@ class State(rx.State):
         try:
             with rx.session() as session:
                 session.exec(
-                    update(Meal_Model)
-                    .where(Meal_Model.meal_id == meal_id)
-                    .values(served=value)
+                    update(Meal).where(Meal.meal_id == meal_id).values(served=value)
                 )
                 session.commit()
             async with self:
@@ -352,25 +350,17 @@ class State(rx.State):
     @rx.event
     def get_todays_breakfast_meals(self):
         return (
-            rx.session()
-            .execute(Meal_Model.select_todays_breakfast_meals())
-            .scalars()
-            .all()
+            rx.session().execute(Meal.select_todays_breakfast_meals()).scalars().all()
         )
 
     @rx.event
     def get_todays_dinner_meals(self):
-        return (
-            rx.session()
-            .execute(Meal_Model.select_todays_dinner_meals())
-            .scalars()
-            .all()
-        )
+        return rx.session().execute(Meal.select_todays_dinner_meals()).scalars().all()
 
     @rx.event
     def get_admin_data(self):
         admin_data = {}
-        for row in rx.session().exec(Admin_Model.select()).all():
+        for row in rx.session().exec(Admin.select()).all():
             admin_data[row.key] = (
                 row.value if "deadline" in row.key else float(row.value)
             )
@@ -399,7 +389,7 @@ class State(rx.State):
 
     @rx.event
     def update_meal_totals(self):
-        meal_totals = Meal_Model.get_todays_meal_counts()
+        meal_totals = Meal.get_todays_meal_counts()
         self.breakfast_count = meal_totals["breakfast"]["total"]
         self.breakfast_count_served = meal_totals["breakfast"]["served"]
 
@@ -632,7 +622,7 @@ class State(rx.State):
                 )
             )
             session.add(
-                Meal_Model(
+                Meal(
                     meal_id=str(short_uid()),
                     order_id=order_id,
                     user_nick_name=self.current_user.nick_name,
@@ -701,9 +691,9 @@ class State(rx.State):
             not self.breakfast_signup_item.lower().startswith("packed lunch")
             and rx.session()
             .execute(
-                Meal_Model.select_todays_breakfast_meals().where(
-                    Meal_Model.receiver == self.get_receiver,
-                    ~Meal_Model.diet.ilike("packed lunch%"),
+                Meal.select_todays_breakfast_meals().where(
+                    Meal.receiver == self.get_receiver,
+                    ~Meal.diet.ilike("packed lunch%"),
                 )
             )
             .scalar()
@@ -738,8 +728,8 @@ class State(rx.State):
         if (
             rx.session()
             .execute(
-                Meal_Model.select_todays_dinner_meals().where(
-                    Meal_Model.receiver == self.get_receiver
+                Meal.select_todays_dinner_meals().where(
+                    Meal.receiver == self.get_receiver
                 )
             )
             .scalar()
@@ -780,11 +770,7 @@ class State(rx.State):
 
         if (
             rx.session()
-            .exec(
-                Meal_Model.select_todays_dinner_meals().where(
-                    Meal_Model.receiver == receiver
-                )
-            )
+            .exec(Meal.select_todays_dinner_meals().where(Meal.receiver == receiver))
             .first()
             is not None
         ):
@@ -819,7 +805,7 @@ class State(rx.State):
                 )
             )
             session.add(
-                Meal_Model(
+                Meal(
                     meal_id=str(short_uid()),
                     order_id=order_id,
                     user_nick_name=form_data["nick_name"],
@@ -873,7 +859,7 @@ class State(rx.State):
                 )
             )
             session.add(
-                Meal_Model(
+                Meal(
                     meal_id=str(short_uid()),
                     order_id=order_id,
                     user_nick_name=self.current_user.nick_name,
