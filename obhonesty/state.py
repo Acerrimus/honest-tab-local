@@ -16,7 +16,7 @@ from obhonesty.aux import (
     get_system_provider_handling_fee_rounded_to_two_digits,
     get_full_breakfast_item,
 )
-from obhonesty.constants import true_values, DATETIME_FORMAT
+from obhonesty.constants import DATETIME_FORMAT
 from obhonesty.order import Order
 from obhonesty.models import (
     User,
