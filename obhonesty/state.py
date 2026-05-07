@@ -694,9 +694,18 @@ class State(rx.State):
             ) + [State.reset_order_request_id]
 
         # guests should not be able to sign up for multiple breakfasts, but they can sign up for multiple packed lunches
-        if not self.breakfast_signup_item.lower().startswith(
-            "packed lunch"
-        ) and self.get_receiver in [order.receiver for order in self.breakfast_signups]:
+
+        if (
+            not self.breakfast_signup_item.lower().startswith("packed lunch")
+            and rx.session()
+            .execute(
+                Meal_Model.select_todays_breakfast_meals().where(
+                    Meal_Model.receiver == self.get_receiver,
+                    ~Meal_Model.diet.ilike("packed lunch%"),
+                )
+            )
+            .scalar()
+        ):
             return [
                 State.reset_order_request_id,
                 rx.toast.error(
@@ -839,13 +848,13 @@ class State(rx.State):
     def order_breakfast(self):
         price = self.get_breakfast_price if not self.current_user.volunteer else 0.0
         now = get_madrid_datetime_now().strftime(DATETIME_FORMAT)
-
+        order_id = order_id = (
+            self.item_uuid if self.is_stripe_session_paid else str(short_uid())
+        )
         with rx.session() as session:
             session.add(
                 Order_Model(
-                    order_id=self.item_uuid
-                    if self.is_stripe_session_paid
-                    else str(short_uid()),
+                    order_id=order_id,
                     user_nick_name=self.current_user.nick_name,
                     time=now,
                     item="Breakfast sign-up",
@@ -861,7 +870,20 @@ class State(rx.State):
                     synced=False,
                 )
             )
-
+            session.add(
+                Meal_Model(
+                    meal_id=str(short_uid()),
+                    order_id=order_id,
+                    user_nick_name=self.current_user.nick_name,
+                    receiver=self.get_receiver,
+                    order_time=datetime.strptime(now, DATETIME_FORMAT),
+                    meal_type="breakfast",
+                    diet=self.breakfast_signup_item,
+                    allergies=self.breakfast_signup_allergies,
+                    volunteer=False,
+                    served=False,
+                )
+            )
             if self.is_stripe_session_paid:
                 session.add(
                     Payment(
@@ -871,7 +893,6 @@ class State(rx.State):
                         checkout_staff="",
                     )
                 )
-
             session.commit()
 
         events = [rx.toast.info("Breakfast sign-up registration successful!")]
@@ -1331,31 +1352,6 @@ class State(rx.State):
         deadline_minutes = deadline.hour * 60 + deadline.minute
         now_minutes = now.hour * 60 + now.minute
         return now_minutes < deadline_minutes
-
-    @rx.var(cache=False)
-    def breakfast_signups(self) -> List[Order]:
-        signups: List[Order] = []
-        for order in self.orders:
-            try:
-                order_date = datetime.strptime(order.time, DATETIME_FORMAT).date()
-            except BaseException:
-                continue
-
-            if (
-                order.item == "Breakfast sign-up"
-                and not order.item.lower().startswith("packed lunch")
-                and order_date == datetime.today().date()
-            ):
-                order_alt = order.copy()
-                try:
-                    order_alt.time = datetime.fromisoformat(order.time).strftime(
-                        "%H:%M:%S"
-                    )
-                except:
-                    pass
-                signups.append(order_alt)
-        signups.sort(key=lambda x: x.time, reverse=True)
-        return signups
 
     @rx.var
     def get_user_debt(self) -> float:
