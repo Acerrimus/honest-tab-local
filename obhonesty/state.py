@@ -508,9 +508,11 @@ class State(rx.State):
         with rx.session() as session:
             session.add(
                 Order(
-                    order_id=self.item_uuid
-                    if self.is_stripe_session_paid
-                    else str(short_uid()),
+                    order_id=(
+                        self.item_uuid
+                        if self.is_stripe_session_paid
+                        else str(short_uid())
+                    ),
                     user_nick_name=self.current_user.nick_name,
                     time=now,
                     item=item.name,
@@ -1088,12 +1090,16 @@ class State(rx.State):
                     metadata={"ob_payment_id": ob_payment_id},
                     # payment_intent_data allows staff to track the payment through the stripe dashboard using the payment id
                     payment_intent_data={"metadata": {"ob_payment_id": ob_payment_id}},
-                    success_url=os.getenv("SUCCESS_URL")
-                    if os.getenv("SUCCESS_URL")
-                    else "https://example.com/success",
-                    cancel_url=os.getenv("CANCEL_URL")
-                    if os.getenv("CANCEL_URL")
-                    else "https://example.com/cancel",
+                    success_url=(
+                        os.getenv("SUCCESS_URL")
+                        if os.getenv("SUCCESS_URL")
+                        else "https://example.com/success"
+                    ),
+                    cancel_url=(
+                        os.getenv("CANCEL_URL")
+                        if os.getenv("CANCEL_URL")
+                        else "https://example.com/cancel"
+                    ),
                     # the stripe session is set to expire after 30 minutes, this is the minimum expiry time for a checkout session, see https://docs.stripe.com/api/checkout/sessions/create
                     # this is to have the maximum frequency that the app can poll the stripe api without hitting the rate limit, see https://docs.stripe.com/rate-limits#api-read-request-allocations
                     expires_at=int(
@@ -1128,15 +1134,15 @@ class State(rx.State):
                         datetime_requested=datetime_requested,
                         stripe_payment_id=self.current_stripe_session_id,
                         ob_payment_id=ob_payment_id,
-                        order_id=order.order_id
-                        if item_name == "tab"
-                        else order["order_id"],
+                        order_id=(
+                            order.order_id if item_name == "tab" else order["order_id"]
+                        ),
                         user=self.current_user.nick_name,
                         system_provider_handling_fee_amount=self.stripe_system_provider_handling_fee_amount,
                         item=order.item if item_name == "tab" else order["item"],
-                        quantity=order.quantity
-                        if item_name == "tab"
-                        else order["quantity"],
+                        quantity=(
+                            order.quantity if item_name == "tab" else order["quantity"]
+                        ),
                         price=order.price if item_name == "tab" else order["price"],
                         total=order.total if item_name == "tab" else order["total"],
                         synced=False,

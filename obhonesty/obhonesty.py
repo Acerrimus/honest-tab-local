@@ -543,22 +543,22 @@ def update_meals_table():
         with rx.session() as session:
             now = get_madrid_datetime_now()
             # if a meal doesn't have a corresponding order then the order will have been deleted by staff, so it should be removed
-            todays_guest_meals_without_corresponding_orders: list[
-                Meal
-            ] = session.execute(
-                Meal.select_todays_meals().where(
-                    Meal.order_id != "N/A",
-                    Meal.order_id.notin_(
-                        select(Order.order_id).where(
-                            Order.time.ilike(f"{now.date().strftime('%d/%m/%Y')}%"),
-                            or_(
-                                Order.item == "Breakfast sign-up",
-                                Order.item == "Dinner sign-up",
-                            ),
-                        )
-                    ),
-                )
-            ).scalars()
+            todays_guest_meals_without_corresponding_orders: list[Meal] = (
+                session.execute(
+                    Meal.select_todays_meals().where(
+                        Meal.order_id != "N/A",
+                        Meal.order_id.notin_(
+                            select(Order.order_id).where(
+                                Order.time.ilike(f"{now.date().strftime('%d/%m/%Y')}%"),
+                                or_(
+                                    Order.item == "Breakfast sign-up",
+                                    Order.item == "Dinner sign-up",
+                                ),
+                            )
+                        ),
+                    )
+                ).scalars()
+            )
             for meal in todays_guest_meals_without_corresponding_orders:
                 session.delete(meal)
             dinner_meals_today_as_receivers: set[str] = set(

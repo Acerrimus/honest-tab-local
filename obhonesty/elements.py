@@ -256,9 +256,11 @@ def stripe_payment_dialog(name, amount) -> rx.Component:
                             rx.cond(
                                 State.payment_qr_code != "",
                                 rx.image(
-                                    src=State.payment_qr_code
-                                    if not is_test_environment
-                                    else rx.asset("test_url.png"),
+                                    src=(
+                                        State.payment_qr_code
+                                        if not is_test_environment
+                                        else rx.asset("test_url.png")
+                                    ),
                                     width="250px",
                                     height="250px",
                                     border="1px solid #ddd",
