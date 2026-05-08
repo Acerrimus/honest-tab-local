@@ -616,10 +616,10 @@ def sync_new_stripe_checkout_sessions():
                 "total",
             ],
         )
-        stripe_checkout_session_record_payment_ids: list[str] = [
+        stripe_checkout_session_record_payment_ids: set[str] = set(
             checkout_session["payment_order_id"]
             for checkout_session in stripe_checkout_session_records
-        ]
+        )
         remaining_unsynced_sessions: list[Stripe_Checkout_Session] = []
 
         with rx.session() as session:
