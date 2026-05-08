@@ -574,10 +574,13 @@ class State(rx.State):
             )
             session.commit()
 
-        return rx.toast.info(
-            f"'{item_name}' registered succesfully. Thank you!",
-            position="bottom-center",
-        )
+        return [
+            rx.toast.info(
+                f"'{item_name}' registered succesfully. Thank you!",
+                position="bottom-center",
+            ),
+            rx.redirect("/user"),
+        ]
 
     @rx.var(cache=False)
     def get_receiver(self) -> str:

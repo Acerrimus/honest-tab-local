@@ -204,6 +204,7 @@ def user_page() -> rx.Component:
                             on_click=rx.redirect("/custom_item"),
                             size=default_button_size,
                             disabled=State.are_user_buttons_disabled,
+                            **{"data-testid": "custom-item-button"},
                         ),
                         align="center",
                     ),
@@ -222,7 +223,9 @@ def custom_item_page() -> rx.Component:
                     rx.vstack(
                         rx.text("Name"),
                         rx.input(
-                            placeholder="What did you get?", name="custom_item_name"
+                            placeholder="What did you get?",
+                            name="custom_item_name",
+                            **{"data-testid": "custom-item-name-input"},
                         ),
                         rx.text("Price"),
                         rx.form.field(
@@ -231,6 +234,7 @@ def custom_item_page() -> rx.Component:
                                     placeholder="E.g. 2.50 for (2.50€)",
                                     name="custom_item_price",
                                     on_change=State.set_custom_item_price,
+                                    **{"data-testid": "custom-item-price-input"},
                                 ),
                                 as_child=True,
                             ),
@@ -256,6 +260,7 @@ def custom_item_page() -> rx.Component:
                             rx.text("Register", size=default_button_text_size),
                             type="submit",
                             size=default_button_size,
+                            **{"data-testid": "custom-item-register-button"},
                         ),
                     ),
                     on_submit=State.order_custom_item,
