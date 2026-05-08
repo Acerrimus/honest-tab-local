@@ -81,6 +81,10 @@ Create a new branch for your changes. Ideally create a pull request so it can be
 
 Once agreed features are complete in `ci` it will be merged into `main`.
 
+#### Formatting
+
+This repo uses Black and Prettier for formmatting. Black uses version 26.1.0. 
+
 ### Altering the SQLite Database
 
 Honest Tab uses [SQLAlchemy v1.4](https://docs.sqlalchemy.org/en/14/orm/quickstart.html) ORM as part of Reflex to manage and interact with the SQLite database.
