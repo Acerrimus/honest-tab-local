@@ -1,7 +1,6 @@
 import reflex as rx
-from sqlalchemy import select
+from sqlalchemy import select, or_
 import asyncio
-from datetime import datetime
 from obhonesty.pages import *
 from obhonesty.state import State
 from obhonesty.sheet import (
@@ -29,7 +28,6 @@ from obhonesty.aux import (
     generate_receiver_from_names,
     get_madrid_datetime_now,
 )
-from obhonesty.constants import DATETIME_FORMAT
 import os
 from fastapi import FastAPI, status
 from typing import TypedDict
@@ -543,47 +541,37 @@ def sync_admin_data():
 def update_meals_table():
     try:
         with rx.session() as session:
-            volunteers: list[User] = (
-                session.exec(select(User).where(User.volunteer == True)).scalars().all()
-            )
-            orders: list[Order] = session.exec(Order.select()).all()
             now = get_madrid_datetime_now()
-            todays_meals: list[Meal] = (
-                session.execute(Meal.select_todays_meals()).scalars().all()
-            )
-            dinner_meals_today: list[Meal] = (
-                session.execute(Meal.select_todays_dinner_meals()).scalars().all()
-            )
-            signups_in_todays_orders = list(
-                filter(
-                    lambda order: (
-                        order.item == "Breakfast sign-up"
-                        or order.item == "Dinner sign-up"
-                    )
-                    and datetime.strptime(order.time, DATETIME_FORMAT).date()
-                    == now.date(),
-                    orders,
+            # if a meal doesn't have a corresponding order then the order will have been deleted by staff, so it should be removed
+            todays_guest_meals_without_corresponding_orders: list[
+                Meal
+            ] = session.execute(
+                Meal.select_todays_meals().where(
+                    Meal.order_id != "N/A",
+                    Meal.order_id.notin_(
+                        select(Order.order_id).where(
+                            Order.time.ilike(f"{now.date().strftime('%d/%m/%Y')}%"),
+                            or_(
+                                Order.item == "Breakfast sign-up",
+                                Order.item == "Dinner sign-up",
+                            ),
+                        )
+                    ),
                 )
-            )
-            signups_in_todays_orders_as_order_ids = list(
-                map(lambda order: order.order_id, signups_in_todays_orders)
-            )
-
-            # remove guest meals from today's signups if they've been removed from orders
-            for meal in todays_meals:
-                # if order_id is "N/A" they are a volunteer getting dinner automatically, so this meal will not appear in the order table
-                if (
-                    meal.order_id in signups_in_todays_orders_as_order_ids
-                    or meal.order_id == "N/A"
-                ):
-                    continue
+            ).scalars()
+            for meal in todays_guest_meals_without_corresponding_orders:
                 session.delete(meal)
-
-            dinner_meals_today_as_receivers = list(
-                map(lambda meal: meal.receiver, dinner_meals_today)
+            dinner_meals_today_as_receivers: set[str] = set(
+                session.execute(
+                    Meal.select_todays_dinner_meals().with_only_columns(Meal.receiver)
+                )
+                .scalars()
+                .all()
             )
-
-            # add volunteers to today's dinner meals if not already added
+            volunteers: list[User] = session.exec(
+                select(User).where(User.volunteer == True)
+            ).scalars()
+            # add volunteer meals to tonight's dinner list if they have not already been added
             for volunteer in volunteers:
                 volunteer_receiver_name = generate_receiver_from_names(
                     volunteer.first_name, volunteer.last_name
@@ -604,8 +592,7 @@ def update_meals_table():
                         served=False,
                     )
                 )
-
-            if len(session.new) or len(session.dirty) or len(session.deleted):
+            if len(session.new) or len(session.deleted):
                 session.commit()
     except Exception as e:
         print(f"update_meal_table error: {e}")
