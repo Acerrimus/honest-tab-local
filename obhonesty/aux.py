@@ -1,10 +1,9 @@
-import random
-import string
 import socket
 from datetime import datetime
 from reflex.vars import NumberVar, var_operation, var_operation_return
 from zoneinfo import ZoneInfo
 from obhonesty.constants import SYSTEM_PROVIDER_HANDLING_FEE
+from uuid import uuid4
 
 
 @var_operation
@@ -16,11 +15,8 @@ def two_decimal_points(value: NumberVar):
     )
 
 
-_alphabet = string.ascii_lowercase + string.digits
-
-
-def short_uid(k=8):
-    return "".join(random.choices(_alphabet, k=8))
+def generate_uuid():
+    return uuid4()
 
 
 def check_internet_connection():
