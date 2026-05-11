@@ -149,7 +149,7 @@ class State(rx.State):
 
     @rx.event
     def set_order_request_id(self):
-        request_id = str(generate_uuid())
+        request_id = generate_uuid()
         self.order_request_id = request_id
         if self.current_order_request_id != "":
             return
@@ -511,7 +511,7 @@ class State(rx.State):
                     order_id=(
                         self.item_uuid
                         if self.is_stripe_session_paid
-                        else str(generate_uuid())
+                        else generate_uuid()
                     ),
                     user_nick_name=self.current_user.nick_name,
                     time=now,
@@ -532,7 +532,7 @@ class State(rx.State):
             if self.is_stripe_session_paid:
                 session.add(
                     Payment(
-                        payment_id=str(generate_uuid()),
+                        payment_id=generate_uuid(),
                         order_id=self.item_uuid,
                         paid_time=now,
                         method="stripe-tablet",
@@ -559,7 +559,7 @@ class State(rx.State):
         with rx.session() as session:
             session.add(
                 Order(
-                    order_id=str(generate_uuid()),
+                    order_id=generate_uuid(),
                     user_nick_name=self.current_user.nick_name,
                     time=now,
                     item=item_name,
@@ -602,9 +602,7 @@ class State(rx.State):
     @rx.event
     def order_dinner(self):
         now = get_madrid_datetime_now().strftime(DATETIME_FORMAT)
-        order_id = (
-            self.item_uuid if self.is_stripe_session_paid else str(generate_uuid())
-        )
+        order_id = self.item_uuid if self.is_stripe_session_paid else generate_uuid()
         with rx.session() as session:
             session.add(
                 Order(
@@ -626,7 +624,7 @@ class State(rx.State):
             )
             session.add(
                 Meal(
-                    meal_id=str(generate_uuid()),
+                    meal_id=generate_uuid(),
                     order_id=order_id,
                     user_nick_name=self.current_user.nick_name,
                     receiver=self.get_receiver,
@@ -641,7 +639,7 @@ class State(rx.State):
             if self.is_stripe_session_paid:
                 session.add(
                     Payment(
-                        payment_id=str(generate_uuid()),
+                        payment_id=generate_uuid(),
                         order_id=self.item_uuid,
                         paid_time=now,
                         method="stripe-tablet",
@@ -787,7 +785,7 @@ class State(rx.State):
             ]
 
         with rx.session() as session:
-            order_id = str(generate_uuid())
+            order_id = generate_uuid()
             now = get_madrid_datetime_now().strftime(DATETIME_FORMAT)
             price = self.admin_data.get("dinner_price", 0)
             session.add(
@@ -810,7 +808,7 @@ class State(rx.State):
             )
             session.add(
                 Meal(
-                    meal_id=str(generate_uuid()),
+                    meal_id=generate_uuid(),
                     order_id=order_id,
                     user_nick_name=form_data["nick_name"],
                     receiver=receiver,
@@ -841,7 +839,7 @@ class State(rx.State):
         price = self.get_breakfast_price if not self.current_user.volunteer else 0.0
         now = get_madrid_datetime_now().strftime(DATETIME_FORMAT)
         order_id = order_id = (
-            self.item_uuid if self.is_stripe_session_paid else str(generate_uuid())
+            self.item_uuid if self.is_stripe_session_paid else generate_uuid()
         )
         with rx.session() as session:
             session.add(
@@ -864,7 +862,7 @@ class State(rx.State):
             )
             session.add(
                 Meal(
-                    meal_id=str(generate_uuid()),
+                    meal_id=generate_uuid(),
                     order_id=order_id,
                     user_nick_name=self.current_user.nick_name,
                     receiver=self.get_receiver,
@@ -879,7 +877,7 @@ class State(rx.State):
             if self.is_stripe_session_paid:
                 session.add(
                     Payment(
-                        payment_id=str(generate_uuid()),
+                        payment_id=generate_uuid(),
                         order_id=self.item_uuid,
                         paid_time=now,
                         method="stripe-tablet",
@@ -957,7 +955,7 @@ class State(rx.State):
             for order in self.current_user_orders:
                 session.add(
                     Payment(
-                        payment_id=str(generate_uuid()),
+                        payment_id=generate_uuid(),
                         order_id=order.order_id,
                         paid_time=now,
                         method="stripe-tablet",
@@ -1040,12 +1038,12 @@ class State(rx.State):
             self.is_payment_status_written_to_db = False
             self.is_stripe_session_paid = False
             self.payment_qr_code = ""
-        ob_payment_id = str(generate_uuid())
+        ob_payment_id = generate_uuid()
         individual_item_request: dict[str, str | float] = {}
 
         if item_name != "tab":
             async with self:
-                self.item_uuid = str(generate_uuid())
+                self.item_uuid = generate_uuid()
             quantity = (
                 self.temp_quantity
                 if self.temp_quantity > 0
@@ -1136,7 +1134,7 @@ class State(rx.State):
             ):
                 session.add(
                     Stripe_Checkout_Session(
-                        payment_order_id=str(generate_uuid()),
+                        payment_order_id=generate_uuid(),
                         datetime_requested=datetime_requested,
                         stripe_payment_id=self.current_stripe_session_id,
                         ob_payment_id=ob_payment_id,

@@ -16,7 +16,7 @@ def two_decimal_points(value: NumberVar):
 
 
 def generate_uuid():
-    return uuid4()
+    return str(uuid4())
 
 
 def check_internet_connection():

@@ -208,12 +208,12 @@ async def get_todays_dinner_meals():
 
 @fastapi_app.post("/api/test/meals/dinner/today", status_code=status.HTTP_201_CREATED)
 async def create_dinner_meal_for_today(username: str, receiver: str):
-    meal_id = str(generate_uuid())
+    meal_id = generate_uuid()
     with rx.session() as session:
         session.add(
             Meal(
                 meal_id=meal_id,
-                order_id=str(generate_uuid()),
+                order_id=generate_uuid(),
                 user_nick_name=username,
                 receiver=receiver,
                 order_time=get_madrid_datetime_now(),
@@ -580,7 +580,7 @@ def update_meals_table():
                     continue
                 session.add(
                     Meal(
-                        meal_id=str(generate_uuid()),
+                        meal_id=generate_uuid(),
                         order_id="N/A",
                         user_nick_name=volunteer.nick_name,
                         receiver=volunteer_receiver_name,
