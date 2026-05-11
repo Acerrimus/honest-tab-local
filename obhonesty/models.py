@@ -50,7 +50,7 @@ class Order(rx.Model, table=True):
 class Payment(rx.Model, table=True):
     payment_id: str
     order_id: str
-    paid_time: str
+    paid_time: datetime
     method: str
     checkout_staff: str
     is_synced: bool = False

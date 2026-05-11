@@ -503,7 +503,7 @@ class State(rx.State):
         except BaseException:
             return rx.toast.error("Failed to register. Quantity must be a number")
 
-        now = get_madrid_datetime_now().strftime(DATETIME_FORMAT)
+        now = get_madrid_datetime_now()
 
         with rx.session() as session:
             session.add(
@@ -514,7 +514,7 @@ class State(rx.State):
                         else generate_uuid()
                     ),
                     user_nick_name=self.current_user.nick_name,
-                    time=now,
+                    time=now.strftime(DATETIME_FORMAT),
                     item=item.name,
                     quantity=quantity,
                     price=item.price,
@@ -601,14 +601,14 @@ class State(rx.State):
 
     @rx.event
     def order_dinner(self):
-        now = get_madrid_datetime_now().strftime(DATETIME_FORMAT)
+        now = get_madrid_datetime_now()
         order_id = self.item_uuid if self.is_stripe_session_paid else generate_uuid()
         with rx.session() as session:
             session.add(
                 Order(
                     order_id=order_id,
                     user_nick_name=self.current_user.nick_name,
-                    time=now,
+                    time=now.strftime(DATETIME_FORMAT),
                     item="Dinner sign-up",
                     quantity=1,
                     price=self.admin_data.get("dinner_price", 0),
@@ -628,7 +628,7 @@ class State(rx.State):
                     order_id=order_id,
                     user_nick_name=self.current_user.nick_name,
                     receiver=self.get_receiver,
-                    order_time=datetime.strptime(now, DATETIME_FORMAT),
+                    order_time=now,
                     meal_type="dinner",
                     diet=self.dinner_signup_dietary_preference,
                     allergies=self.dinner_signup_allergies,
@@ -837,7 +837,7 @@ class State(rx.State):
     @rx.event
     def order_breakfast(self):
         price = self.get_breakfast_price if not self.current_user.volunteer else 0.0
-        now = get_madrid_datetime_now().strftime(DATETIME_FORMAT)
+        now = get_madrid_datetime_now()
         order_id = order_id = (
             self.item_uuid if self.is_stripe_session_paid else generate_uuid()
         )
@@ -846,7 +846,7 @@ class State(rx.State):
                 Order(
                     order_id=order_id,
                     user_nick_name=self.current_user.nick_name,
-                    time=now,
+                    time=now.strftime(DATETIME_FORMAT),
                     item="Breakfast sign-up",
                     quantity=1,
                     price=price,
@@ -866,7 +866,7 @@ class State(rx.State):
                     order_id=order_id,
                     user_nick_name=self.current_user.nick_name,
                     receiver=self.get_receiver,
-                    order_time=datetime.strptime(now, DATETIME_FORMAT),
+                    order_time=now,
                     meal_type="breakfast",
                     diet=self.breakfast_signup_item,
                     allergies=self.breakfast_signup_allergies,
@@ -949,8 +949,7 @@ class State(rx.State):
 
     @rx.event
     def pay_current_tab(self):
-        now = get_madrid_datetime_now().strftime(DATETIME_FORMAT)
-
+        now = get_madrid_datetime_now()
         with rx.session() as session:
             for order in self.current_user_orders:
                 session.add(

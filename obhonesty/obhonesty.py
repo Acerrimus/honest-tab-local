@@ -1,3 +1,4 @@
+from datetime import datetime
 import reflex as rx
 from sqlalchemy import select, or_
 import asyncio
@@ -679,6 +680,7 @@ def sync_payments():
                 "method",
                 "checkout_staff",
             ],
+            True,
         )
         payment_ids: set[str] = set(payment["payment_id"] for payment in payment_data)
 
@@ -702,7 +704,9 @@ def sync_payments():
                         [
                             unsynced_payment.payment_id,
                             unsynced_payment.order_id,
-                            unsynced_payment.paid_time,
+                            datetime.strftime(
+                                unsynced_payment.paid_time, DATETIME_FORMAT
+                            ),
                             unsynced_payment.method,
                             unsynced_payment.checkout_staff,
                         ]
@@ -711,14 +715,18 @@ def sync_payments():
                     value_input_option="USER_ENTERED",
                     table_range="A1",
                 )
-                return
 
-            for row in session.exec(Payment.select()).all():
-                session.delete(row)
-            add_google_sheet_data_to_session(
-                session, payment_data, Payment, "payment_id"
-            )
-            session.commit()
+                for row in session.exec(Payment.select()).all():
+                    session.delete(row)
+                for index, payment in enumerate(payment_data):
+                    payment_data[index]["paid_time"] = datetime.strptime(
+                        payment_data[index]["paid_time"], DATETIME_FORMAT
+                    )
+                    payment_data[index]["is_synced"] = True
+                add_google_sheet_data_to_session(
+                    session, payment_data, Payment, "payment_id"
+                )
+                session.commit()
     except Exception as e:
         print(f"sync_payments error: {e}")
 
@@ -742,7 +750,6 @@ async def run_loop_tasks():
         except Exception as e:
             print(f"run_loop_tasks error: {e}")
         await asyncio.sleep(10)
-        return
 
 
 app.register_lifespan_task(run_loop_tasks)
