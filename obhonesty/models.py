@@ -48,6 +48,7 @@ class Order(rx.Model, table=True):
 
 
 class Payment(rx.Model, table=True):
+    payment_id: str
     order_id: str
     paid_time: str
     method: str

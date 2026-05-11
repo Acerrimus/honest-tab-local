@@ -673,13 +673,14 @@ def sync_payments():
         payment_data = get_records(
             payments_sheet,
             [
+                "payment_id",
                 "order_id",
                 "paid_time",
                 "method",
                 "checkout_staff",
             ],
         )
-        payment_order_ids: list[str] = [payment["order_id"] for payment in payment_data]
+        payment_ids: set[str] = set(payment["payment_id"] for payment in payment_data)
 
         with rx.session() as session:
             unsynced_payments: list[Payment] = (
@@ -687,19 +688,19 @@ def sync_payments():
             )
             remaining_unsynyced_payments: list[Payment] = []
             for unsynced_payment in unsynced_payments:
-                if unsynced_payment.order_id in payment_order_ids:
+                if unsynced_payment.payment_id in payment_ids:
                     unsynced_payment.is_synced = True
                     continue
                 remaining_unsynyced_payments.append(unsynced_payment)
 
             if len(session.dirty):
-                session.commmit()
+                session.commit()
 
             if len(remaining_unsynyced_payments):
                 payments_sheet.append_rows(
                     [
                         [
-                            # unsynced_payment.payment_id,
+                            unsynced_payment.payment_id,
                             unsynced_payment.order_id,
                             unsynced_payment.paid_time,
                             unsynced_payment.method,
@@ -710,10 +711,13 @@ def sync_payments():
                     value_input_option="USER_ENTERED",
                     table_range="A1",
                 )
+                return
 
             for row in session.exec(Payment.select()).all():
                 session.delete(row)
-            add_google_sheet_data_to_session(session, payment_data, Payment, "order_id")
+            add_google_sheet_data_to_session(
+                session, payment_data, Payment, "payment_id"
+            )
             session.commit()
     except Exception as e:
         print(f"sync_payments error: {e}")
@@ -738,6 +742,7 @@ async def run_loop_tasks():
         except Exception as e:
             print(f"run_loop_tasks error: {e}")
         await asyncio.sleep(10)
+        return
 
 
 app.register_lifespan_task(run_loop_tasks)

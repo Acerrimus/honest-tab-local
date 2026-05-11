@@ -532,6 +532,7 @@ class State(rx.State):
             if self.is_stripe_session_paid:
                 session.add(
                     Payment(
+                        payment_id=str(generate_uuid()),
                         order_id=self.item_uuid,
                         paid_time=now,
                         method="stripe-tablet",
@@ -640,6 +641,7 @@ class State(rx.State):
             if self.is_stripe_session_paid:
                 session.add(
                     Payment(
+                        payment_id=str(generate_uuid()),
                         order_id=self.item_uuid,
                         paid_time=now,
                         method="stripe-tablet",
@@ -877,6 +879,7 @@ class State(rx.State):
             if self.is_stripe_session_paid:
                 session.add(
                     Payment(
+                        payment_id=str(generate_uuid()),
                         order_id=self.item_uuid,
                         paid_time=now,
                         method="stripe-tablet",
@@ -954,6 +957,7 @@ class State(rx.State):
             for order in self.current_user_orders:
                 session.add(
                     Payment(
+                        payment_id=str(generate_uuid()),
                         order_id=order.order_id,
                         paid_time=now,
                         method="stripe-tablet",
