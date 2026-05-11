@@ -52,6 +52,7 @@ class Payment(rx.Model, table=True):
     paid_time: str
     method: str
     checkout_staff: str
+    is_synced: bool = False
 
 
 class Stripe_Checkout_Session(rx.Model, table=True):

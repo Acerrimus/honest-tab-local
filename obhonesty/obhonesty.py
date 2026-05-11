@@ -683,26 +683,33 @@ def sync_payments():
 
         with rx.session() as session:
             unsynced_payments: list[Payment] = (
-                session.query(Payment)
-                .filter(Payment.order_id.not_in(payment_order_ids))
-                .all()
+                session.query(Payment).filter(~Payment.is_synced).all()
             )
-            if len(unsynced_payments):
-                session.close()
+            remaining_unsynyced_payments: list[Payment] = []
+            for unsynced_payment in unsynced_payments:
+                if unsynced_payment.order_id in payment_order_ids:
+                    unsynced_payment.is_synced = True
+                    continue
+                remaining_unsynyced_payments.append(unsynced_payment)
+
+            if len(session.dirty):
+                session.commmit()
+
+            if len(remaining_unsynyced_payments):
                 payments_sheet.append_rows(
                     [
                         [
+                            # unsynced_payment.payment_id,
                             unsynced_payment.order_id,
                             unsynced_payment.paid_time,
                             unsynced_payment.method,
                             unsynced_payment.checkout_staff,
                         ]
-                        for unsynced_payment in unsynced_payments
+                        for unsynced_payment in remaining_unsynyced_payments
                     ],
                     value_input_option="USER_ENTERED",
                     table_range="A1",
                 )
-                return
 
             for row in session.exec(Payment.select()).all():
                 session.delete(row)
