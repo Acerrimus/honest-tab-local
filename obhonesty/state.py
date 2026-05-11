@@ -525,7 +525,6 @@ class State(rx.State):
                     served="",
                     tax_category=item.tax_category,
                     comment="",
-                    synced=False,
                 )
             )
 
@@ -572,7 +571,6 @@ class State(rx.State):
                     served="",
                     tax_category=form_data["tax_category"],
                     comment=form_data["custom_item_description"],
-                    synced=False,
                 )
             )
             session.commit()
@@ -619,7 +617,6 @@ class State(rx.State):
                     served="",
                     tax_category="Food and beverage non-alcoholic",
                     comment="",
-                    synced=False,
                 )
             )
             session.add(
@@ -803,7 +800,6 @@ class State(rx.State):
                     served="",
                     tax_category="Food and beverage non-alcoholic",
                     comment="Late dinner signup",
-                    synced=False,
                 )
             )
             session.add(
@@ -857,7 +853,6 @@ class State(rx.State):
                     served="",
                     tax_category="Food and beverage non-alcoholic",
                     comment="",
-                    synced=False,
                 )
             )
             session.add(
@@ -944,7 +939,7 @@ class State(rx.State):
                 )
             if self.is_closing_account:
                 user.active_tab = False
-            user.synced = False
+            user.is_synced = False
             session.commit()
 
     @rx.event
@@ -1148,7 +1143,6 @@ class State(rx.State):
                         ),
                         price=order.price if item_name == "tab" else order["price"],
                         total=order.total if item_name == "tab" else order["total"],
-                        synced=False,
                     )
                 )
             session.commit()

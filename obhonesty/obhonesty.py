@@ -162,7 +162,6 @@ async def create_test_order(
                 served=served,
                 tax_category=tax_category,
                 comment=comment,
-                synced=False,
             )
         )
         session.commit()
@@ -361,7 +360,9 @@ def sync_orders():
                 ],
                 True,
             )
-            current_unsynced_orders = session.query(Order).filter(~Order.synced).all()
+            current_unsynced_orders = (
+                session.query(Order).filter(~Order.is_synced).all()
+            )
             if not len(current_unsynced_orders):
                 for order in order_data:
                     order["user_nick_name"] = order["user"]
@@ -376,7 +377,7 @@ def sync_orders():
 
             for order in current_unsynced_orders:
                 if order.order_id in google_sheet_order_ids:
-                    order.synced = True
+                    order.is_synced = True
                     continue
                 remaining_unsynced_orders.append(order)
 
@@ -411,7 +412,7 @@ def sync_users():
                 True,
             )
             current_unsynced_users: list[User] = (
-                session.query(User).filter(~User.synced).all()
+                session.query(User).filter(~User.is_synced).all()
             )
             new_unsynced_users_to_sync: list[User] = []
             updated_unsynced_users_to_sync: list[UnsyncedUserWithRow] = []
@@ -470,7 +471,7 @@ def sync_users():
                             }
                         )
                         continue
-                    unsynced_user.synced = True
+                    unsynced_user.is_synced = True
 
             if len(session.new) or len(session.dirty):
                 session.commit()
@@ -626,7 +627,7 @@ def sync_new_stripe_checkout_sessions():
         with rx.session() as session:
             unsynced_stripe_checkout_session_rows = (
                 session.query(Stripe_Checkout_Session)
-                .filter(~Stripe_Checkout_Session.synced)
+                .filter(~Stripe_Checkout_Session.is_synced)
                 .all()
             )
 
@@ -635,7 +636,7 @@ def sync_new_stripe_checkout_sessions():
                     unsynced_session.payment_order_id
                     in stripe_checkout_session_record_payment_ids
                 ):
-                    unsynced_session.synced = True
+                    unsynced_session.is_synced = True
                     continue
                 remaining_unsynced_sessions.append(unsynced_session)
 
@@ -722,7 +723,6 @@ def sync_payments():
                     payment_data[index]["paid_time"] = datetime.strptime(
                         payment_data[index]["paid_time"], DATETIME_FORMAT
                     )
-                    payment_data[index]["is_synced"] = True
                 add_google_sheet_data_to_session(
                     session, payment_data, Payment, "payment_id"
                 )

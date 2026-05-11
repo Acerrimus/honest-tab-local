@@ -6,7 +6,7 @@ from obhonesty.aux import get_madrid_datetime_now
 # These classes specify the table info for the SQL database, storing google sheets data offline.
 # They must be updated if any new columns are added.
 
-# synced is a prop only in the postgres db.
+# is_synced is a prop only in the postgres db.
 
 
 class User(rx.Model, table=True):
@@ -19,7 +19,7 @@ class User(rx.Model, table=True):
     away: bool
     diet: str
     allergies: str
-    synced: bool
+    is_synced: bool = False
     # these must default to False otherwise the app crashes on startup
     current_guest: bool = False
     active_tab: bool = True
@@ -44,7 +44,7 @@ class Order(rx.Model, table=True):
     served: str
     tax_category: str
     comment: str
-    synced: bool
+    is_synced: bool = False
 
 
 class Payment(rx.Model, table=True):
@@ -63,7 +63,7 @@ class Stripe_Checkout_Session(rx.Model, table=True):
     ob_payment_id: str
     order_id: str
     user: str
-    synced: bool
+    is_synced: bool = False
     system_provider_handling_fee_amount: float
     item: str
     quantity: float
