@@ -28,6 +28,7 @@ from obhonesty.aux import (
     generate_uuid,
     generate_receiver_from_names,
     get_madrid_datetime_now,
+    get_todays_date_as_string,
 )
 import os
 from fastapi import FastAPI, status
@@ -554,7 +555,7 @@ def update_meals_table():
                         Meal.order_id != "N/A",
                         Meal.order_id.notin_(
                             select(Order.order_id).where(
-                                Order.time.ilike(f"{now.date().strftime('%d/%m/%Y')}%"),
+                                Order.time.ilike(f"{get_todays_date_as_string()}%"),
                                 or_(
                                     Order.item == "Breakfast sign-up",
                                     Order.item == "Dinner sign-up",
@@ -600,7 +601,7 @@ def update_meals_table():
             # add new orders to today's meals if not already added
             signups_in_todays_orders: list[Order] = session.execute(
                 select(Order).where(
-                    Order.time.ilike(f"{now.date().strftime('%d/%m/%Y')}%"),
+                    Order.time.ilike(f"{get_todays_date_as_string()}%"),
                     or_(
                         Order.item == "Breakfast sign-up",
                         Order.item == "Dinner sign-up",

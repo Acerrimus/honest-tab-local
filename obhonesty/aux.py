@@ -56,6 +56,10 @@ def get_madrid_datetime_now():
     return datetime.now(ZoneInfo("Europe/Madrid"))
 
 
+def get_todays_date_as_string():
+    return get_madrid_datetime_now().date().strftime("%d/%m/%Y")
+
+
 def generate_line_item(name: str, unit_amount: int, quantity: int):
     return {
         "price_data": {
