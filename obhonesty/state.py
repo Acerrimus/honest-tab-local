@@ -1038,11 +1038,9 @@ class State(rx.State):
         if item_name != "tab":
             async with self:
                 self.item_uuid = generate_uuid()
+            is_meal = self.ordered_item in ["breakfast", "dinner"]
             quantity = (
-                self.temp_quantity
-                if self.temp_quantity > 0
-                and self.ordered_item not in ["breakfast", "dinner"]
-                else 1.0
+                self.temp_quantity if self.temp_quantity > 0 and not is_meal else 1.0
             )
             if self.ordered_item == "breakfast":
                 item_name = get_full_breakfast_item(self.breakfast_signup_item)
@@ -1056,6 +1054,15 @@ class State(rx.State):
                 "quantity": quantity,
                 "price": unit_price,
                 "total": quantity * unit_price,
+                "receiver": (self.get_receiver if is_meal else ""),
+                "diet": (self.dinner_signup_dietary_preference if is_meal else ""),
+                "allergies": (self.dinner_signup_allergies if is_meal else ""),
+                "tax_category": (
+                    "Food and beverage non-alcoholic"
+                    if is_meal
+                    else self.items[self.ordered_item].tax_category
+                ),
+                "comment": "",
             }
 
         line_items = (
@@ -1143,6 +1150,23 @@ class State(rx.State):
                         ),
                         price=order.price if item_name == "tab" else order["price"],
                         total=order.total if item_name == "tab" else order["total"],
+                        receiver=(
+                            order.receiver if item_name == "tab" else order["receiver"]
+                        ),
+                        diet=order.diet if item_name == "tab" else order["diet"],
+                        allergies=(
+                            order.allergies
+                            if item_name == "tab"
+                            else order["allergies"]
+                        ),
+                        tax_category=(
+                            order.tax_category
+                            if item_name == "tab"
+                            else order["tax_category"]
+                        ),
+                        comment=(
+                            order.comment if item_name == "tab" else order["comment"]
+                        ),
                     )
                 )
             session.commit()

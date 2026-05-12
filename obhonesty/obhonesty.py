@@ -661,6 +661,11 @@ def sync_new_stripe_checkout_sessions():
                     remaining_unsynced_session.quantity,
                     remaining_unsynced_session.price,
                     remaining_unsynced_session.total,
+                    remaining_unsynced_session.receiver,
+                    remaining_unsynced_session.diet,
+                    remaining_unsynced_session.allergies,
+                    remaining_unsynced_session.tax_category,
+                    remaining_unsynced_session.comment,
                 ]
                 for remaining_unsynced_session in remaining_unsynced_sessions
             ],

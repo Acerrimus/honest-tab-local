@@ -68,7 +68,12 @@ class Stripe_Checkout_Session(rx.Model, table=True):
     item: str
     quantity: float
     price: float
-    total: str
+    total: float
+    receiver: str
+    diet: str
+    allergies: str
+    tax_category: str
+    comment: str
 
 
 class Item(rx.Model, table=True):
