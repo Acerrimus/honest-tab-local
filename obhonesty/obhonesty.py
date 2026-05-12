@@ -33,6 +33,7 @@ import os
 from fastapi import FastAPI, status
 from typing import TypedDict
 from gspread import Cell
+from zoneinfo import ZoneInfo
 
 
 class UnsyncedUserWithRow(TypedDict):
@@ -698,7 +699,6 @@ def sync_payments():
 
             if len(session.dirty):
                 session.commit()
-
             if len(remaining_unsynyced_payments):
                 payments_sheet.append_rows(
                     [
@@ -706,7 +706,10 @@ def sync_payments():
                             unsynced_payment.payment_id,
                             unsynced_payment.order_id,
                             datetime.strftime(
-                                unsynced_payment.paid_time, DATETIME_FORMAT
+                                unsynced_payment.paid_time.astimezone(
+                                    ZoneInfo("Europe/Madrid")
+                                ),
+                                DATETIME_FORMAT,
                             ),
                             unsynced_payment.method,
                             unsynced_payment.checkout_staff,
@@ -716,17 +719,18 @@ def sync_payments():
                     value_input_option="USER_ENTERED",
                     table_range="A1",
                 )
+                return
 
-                for row in session.exec(Payment.select()).all():
-                    session.delete(row)
-                for index, payment in enumerate(payment_data):
-                    payment_data[index]["paid_time"] = datetime.strptime(
-                        payment_data[index]["paid_time"], DATETIME_FORMAT
-                    )
-                add_google_sheet_data_to_session(
-                    session, payment_data, Payment, "payment_id"
-                )
-                session.commit()
+            for row in session.exec(Payment.select()).all():
+                session.delete(row)
+            for index, payment in enumerate(payment_data):
+                payment_data[index]["paid_time"] = datetime.strptime(
+                    payment_data[index]["paid_time"], DATETIME_FORMAT
+                ).replace(tzinfo=ZoneInfo("Europe/Madrid"))
+            add_google_sheet_data_to_session(
+                session, payment_data, Payment, "payment_id"
+            )
+            session.commit()
     except Exception as e:
         print(f"sync_payments error: {e}")
 
