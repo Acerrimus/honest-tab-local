@@ -595,6 +595,41 @@ def update_meals_table():
                         served=False,
                     )
                 )
+            # add new orders to today's meals if not already added
+            signups_in_todays_orders: list[Order] = session.execute(
+                select(Order).where(
+                    Order.time.ilike(f"{now.date().strftime('%d/%m/%Y')}%"),
+                    or_(
+                        Order.item == "Breakfast sign-up",
+                        Order.item == "Dinner sign-up",
+                    ),
+                    Order.order_id.notin_(
+                        Meal.select_todays_meals().with_only_columns(Meal.order_id)
+                    ),
+                )
+            ).scalars()
+            for order in signups_in_todays_orders:
+                print(order, flush=True)
+                session.add(
+                    Meal(
+                        meal_id=generate_uuid(),
+                        order_id=order.order_id,
+                        user_nick_name=order.user_nick_name,
+                        receiver=order.receiver,
+                        order_time=datetime.strptime(
+                            order.time, DATETIME_FORMAT
+                        ).replace(tzinfo=ZoneInfo("Europe/Madrid")),
+                        meal_type=(
+                            "breakfast"
+                            if order.item == "Breakfast sign-up"
+                            else "dinner"
+                        ),
+                        diet=order.diet,
+                        allergies=order.allergies,
+                        volunteer=False,
+                        served=False,
+                    )
+                )
             if len(session.new) or len(session.deleted):
                 session.commit()
     except Exception as e:
