@@ -113,7 +113,7 @@ async def create_test_user(
                     "diet": "Vegan",
                     "allergies": "Nuts",
                     "current_guest": "Yes",
-                    "synced": False,
+                    "is_synced": False,
                     "volunteer": len(volunteer) > 0,
                     "away": False,
                     "prepaid_dinners_quantity": prepaid_dinners_quantity,

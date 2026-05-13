@@ -898,7 +898,7 @@ class State(rx.State):
                 User.model_validate(
                     {
                         **{key: str(form_data[key]) for key in form_data},
-                        "synced": False,
+                        "is_synced": False,
                         "volunteer": False,
                         "away": False,
                     }
