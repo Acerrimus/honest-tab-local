@@ -21,13 +21,13 @@ class User(rx.Model, table=True):
     allergies: str
     is_synced: bool = False
     # these must default to False otherwise the app crashes on startup
-    current_guest: bool = False
-    active_tab: bool = True
+    is_current_guest: bool
+    has_active_tab: bool = True
     prepaid_dinners_quantity: int = 0
 
     @classmethod
     def select_users_with_an_active_tab(cls):
-        return select(cls).where(cls.active_tab == True)
+        return select(cls).where(cls.has_active_tab == True)
 
 
 class Order(rx.Model, table=True):

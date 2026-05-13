@@ -242,7 +242,7 @@ def stripe_payment_dialog(name, amount) -> rx.Component:
                                 **{"data-testid": "stripe_payment_successful_text"},
                             ),
                             rx.cond(
-                                State.current_user.current_guest
+                                State.current_user.is_current_guest
                                 & State.is_closing_account,
                                 rx.text(
                                     "Please see reception to complete your checkout.",

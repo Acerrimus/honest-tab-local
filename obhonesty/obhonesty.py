@@ -112,7 +112,7 @@ async def create_test_user(
                     "email": "test@test.com",
                     "diet": "Vegan",
                     "allergies": "Nuts",
-                    "current_guest": "Yes",
+                    "is_current_guest": True,
                     "is_synced": False,
                     "volunteer": len(volunteer) > 0,
                     "away": False,
@@ -299,8 +299,8 @@ def sync_new_users(unsynced_users: list[User]):
                 user.volunteer,
                 user.away,
                 "",
-                user.current_guest,
-                user.active_tab,
+                user.is_current_guest,
+                user.has_active_tab,
                 user.prepaid_dinners_quantity if user.prepaid_dinners_quantity else "",
             ]
         )
@@ -313,7 +313,7 @@ def sync_updated_users(unsynced_users_with_rows: list[UnsyncedUserWithRow]):
     updated_cells: list[Cell] = []
     for unsynced_user_with_row in unsynced_users_with_rows:
         for column_number, column_name in [
-            [12, "active_tab"],
+            [12, "has_active_tab"],
             [13, "prepaid_dinners_quantity"],
         ]:
             value = getattr(unsynced_user_with_row["user"], column_name)
@@ -409,8 +409,8 @@ def sync_users():
                     "volunteer",
                     "away",
                     "owes",
-                    "current_guest",
-                    "active_tab",
+                    "is_current_guest",
+                    "has_active_tab",
                     "prepaid_dinners_quantity",
                 ],
                 True,
@@ -423,7 +423,7 @@ def sync_users():
 
             for google_sheets_user in google_sheets_user_data:
                 del google_sheets_user["owes"]
-                for key in ["volunteer", "away", "current_guest", "active_tab"]:
+                for key in ["volunteer", "away", "is_current_guest", "has_active_tab"]:
                     google_sheets_user[key] = google_sheets_user[key].lower() in [
                         "yes",
                         "true",
@@ -464,7 +464,7 @@ def sync_users():
                         matching_google_sheet_user[column]
                         == getattr(unsynced_user, column)
                         for column in [
-                            "active_tab",
+                            "has_active_tab",
                             "prepaid_dinners_quantity",
                         ]
                     ):

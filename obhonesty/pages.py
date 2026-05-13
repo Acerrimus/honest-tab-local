@@ -366,7 +366,7 @@ def user_signup_page() -> rx.Component:
                                 ),
                             ),
                             required=True,
-                            name="current_guest",
+                            name="is_current_guest",
                             default_value="Yes",
                             direction="row",
                         ),
@@ -807,7 +807,7 @@ def user_info_page() -> rx.Component:
                                     rx.vstack(
                                         rx.text(
                                             rx.cond(
-                                                State.current_user.current_guest
+                                                State.current_user.is_current_guest
                                                 == True,
                                                 "Are you leaving the Olive Branch?",
                                                 "Are you closing your account?",

@@ -938,7 +938,7 @@ class State(rx.State):
                     self.get_remaining_prepaid_dinner_quantity()
                 )
             if self.is_closing_account:
-                user.active_tab = False
+                user.has_active_tab = False
             user.is_synced = False
             session.commit()
 
