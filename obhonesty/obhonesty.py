@@ -385,8 +385,7 @@ def sync_orders():
                     continue
                 remaining_unsynced_orders.append(order)
 
-            if len(session.new) or len(session.dirty):
-                session.commit()
+            session.commit()
             if len(remaining_unsynced_orders):
                 sync_new_orders(remaining_unsynced_orders)
     except Exception as e:
@@ -477,8 +476,7 @@ def sync_users():
                         continue
                     unsynced_user.is_synced = True
 
-            if len(session.new) or len(session.dirty):
-                session.commit()
+            session.commit()
             if len(new_unsynced_users_to_sync):
                 sync_new_users(new_unsynced_users_to_sync)
             if len(updated_unsynced_users_to_sync):
@@ -584,6 +582,7 @@ def update_meals_table():
                 )
                 if volunteer_receiver_name in dinner_meals_today_as_receivers:
                     continue
+                print(volunteer_receiver_name, flush=True)
                 session.add(
                     Meal(
                         meal_id=generate_uuid(),
@@ -633,8 +632,7 @@ def update_meals_table():
                         served=False,
                     )
                 )
-            if len(session.new) or len(session.deleted):
-                session.commit()
+            session.commit()
     except Exception as e:
         print(f"update_meal_table error: {e}")
 
@@ -679,8 +677,7 @@ def sync_new_stripe_checkout_sessions():
                     continue
                 remaining_unsynced_sessions.append(unsynced_session)
 
-            if len(session.new) or len(session.dirty) or len(session.deleted):
-                session.commit()
+            session.commit()
 
         if not len(remaining_unsynced_sessions):
             return
@@ -740,8 +737,7 @@ def sync_payments():
                     continue
                 remaining_unsynyced_payments.append(unsynced_payment)
 
-            if len(session.dirty):
-                session.commit()
+            session.commit()
             if len(remaining_unsynyced_payments):
                 payments_sheet.append_rows(
                     [
