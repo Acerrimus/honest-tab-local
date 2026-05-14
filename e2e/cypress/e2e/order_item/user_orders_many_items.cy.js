@@ -19,7 +19,7 @@ describe("When a user orders many items", () => {
     getDataTestIdElement("item_register").click();
     getDataTestIdElement("view-orders-button").click();
     getDataTestIdElement("ordered_item").contains("TEST ITEM");
-    getDataTestIdElement("ordered_item_quantity").contains(5);
+    getDataTestIdElement("ordered-item-quantity").contains(5);
     getDataTestIdElement("ordered_item_total").contains("€5.00");
   });
 });

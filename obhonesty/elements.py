@@ -368,7 +368,7 @@ def show_row(order: Order):
                 f"{order.quantity}",
             ),
             align="right",
-            **{"data-testid": "ordered_item_quantity"},
+            **{"data-testid": "ordered-item-quantity"},
         ),
         rx.table.cell(
             rx.cond(

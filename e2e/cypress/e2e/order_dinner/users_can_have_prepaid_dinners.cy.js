@@ -56,7 +56,7 @@ describe(
         "have.text",
         "Total amount due: €12.00",
       );
-      getDataTestIdElement("ordered_item_quantity")
+      getDataTestIdElement("ordered-item-quantity")
         .should("have.length", 3)
         .each(($orderedItemEl, index) => {
           cy.wrap($orderedItemEl).should(
