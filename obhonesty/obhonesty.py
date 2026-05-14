@@ -665,9 +665,9 @@ def sync_new_stripe_checkout_sessions():
             checkout_session["payment_order_id"]
             for checkout_session in stripe_checkout_session_records
         )
-        remaining_unsynced_sessions: list[Stripe_Checkout_Session] = []
 
         with rx.session() as session:
+            remaining_unsynced_sessions: list[Stripe_Checkout_Session] = []
             unsynced_stripe_checkout_session_rows = (
                 session.query(Stripe_Checkout_Session)
                 .filter(~Stripe_Checkout_Session.is_synced)
@@ -683,36 +683,34 @@ def sync_new_stripe_checkout_sessions():
                     continue
                 remaining_unsynced_sessions.append(unsynced_session)
 
+            if len(remaining_unsynced_sessions):
+                stripe_payments_sheet.append_rows(
+                    [
+                        [
+                            remaining_unsynced_session.payment_order_id,
+                            remaining_unsynced_session.datetime_requested,
+                            remaining_unsynced_session.stripe_payment_id,
+                            remaining_unsynced_session.ob_payment_id,
+                            remaining_unsynced_session.order_id,
+                            remaining_unsynced_session.user,
+                            remaining_unsynced_session.system_provider_handling_fee_amount,
+                            remaining_unsynced_session.item,
+                            remaining_unsynced_session.quantity,
+                            remaining_unsynced_session.price,
+                            remaining_unsynced_session.total,
+                            remaining_unsynced_session.receiver,
+                            remaining_unsynced_session.diet,
+                            remaining_unsynced_session.allergies,
+                            remaining_unsynced_session.tax_category,
+                            remaining_unsynced_session.comment,
+                        ]
+                        for remaining_unsynced_session in remaining_unsynced_sessions
+                    ],
+                    value_input_option="USER_ENTERED",
+                    table_range="A1",
+                    )
             session.commit()
-
-        if not len(remaining_unsynced_sessions):
-            return
-
-        stripe_payments_sheet.append_rows(
-            [
-                [
-                    remaining_unsynced_session.payment_order_id,
-                    remaining_unsynced_session.datetime_requested,
-                    remaining_unsynced_session.stripe_payment_id,
-                    remaining_unsynced_session.ob_payment_id,
-                    remaining_unsynced_session.order_id,
-                    remaining_unsynced_session.user,
-                    remaining_unsynced_session.system_provider_handling_fee_amount,
-                    remaining_unsynced_session.item,
-                    remaining_unsynced_session.quantity,
-                    remaining_unsynced_session.price,
-                    remaining_unsynced_session.total,
-                    remaining_unsynced_session.receiver,
-                    remaining_unsynced_session.diet,
-                    remaining_unsynced_session.allergies,
-                    remaining_unsynced_session.tax_category,
-                    remaining_unsynced_session.comment,
-                ]
-                for remaining_unsynced_session in remaining_unsynced_sessions
-            ],
-            value_input_option="USER_ENTERED",
-            table_range="A1",
-        )
+                
     except Exception as e:
         print(f"sync_new_stripe_checkout_sessions error: {e}")
 
