@@ -11,9 +11,7 @@ is_test_environment = True if os.getenv("TEST") else False
 def user_button(*children, **kwargs):
     return rx.button(
         *children,
-        font_size="1.5rem",
-        padding="1.5rem 2rem",
-        border_radius="0.5rem",
+        size=default_button_size,
         **kwargs,
     )
 
@@ -22,7 +20,7 @@ def user_button_dialog(user: User) -> rx.Component:
     return rx.dialog.root(
         rx.dialog.trigger(
             user_button(
-                user.nick_name,
+                rx.text(user.nick_name, size=default_button_text_size),
                 **{"data-testid": f"user-button-{user.nick_name}"},
                 disabled=State.current_user != None,
             )
