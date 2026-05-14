@@ -582,7 +582,6 @@ def update_meals_table():
                 )
                 if volunteer_receiver_name in dinner_meals_today_as_receivers:
                     continue
-                print(volunteer_receiver_name, flush=True)
                 session.add(
                     Meal(
                         meal_id=generate_uuid(),
