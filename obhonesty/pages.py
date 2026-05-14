@@ -773,7 +773,7 @@ def user_info_page() -> rx.Component:
                     size=default_button_size,
                 ),
                 rx.text(
-                    "Note: new registrations may take a moment to show. "
+                    "Note: new orders may take a moment to show. "
                     "If you made a registration by mistake, please talk to the reception "
                     "and they will help correcting it.",
                     size=default_text_size,
@@ -872,7 +872,7 @@ def user_info_page() -> rx.Component:
                         size=default_text_size,
                     ),
                 ),
-                rx.text("Registrations:", size=default_text_size, weight="bold"),
+                rx.text("Orders:", size=default_text_size, weight="bold"),
                 rx.scroll_area(
                     rx.table.root(
                         rx.table.header(
