@@ -1,10 +1,14 @@
 import { getDataTestIdElement } from "../../helpers";
+import { getCheckoutApi } from "../../steps/checkouts";
 import {
   createUserOrderApi,
   generateOrderDetails,
   getUserOrdersApi,
 } from "../../steps/orders";
-import { getPaymentApi } from "../../steps/payments";
+import {
+  getPaymentApi,
+  getStripeCheckoutSessionsApi,
+} from "../../steps/payments";
 import {
   assertStripeLineItemsMatchExpected,
   triggerSuccessfulStripePayment,
@@ -114,6 +118,21 @@ describe(
           quantity: 1,
         },
       ]);
+    });
+
+    it("will log the user's checkout in the checkout table", () => {
+      getCheckoutApi(username).then((checkoutResponse) => {
+        const checkout = checkoutResponse.body.checkout;
+        expect(checkout.user).to.eq(username);
+        expect(checkout.checkout_origin).to.eq("stripe-tablet");
+        getStripeCheckoutSessionsApi(username).then(
+          (stripeCheckoutSessionsResponse) => {
+            expect(stripeCheckoutSessionsResponse.body.checkout_sessions[0].ob_payment_id).to.eq(
+              checkout.checkout_origin_payment_id,
+            );
+          },
+        );
+      });
     });
   },
 );

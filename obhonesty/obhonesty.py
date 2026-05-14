@@ -11,6 +11,7 @@ from obhonesty.sheet import (
     admin_sheet,
     stripe_payments_sheet,
     payments_sheet,
+    checkouts_sheet,
 )
 from obhonesty.models import (
     User,
@@ -20,6 +21,7 @@ from obhonesty.models import (
     Meal,
     Stripe_Checkout_Session,
     Payment,
+    Checkout,
 )
 from obhonesty.aux import (
     check_internet_connection,
@@ -122,6 +124,12 @@ async def create_test_user(
         )
         session.commit()
     return {"username": username, "message": "Test user created successfully"}
+
+
+@fastapi_app.get("/api/test/checkout")
+async def get_checkout(username: str):
+    checkout = rx.session().query(Checkout).filter(Checkout.user == username).first()
+    return {"checkout": checkout.model_dump()}
 
 
 @fastapi_app.get("/api/test/user")
@@ -772,6 +780,71 @@ def sync_payments():
         print(f"sync_payments error: {e}")
 
 
+def sync_checkouts():
+    try:
+        checkout_data = get_records(
+            checkouts_sheet,
+            [
+                "checkout_id",
+                "user",
+                "checkout_datetime",
+                "checkout_origin",
+                "checkout_origin_payment_id",
+            ],
+            True,
+        )
+        checkout_ids: set[str] = set(
+            checkout["checkout_id"] for checkout in checkout_data
+        )
+
+        with rx.session() as session:
+            unsynced_checkouts: list[Checkout] = (
+                session.query(Checkout).filter(~Checkout.is_synced).all()
+            )
+            remaining_unsynyced_checkouts: list[Checkout] = []
+            for unsynced_checkout in unsynced_checkouts:
+                if unsynced_checkout.checkout_id in checkout_ids:
+                    unsynced_checkout.is_synced = True
+                    continue
+                remaining_unsynyced_checkouts.append(unsynced_checkout)
+
+            session.commit()
+            if len(remaining_unsynyced_checkouts):
+                checkouts_sheet.append_rows(
+                    [
+                        [
+                            unsynced_checkout.checkout_id,
+                            unsynced_checkout.user,
+                            datetime.strftime(
+                                unsynced_checkout.checkout_datetime.astimezone(
+                                    ZoneInfo("Europe/Madrid")
+                                ),
+                                DATETIME_FORMAT,
+                            ),
+                            unsynced_checkout.checkout_origin,
+                            unsynced_checkout.checkout_origin_payment_id,
+                        ]
+                        for unsynced_checkout in remaining_unsynyced_checkouts
+                    ],
+                    value_input_option="USER_ENTERED",
+                    table_range="A1",
+                )
+                return
+
+            for row in session.exec(Checkout.select()).all():
+                session.delete(row)
+            for index, checkout in enumerate(checkout_data):
+                checkout_data[index]["checkout_datetime"] = datetime.strptime(
+                    checkout_data[index]["checkout_datetime"], DATETIME_FORMAT
+                ).replace(tzinfo=ZoneInfo("Europe/Madrid"))
+            add_google_sheet_data_to_session(
+                session, checkout_data, Checkout, "checkout_id"
+            )
+            session.commit()
+    except Exception as e:
+        print(f"sync_checkouts error: {e}")
+
+
 async def run_loop_tasks():
     while True:
         try:
@@ -788,6 +861,8 @@ async def run_loop_tasks():
             sync_new_stripe_checkout_sessions()
             await asyncio.sleep(5)
             sync_payments()
+            await asyncio.sleep(5)
+            sync_checkouts()
         except Exception as e:
             print(f"run_loop_tasks error: {e}")
         await asyncio.sleep(10)

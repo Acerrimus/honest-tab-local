@@ -25,6 +25,7 @@ from obhonesty.models import (
     Meal,
     Stripe_Checkout_Session,
     Payment,
+    Checkout,
 )
 from zoneinfo import ZoneInfo
 
@@ -101,6 +102,7 @@ class State(rx.State):
     is_payment_status_written_to_db: bool = False
     stripe_system_provider_handling_fee_amount: float = 0
     stripe_total: float = 0
+    ob_payment_id: str = ""
     # ------------------------------------
 
     # --- Item Payment State ---
@@ -970,6 +972,15 @@ class State(rx.State):
                 return rx.toast.error("Error checking guest out, please see reception.")
             user.has_active_tab = False
             user.is_synced = False
+            session.add(
+                Checkout(
+                    checkout_id=generate_uuid(),
+                    user=self.current_user.nick_name,
+                    checkout_datetime=get_madrid_datetime_now(),
+                    checkout_origin="stripe-tablet",
+                    checkout_origin_payment_id=self.ob_payment_id,
+                )
+            )
             session.commit()
 
     @rx.event
@@ -1059,7 +1070,8 @@ class State(rx.State):
             self.is_payment_status_written_to_db = False
             self.is_stripe_session_paid = False
             self.payment_qr_code = ""
-        ob_payment_id = generate_uuid()
+            self.ob_payment_id = generate_uuid()
+
         individual_item_request: dict[str, str | float] = {}
 
         if item_name != "tab":
@@ -1119,9 +1131,11 @@ class State(rx.State):
                     payment_method_types=["card"],
                     line_items=line_items,
                     mode="payment",
-                    metadata={"ob_payment_id": ob_payment_id},
+                    metadata={"ob_payment_id": self.ob_payment_id},
                     # payment_intent_data allows staff to track the payment through the stripe dashboard using the payment id
-                    payment_intent_data={"metadata": {"ob_payment_id": ob_payment_id}},
+                    payment_intent_data={
+                        "metadata": {"ob_payment_id": self.ob_payment_id}
+                    },
                     success_url=(
                         os.getenv("SUCCESS_URL")
                         if os.getenv("SUCCESS_URL")
@@ -1153,7 +1167,6 @@ class State(rx.State):
 
             if self.current_stripe_session_id == "":
                 return
-
         with rx.session() as session:
             for order in (
                 self.current_user_orders
@@ -1165,7 +1178,7 @@ class State(rx.State):
                         payment_order_id=generate_uuid(),
                         datetime_requested=datetime_requested,
                         stripe_payment_id=self.current_stripe_session_id,
-                        ob_payment_id=ob_payment_id,
+                        ob_payment_id=self.ob_payment_id,
                         order_id=(
                             order.order_id if item_name == "tab" else order["order_id"]
                         ),

@@ -166,3 +166,12 @@ class Meal(rx.Model, table=True):
                 totals["dinner"][user_type]["served"] += count[4]
 
         return totals
+
+
+class Checkout(rx.Model, table=True):
+    checkout_id: str
+    user: str
+    checkout_datetime: datetime
+    checkout_origin: str
+    checkout_origin_payment_id: str
+    is_synced: bool = False
