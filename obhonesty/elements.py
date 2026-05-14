@@ -362,28 +362,16 @@ def show_row(order: Order):
             **{"data-testid": f"ordered_item"},
         ),
         rx.table.cell(
-            rx.cond(
-                State.prepaid_dinner_ids.contains(order.order_id),
-                rx.text.strong("Prepaid dinner"),
-                f"{order.quantity}",
-            ),
+            f"{order.quantity}",
             align="right",
             **{"data-testid": "ordered-item-quantity"},
         ),
         rx.table.cell(
-            rx.cond(
-                State.prepaid_dinner_ids.contains(order.order_id),
-                "€0",
-                f"€{two_decimal_points(order.price)}",
-            ),
+            f"€{two_decimal_points(order.price)}",
             align="right",
         ),
         rx.table.cell(
-            rx.cond(
-                State.prepaid_dinner_ids.contains(order.order_id),
-                "€0",
-                f"€{two_decimal_points(order.total)}",
-            ),
+            f"€{two_decimal_points(order.total)}",
             align="right",
             **{"data-testid": "ordered_item_total"},
         ),

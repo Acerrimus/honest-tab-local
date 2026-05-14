@@ -556,7 +556,7 @@ def update_meals_table():
                                 Order.time.ilike(f"{get_todays_date_as_string()}%"),
                                 or_(
                                     Order.item == "Breakfast sign-up",
-                                    Order.item == "Dinner sign-up",
+                                    Order.item.ilike("Dinner sign-up%"),
                                 ),
                             )
                         ),
@@ -602,7 +602,7 @@ def update_meals_table():
                     Order.time.ilike(f"{get_todays_date_as_string()}%"),
                     or_(
                         Order.item == "Breakfast sign-up",
-                        Order.item == "Dinner sign-up",
+                        Order.item.ilike("Dinner sign-up%"),
                     ),
                     Order.order_id.notin_(
                         Meal.select_todays_meals().with_only_columns(Meal.order_id)

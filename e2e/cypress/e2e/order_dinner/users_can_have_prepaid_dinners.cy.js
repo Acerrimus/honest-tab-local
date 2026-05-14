@@ -11,7 +11,7 @@ import {
 
 describe(
   "When a user has prepaid dinners",
-  { testIsolation: false, tags: "@smoke" },
+  { testIsolation: false, tags: ["@smoke", "@prepaidDinner"] },
   () => {
     const username = generateUsername();
 
@@ -56,12 +56,20 @@ describe(
         "have.text",
         "Total amount due: €12.00",
       );
-      getDataTestIdElement("ordered-item-quantity")
+      getDataTestIdElement("ordered_item")
         .should("have.length", 3)
         .each(($orderedItemEl, index) => {
           cy.wrap($orderedItemEl).should(
             "have.text",
-            index ? "Prepaid dinner" : 1,
+            `Dinner sign-up${index ? " (Prepaid)" : ""}`,
+          );
+        });
+      getDataTestIdElement("ordered_item_total")
+        .should("have.length", 3)
+        .each(($orderedItemTotalEl, index) => {
+          cy.wrap($orderedItemTotalEl).should(
+            "have.text",
+            index ? "€0.00" : "€12.00",
           );
         });
     });

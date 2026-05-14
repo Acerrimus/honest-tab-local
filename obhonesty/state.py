@@ -36,7 +36,7 @@ is_test_environment = True if os.getenv("TEST") else False
 class State(rx.State):
     """The app state."""
 
-    has_homepage_load_completed: bool = False
+    has_sheet_data_finished_fetching: bool = False
     admin_data: Dict[str, Any] = {}
     users: List[User] = []
     items: Dict[str, Item] = {}
@@ -60,8 +60,6 @@ class State(rx.State):
     is_user_activity_check_running: bool = False
     latest_user_activity_datetime: datetime = None
     is_reload_admin_dinner_data_running: bool = False
-    remaining_prepaid_dinners_count: int = 0
-    prepaid_dinner_ids: list[str] = []
     current_user_orders: list[Order] = []
 
     # --- Test Environment State ---
@@ -134,7 +132,7 @@ class State(rx.State):
 
     @rx.event
     def redirect_to_homepage(self):
-        self.has_homepage_load_completed = False
+        self.has_sheet_data_finished_fetching = False
         return rx.redirect("/")
 
     def set_temp_quantity(self, value: str):
@@ -366,6 +364,19 @@ class State(rx.State):
         return admin_data
 
     @rx.event
+    def get_user(self, nick_name: str) -> User:
+        return (
+            rx.session().exec(select(User).where(User.nick_name == nick_name)).scalar()
+        )
+
+    @rx.event
+    def update_current_user(self):
+        if not self.current_user:
+            return
+
+        self.current_user = self.get_user(self.current_user.nick_name)
+
+    @rx.event
     def reload_sheet_data(self):
         with rx.session() as session:
             items = {}
@@ -376,11 +387,10 @@ class State(rx.State):
         self.items = items
         self.users = self.get_users_with_active_tabs()
         self.admin_data = self.get_admin_data()
-        self.update_remaining_prepaid_dinners_count()
-        self.update_prepaid_dinner_ids()
+        self.update_current_user()
         self.update_current_user_orders()
-        if not self.has_homepage_load_completed:
-            self.has_homepage_load_completed = True
+        if not self.has_sheet_data_finished_fetching:
+            self.has_sheet_data_finished_fetching = True
 
     @rx.event
     def update_meal_totals(self):
@@ -598,19 +608,34 @@ class State(rx.State):
         return generate_receiver_from_names(first_name, last_name)
 
     @rx.event
+    def decrement_prepaid_dinners_quantity(self, session, nick_name: str):
+        user: User = session.query(User).filter(User.nick_name == nick_name).scalar()
+        user.prepaid_dinners_quantity -= 1
+        user.is_synced = False
+
+    @rx.event
     def order_dinner(self):
+        self.has_sheet_data_finished_fetching = False
         now = get_madrid_datetime_now()
         order_id = self.item_uuid if self.is_stripe_session_paid else generate_uuid()
+        dinner_price = (
+            self.admin_data.get("dinner_price", 0)
+            if not self.current_user.prepaid_dinners_quantity
+            else 0
+        )
+        prepaid_dinner_suffix = (
+            " (Prepaid)" if self.current_user.prepaid_dinners_quantity else ""
+        )
         with rx.session() as session:
             session.add(
                 Order(
                     order_id=order_id,
                     user_nick_name=self.current_user.nick_name,
                     time=now.strftime(DATETIME_FORMAT),
-                    item="Dinner sign-up",
+                    item=f"Dinner sign-up{prepaid_dinner_suffix}",
                     quantity=1,
-                    price=self.admin_data.get("dinner_price", 0),
-                    total=self.admin_data.get("dinner_price", 0),
+                    price=dinner_price,
+                    total=dinner_price,
                     receiver=self.get_receiver,
                     diet=self.dinner_signup_dietary_preference,
                     allergies=self.dinner_signup_allergies,
@@ -643,10 +668,13 @@ class State(rx.State):
                         checkout_staff="",
                     )
                 )
+            if self.current_user.prepaid_dinners_quantity:
+                self.decrement_prepaid_dinners_quantity(
+                    session, self.current_user.nick_name
+                )
             session.commit()
 
         events = [rx.toast.info("Dinner sign-up registration successful!")]
-
         if not self.is_stripe_session_paid:
             # only redirect if the user hasn't paid with stripe
             self.current_order_request_id = ""
@@ -781,16 +809,24 @@ class State(rx.State):
                 ),
             ]
 
+        user = self.get_user(form_data["nick_name"])
         with rx.session() as session:
             order_id = generate_uuid()
             now = get_madrid_datetime_now().strftime(DATETIME_FORMAT)
-            price = self.admin_data.get("dinner_price", 0)
+            price = (
+                self.admin_data.get("dinner_price", 0)
+                if not user.prepaid_dinners_quantity
+                else 0
+            )
+            prepaid_dinner_suffix = (
+                " (Prepaid)" if user.prepaid_dinners_quantity else ""
+            )
             session.add(
                 Order(
                     order_id=order_id,
                     user_nick_name=form_data["nick_name"],
                     time=now,
-                    item="Dinner sign-up",
+                    item=f"Dinner sign-up{prepaid_dinner_suffix}",
                     quantity=1,
                     price=price,
                     total=price,
@@ -816,6 +852,8 @@ class State(rx.State):
                     served=False,
                 )
             )
+            if user.prepaid_dinners_quantity:
+                self.decrement_prepaid_dinners_quantity(session, form_data["nick_name"])
             session.commit()
 
         events = [rx.toast(f"{form_data['full_name']} added successfully!")]
@@ -920,10 +958,7 @@ class State(rx.State):
     @rx.event
     def close_guest_account(self):
         with rx.session() as session:
-            if (
-                not self.current_user.prepaid_dinners_quantity
-                and not self.is_closing_account
-            ):
+            if not self.is_closing_account:
                 return
 
             user: User = (
@@ -933,12 +968,7 @@ class State(rx.State):
             )
             if not user:
                 return rx.toast.error("Error checking guest out, please see reception.")
-            if self.current_user.prepaid_dinners_quantity:
-                user.prepaid_dinners_quantity = (
-                    self.get_remaining_prepaid_dinner_quantity()
-                )
-            if self.is_closing_account:
-                user.has_active_tab = False
+            user.has_active_tab = False
             user.is_synced = False
             session.commit()
 
@@ -975,9 +1005,6 @@ class State(rx.State):
             unit_amount = int(order.price * 100)
             if order.item == "Breakfast sign-up":
                 name = get_full_breakfast_item(order.diet)
-            elif order.order_id in self.prepaid_dinner_ids:
-                name += " (Prepaid)"
-                unit_amount = 0
             if name not in summarised_item_quantities:
                 summarised_item_quantities[name] = {}
             if unit_amount not in summarised_item_quantities[name]:
@@ -1368,44 +1395,14 @@ class State(rx.State):
 
     @rx.var
     def get_user_debt(self) -> float:
-        return sum(
-            [
-                order.total
-                for order in self.current_user_orders
-                if order.order_id not in self.prepaid_dinner_ids
-            ]
-        )
-
-    @rx.event
-    def get_remaining_prepaid_dinner_quantity(self):
-        return max(
-            self.current_user.prepaid_dinners_quantity
-            - rx.session()
-            .query(Order)
-            .filter(
-                Order.user_nick_name == self.current_user.nick_name,
-                Order.item == "Dinner sign-up",
-            )
-            .count(),
-            0,
-        )
-
-    @rx.event
-    def update_remaining_prepaid_dinners_count(self):
-        if not self.current_user:
-            return
-        self.remaining_prepaid_dinners_count = (
-            self.get_remaining_prepaid_dinner_quantity()
-        )
-
-    @rx.event
-    def update_prepaid_dinner_ids(self):
-        if not self.current_user:
-            return []
-        self.prepaid_dinner_ids = [
-            o.order_id for o in self.current_user_orders if o.item == "Dinner sign-up"
-        ][: self.current_user.prepaid_dinners_quantity]
+        return sum([order.total for order in self.current_user_orders])
 
     @rx.var
     def are_user_buttons_disabled(self) -> bool:
-        return self.is_stripe_dialog_active or self.is_logging_user_in
+        return any(
+            (
+                self.is_stripe_dialog_active,
+                self.is_logging_user_in,
+                not self.has_sheet_data_finished_fetching,
+            )
+        )

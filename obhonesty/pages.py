@@ -36,7 +36,7 @@ def index() -> rx.Component:
                     width="100%",
                 ),
                 rx.cond(
-                    State.has_homepage_load_completed,
+                    State.has_sheet_data_finished_fetching,
                     rx.hstack(
                         rx.text("New here?", size="3"),
                         rx.button(
@@ -57,7 +57,7 @@ def index() -> rx.Component:
                     rx.text("Loading..."),
                 ),
                 rx.cond(
-                    State.has_homepage_load_completed,
+                    State.has_sheet_data_finished_fetching,
                     rx.scroll_area(
                         rx.flex(
                             rx.foreach(State.users, user_button_dialog),
@@ -394,7 +394,9 @@ def user_signup_page() -> rx.Component:
 
 
 def dinner_signup_page() -> rx.Component:
-    prepaid_dinners_plural = rx.cond(State.remaining_prepaid_dinners_count > 1, "s", "")
+    prepaid_dinners_plural = rx.cond(
+        State.current_user.prepaid_dinners_quantity > 1, "s", ""
+    )
     return rx.container(
         rx.center(
             rx.vstack(
@@ -443,9 +445,9 @@ def dinner_signup_page() -> rx.Component:
                     ),
                     rx.divider(),
                     rx.cond(
-                        State.remaining_prepaid_dinners_count > 0,
+                        State.current_user.prepaid_dinners_quantity > 0,
                         rx.text.strong(
-                            f"You currently have {State.remaining_prepaid_dinners_count} prepaid dinner{prepaid_dinners_plural} remaining.",
+                            f"You currently have {State.current_user.prepaid_dinners_quantity} prepaid dinner{prepaid_dinners_plural} remaining.",
                             **{"data-testid": "prepaid-dinners-message"},
                         ),
                     ),
