@@ -610,7 +610,6 @@ def update_meals_table():
                 )
             ).scalars()
             for order in signups_in_todays_orders:
-                print(order, flush=True)
                 session.add(
                     Meal(
                         meal_id=generate_uuid(),
