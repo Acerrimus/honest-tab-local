@@ -130,7 +130,14 @@ class State(rx.State):
         self.handle_user_reset()
         self.reset_stripe_dialog_active_state()
         self.clear_temp_state_values()
-        self.reload_sheet_data()
+        return State.loop_reload_sheet_data_on_index_page
+
+    @rx.event(background=True)
+    async def loop_reload_sheet_data_on_index_page(self):
+        while self.router.page.path == ("/index"):
+            async with self:
+                self.reload_sheet_data()
+            await asyncio.sleep(10)
 
     @rx.event
     def redirect_to_homepage(self):
