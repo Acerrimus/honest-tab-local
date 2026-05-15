@@ -539,43 +539,52 @@ def late_dinner_signup_page() -> rx.Component:
                                     )
                                 ),
                                 rx.dialog.content(
-                                    rx.dialog.title(
-                                        "Select a user to pay for this dinner sign-up"
-                                    ),
-                                    rx.scroll_area(
-                                        rx.flex(
-                                            rx.foreach(
-                                                State.users,
-                                                lambda user: rx.dialog.close(
-                                                    user_button(
-                                                        user.nick_name,
-                                                        on_click=[
-                                                            lambda: State.set_late_dinner_user_nick_name(
-                                                                user.nick_name
-                                                            ),
-                                                            rx.set_value(
-                                                                "full-name",
-                                                                f"{user.first_name} {user.last_name}",
-                                                            ),
-                                                            rx.set_value(
-                                                                "allergies",
-                                                                user.allergies,
-                                                            ),
-                                                        ],
-                                                        **{
-                                                            "data-testid": f"late-signup-user-select-button-{user.nick_name}"
-                                                        },
-                                                    )
-                                                ),
-                                            ),
-                                            padding="8px",
-                                            spacing="4",
-                                            style={"width": "max"},
-                                            wrap="wrap",
+                                    rx.vstack(
+                                        rx.dialog.title(
+                                            "Select a user to pay for this dinner sign-up"
                                         ),
-                                        type="always",
-                                        scrollbars="vertical",
-                                        style={"height": "80vh"},
+                                        rx.scroll_area(
+                                            rx.flex(
+                                                rx.foreach(
+                                                    State.users,
+                                                    lambda user: rx.dialog.close(
+                                                        user_button(
+                                                            user.nick_name,
+                                                            on_click=[
+                                                                lambda: State.set_late_dinner_user_nick_name(
+                                                                    user.nick_name
+                                                                ),
+                                                                rx.set_value(
+                                                                    "full-name",
+                                                                    f"{user.first_name} {user.last_name}",
+                                                                ),
+                                                                rx.set_value(
+                                                                    "allergies",
+                                                                    user.allergies,
+                                                                ),
+                                                            ],
+                                                            **{
+                                                                "data-testid": f"late-signup-user-select-button-{user.nick_name}"
+                                                            },
+                                                        )
+                                                    ),
+                                                ),
+                                                padding="8px",
+                                                spacing="4",
+                                                style={"width": "max"},
+                                                wrap="wrap",
+                                            ),
+                                            type="always",
+                                            scrollbars="vertical",
+                                            style={"height": "80vh"},
+                                        ),
+                                        rx.dialog.close(
+                                            rx.button(
+                                                "Back",
+                                                size=default_button_size,
+                                                color_scheme="red",
+                                            )
+                                        ),
                                     ),
                                 ),
                             ),
