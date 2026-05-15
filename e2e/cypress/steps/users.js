@@ -17,7 +17,7 @@ export function createUser(username) {
   getDataTestIdElement("user-submit-button").click();
 }
 
-export function logUserOn(username, password = "test@") {
+export function logUserOn(username, password = "testt") {
   cy.get(`[data-testid="user-button-${username}"]`).click();
   getDataTestIdElement("user-email-password").click().type(password);
   getDataTestIdElement("password-submit-button").click();

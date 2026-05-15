@@ -495,7 +495,10 @@ class State(rx.State):
         if error_message:
             return rx.toast.error(error_message)
 
-        if str(form_data["email_first_five_chars"]) != user.email[:5]:
+        if (
+            str(form_data["email_first_five_chars"])
+            != user.email.replace("@", "").lower()[:5]
+        ):
             self.is_email_login_incorrect = True
             return
 

@@ -31,18 +31,26 @@ def user_button_dialog(user: User) -> rx.Component:
                     rx.dialog.title(f"{user.nick_name} - Log in to your account"),
                     rx.box(
                         rx.text(
-                            "Please enter the first five characters of your email address to login to your account.",
+                            "The Olive Branch now uses your email as a password to protect your account.",
                             weight="bold",
                         ),
-                        rx.hstack(
-                            rx.text("This includes symbols such as "),
-                            rx.text("@", weight="bold"),
-                            rx.text(" and "),
-                            rx.text(".", weight="bold"),
+                        rx.text(
+                            "Please enter the first five characters of your email address without the @ to login to your account.",
+                            weight="bold",
                         ),
+                        # rx.hstack(
+                        rx.text(
+                            "This does not include the @ symbol, but does include other symbols such as . (full stop) and _ (underscore)"
+                        ),
+                        # rx.text("@", weight="bold"),
+                        # rx.text(" symbol, but does include other symbols such as "),
+                        # rx.text(".", weight="bold"),
+                        # rx.text(" and "),
+                        # rx.text("-", weight="bold"),
+                        # ),
+                        rx.text("The email address is not case sensitive."),
                         rx.hstack(
-                            rx.text("Eg. john@smith.com = "),
-                            rx.text("john@", weight="bold"),
+                            rx.text("Eg. John@Smith.com = johns", weight="bold"),
                         ),
                         rx.text(
                             "If your email address is five characters or less, please enter the full email address."
@@ -58,7 +66,7 @@ def user_button_dialog(user: User) -> rx.Component:
                     rx.vstack(
                         rx.vstack(
                             rx.input(
-                                placeholder="Enter the first five characters of your email here",
+                                placeholder="Enter the first five characters of your email without the @",
                                 type="password",
                                 name="email_first_five_chars",
                                 max_length=5,
