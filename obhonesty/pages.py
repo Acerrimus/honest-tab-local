@@ -164,20 +164,24 @@ def user_page() -> rx.Component:
                         ),
                         align="center",
                     ),
-                    rx.hstack(
-                        rx.button(
-                            rx.icon("euro"),
-                            rx.text("Pay tab", size=default_button_text_size),
-                            on_click=rx.redirect("/info"),
-                            size=default_button_size,
-                            color_scheme="yellow",
-                            disabled=State.are_user_buttons_disabled,
-                            **{"data-testid": "pay-tab-button"},
+                    rx.cond(
+                        State.are_payments_enabled,
+                        rx.hstack(
+                            rx.button(
+                                rx.icon("euro"),
+                                rx.text("Pay tab", size=default_button_text_size),
+                                on_click=rx.redirect("/info"),
+                                size=default_button_size,
+                                color_scheme="yellow",
+                                disabled=State.are_user_buttons_disabled,
+                                **{"data-testid": "pay-tab-button"},
+                            ),
+                            rx.text(
+                                f"Pay your tab securely via Stripe.",
+                                size=default_text_size,
+                            ),
+                            align="center",
                         ),
-                        rx.text(
-                            f"Pay your tab securely via Stripe.", size=default_text_size
-                        ),
-                        align="center",
                     ),
                     rx.text("Register an item", weight="bold", size=default_text_size),
                     rx.scroll_area(
@@ -461,18 +465,21 @@ def dinner_signup_page() -> rx.Component:
                         loading=State.is_order_request_loading,
                         **{"data-testid": f"dinner-signup-register"},
                     ),
-                    rx.button(
-                        rx.icon("credit-card"),
-                        rx.text("Pay Now", size=default_button_text_size),
-                        color_scheme="green",
-                        size=default_button_size,
-                        type="button",
-                        loading=State.is_order_request_loading,
-                        on_click=[
-                            State.set_order_request_id,
-                            lambda: State.sign_guest_up_for_dinner(True),
-                        ],
-                        **{"data-testid": f"dinner-signup-pay-now"},
+                    rx.cond(
+                        State.are_payments_enabled,
+                        rx.button(
+                            rx.icon("credit-card"),
+                            rx.text("Pay Now", size=default_button_text_size),
+                            color_scheme="green",
+                            size=default_button_size,
+                            type="button",
+                            loading=State.is_order_request_loading,
+                            on_click=[
+                                State.set_order_request_id,
+                                lambda: State.sign_guest_up_for_dinner(True),
+                            ],
+                            **{"data-testid": f"dinner-signup-pay-now"},
+                        ),
                     ),
                     rx.dialog.root(
                         stripe_payment_dialog(
@@ -732,18 +739,21 @@ def breakfast_signup_page() -> rx.Component:
                     ],
                     **{"data-testid": "breakfast-signup-register"},
                 ),
-                rx.button(
-                    rx.icon("credit-card"),
-                    rx.text("Pay Now", size=default_button_text_size),
-                    color_scheme="green",
-                    size=default_button_size,
-                    type="button",
-                    loading=State.is_order_request_loading,
-                    on_click=[
-                        State.set_order_request_id,
-                        lambda: State.sign_guest_up_for_breakfast(True),
-                    ],
-                    **{"data-testid": "breakfast-pay-now"},
+                rx.cond(
+                    State.are_payments_enabled,
+                    rx.button(
+                        rx.icon("credit-card"),
+                        rx.text("Pay Now", size=default_button_text_size),
+                        color_scheme="green",
+                        size=default_button_size,
+                        type="button",
+                        loading=State.is_order_request_loading,
+                        on_click=[
+                            State.set_order_request_id,
+                            lambda: State.sign_guest_up_for_breakfast(True),
+                        ],
+                        **{"data-testid": "breakfast-pay-now"},
+                    ),
                 ),
                 rx.dialog.root(
                     stripe_payment_dialog("breakfast", State.get_breakfast_price),
@@ -786,86 +796,90 @@ def user_info_page() -> rx.Component:
                     weight="bold",
                     **{"data-testid": "total-amount-due"},
                 ),
-                rx.hstack(
-                    rx.dialog.root(
-                        rx.dialog.trigger(
-                            rx.button(
-                                rx.icon("euro"),
-                                rx.text(
-                                    "Pay tab",
-                                    size=default_button_text_size,
-                                    weight="bold",
-                                ),
-                                size=default_button_size,
-                                color_scheme="yellow",
-                                disabled=is_user_debt_0,
-                                **{"data-testid": "pay-tab-button"},
-                            )
-                        ),
-                        rx.cond(
-                            State.is_closing_account == None,
-                            rx.dialog.content(
-                                rx.form(
-                                    rx.vstack(
-                                        rx.text(
-                                            rx.cond(
-                                                State.current_user.is_current_guest
-                                                == True,
-                                                "Are you leaving the Olive Branch?",
-                                                "Are you closing your account?",
-                                            ),
-                                            weight="medium",
-                                        ),
-                                        rx.radio_group.root(
-                                            rx.foreach(
-                                                ["Yes", "No"],
-                                                lambda x: rx.radio_group.item(
-                                                    x,
-                                                    value=x,
-                                                    **{
-                                                        "data-testid": f"radio-input-{x.lower()}"
-                                                    },
-                                                ),
-                                            ),
-                                            required=True,
-                                            name="is_closing_account",
-                                            default_value="Yes",
-                                            direction="row",
-                                        ),
-                                        rx.hstack(
-                                            rx.button(
-                                                rx.text(
-                                                    "Submit",
-                                                    size=default_button_text_size,
-                                                ),
-                                                type="submit",
-                                                size=default_button_size,
-                                                **{"data-testid": "submit-button"},
-                                            ),
-                                            rx.dialog.close(
-                                                rx.button(
-                                                    "Close", size=default_button_size
-                                                )
-                                            ),
-                                        ),
+                rx.cond(
+                    State.are_payments_enabled,
+                    rx.hstack(
+                        rx.dialog.root(
+                            rx.dialog.trigger(
+                                rx.button(
+                                    rx.icon("euro"),
+                                    rx.text(
+                                        "Pay tab",
+                                        size=default_button_text_size,
+                                        weight="bold",
                                     ),
-                                    on_submit=[
-                                        State.handle_checkout_choice,
-                                        lambda: State.generate_item_payment_qr(
-                                            "tab", State.get_user_debt
-                                        ),
-                                    ],
+                                    size=default_button_size,
+                                    color_scheme="yellow",
+                                    disabled=is_user_debt_0,
+                                    **{"data-testid": "pay-tab-button"},
                                 )
                             ),
-                            stripe_payment_dialog("tab", State.get_user_debt),
+                            rx.cond(
+                                State.is_closing_account == None,
+                                rx.dialog.content(
+                                    rx.form(
+                                        rx.vstack(
+                                            rx.text(
+                                                rx.cond(
+                                                    State.current_user.is_current_guest
+                                                    == True,
+                                                    "Are you leaving the Olive Branch?",
+                                                    "Are you closing your account?",
+                                                ),
+                                                weight="medium",
+                                            ),
+                                            rx.radio_group.root(
+                                                rx.foreach(
+                                                    ["Yes", "No"],
+                                                    lambda x: rx.radio_group.item(
+                                                        x,
+                                                        value=x,
+                                                        **{
+                                                            "data-testid": f"radio-input-{x.lower()}"
+                                                        },
+                                                    ),
+                                                ),
+                                                required=True,
+                                                name="is_closing_account",
+                                                default_value="Yes",
+                                                direction="row",
+                                            ),
+                                            rx.hstack(
+                                                rx.button(
+                                                    rx.text(
+                                                        "Submit",
+                                                        size=default_button_text_size,
+                                                    ),
+                                                    type="submit",
+                                                    size=default_button_size,
+                                                    **{"data-testid": "submit-button"},
+                                                ),
+                                                rx.dialog.close(
+                                                    rx.button(
+                                                        "Close",
+                                                        size=default_button_size,
+                                                    )
+                                                ),
+                                            ),
+                                        ),
+                                        on_submit=[
+                                            State.handle_checkout_choice,
+                                            lambda: State.generate_item_payment_qr(
+                                                "tab", State.get_user_debt
+                                            ),
+                                        ],
+                                    )
+                                ),
+                                stripe_payment_dialog("tab", State.get_user_debt),
+                            ),
                         ),
+                        rx.text(
+                            f"Pay your tab securely via Stripe. Please review your registrations below before paying.",
+                            size=default_text_size,
+                            opacity=rx.cond(is_user_debt_0, 0.3, 1),
+                        ),
+                        align="center",
                     ),
-                    rx.text(
-                        f"Pay your tab securely via Stripe. Please review your registrations below before paying.",
-                        size=default_text_size,
-                        opacity=rx.cond(is_user_debt_0, 0.3, 1),
-                    ),
-                    align="center",
                 ),
                 rx.cond(
                     is_user_debt_0,

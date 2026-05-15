@@ -708,9 +708,9 @@ def sync_new_stripe_checkout_sessions():
                     ],
                     value_input_option="USER_ENTERED",
                     table_range="A1",
-                    )
+                )
             session.commit()
-                
+
     except Exception as e:
         print(f"sync_new_stripe_checkout_sessions error: {e}")
 

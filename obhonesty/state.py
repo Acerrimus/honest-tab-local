@@ -62,6 +62,7 @@ class State(rx.State):
     latest_user_activity_datetime: datetime = None
     is_reload_admin_dinner_data_running: bool = False
     current_user_orders: list[Order] = []
+    are_payments_enabled: bool = True
 
     # --- Test Environment State ---
     stripe_test_state: Literal["success"] | None = None
@@ -367,9 +368,14 @@ class State(rx.State):
     def get_admin_data(self):
         admin_data = {}
         for row in rx.session().exec(Admin.select()).all():
-            admin_data[row.key] = (
-                row.value if "deadline" in row.key else float(row.value)
-            )
+            if "deadline" in row.key:
+                admin_data[row.key] = row.value
+            elif row.key == "are_payments_enabled":
+                admin_data[row.key] = row.value.lower() == "true"
+                if not self.is_stripe_dialog_active:
+                    self.are_payments_enabled = admin_data[row.key]
+            else:
+                admin_data[row.key] = float(row.value)
         return admin_data
 
     @rx.event

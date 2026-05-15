@@ -163,21 +163,24 @@ def item_button(item: Item) -> rx.Component:
                                 **{"data-testid": "item_register"},
                             )
                         ),
-                        rx.button(
-                            rx.icon("credit-card"),
-                            rx.text("Pay Now", size=default_button_text_size),
-                            color_scheme="green",
-                            size=default_button_size,
-                            type="button",
-                            # Pass specific item details to backend
-                            loading=State.is_order_request_loading,
-                            on_click=[
-                                State.set_order_request_id,
-                                lambda: State.show_stripe_item_payment_dialog(
-                                    item.name, item.price
-                                ),
-                            ],
-                            **{"data-testid": "item_pay_now"},
+                        rx.cond(
+                            State.are_payments_enabled,
+                            rx.button(
+                                rx.icon("credit-card"),
+                                rx.text("Pay Now", size=default_button_text_size),
+                                color_scheme="green",
+                                size=default_button_size,
+                                type="button",
+                                # Pass specific item details to backend
+                                loading=State.is_order_request_loading,
+                                on_click=[
+                                    State.set_order_request_id,
+                                    lambda: State.show_stripe_item_payment_dialog(
+                                        item.name, item.price
+                                    ),
+                                ],
+                                **{"data-testid": "item_pay_now"},
+                            ),
                         ),
                         rx.dialog.close(
                             rx.button(
