@@ -12,6 +12,7 @@ from obhonesty.elements import (
     logout_button,
     item_button,
     stripe_payment_dialog,
+    admin_last_update_message,
 )
 
 is_test_environment = True if os.getenv("TEST") else False
@@ -951,16 +952,19 @@ def admin_dinner() -> rx.Component:
         rx.center(
             rx.vstack(
                 rx.heading("Dinner", size=default_heading_size),
-                rx.hstack(
-                    admin_refresh_top_bar(),
-                    rx.button(
-                        rx.text("Late sign-up", size=default_button_text_size),
-                        on_click=State.redirect_to_later_dinner_signup,
-                        size=default_button_size,
-                        disabled=State.is_loading_admin_meal_table,
-                        **{"data-testid": "late-signup-button"},
+                rx.vstack(
+                    rx.hstack(
+                        admin_refresh_top_bar(),
+                        rx.button(
+                            rx.text("Late sign-up", size=default_button_text_size),
+                            on_click=State.redirect_to_later_dinner_signup,
+                            size=default_button_size,
+                            disabled=State.is_loading_admin_meal_table,
+                            **{"data-testid": "late-signup-button"},
+                        ),
+                        spacing="2",
                     ),
-                    spacing="2",
+                    admin_last_update_message(),
                 ),
                 # Make the two columns share the available space evenly
                 rx.cond(
@@ -1039,7 +1043,7 @@ def admin_breakfast() -> rx.Component:
         rx.center(
             rx.vstack(
                 rx.heading("Breakfast", size=default_heading_size),
-                admin_refresh_top_bar(),
+                rx.vstack(admin_refresh_top_bar(), admin_last_update_message()),
                 rx.cond(
                     ~State.is_loading_admin_meal_table,
                     rx.vstack(

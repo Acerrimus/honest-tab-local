@@ -399,7 +399,7 @@ def admin_refresh_top_bar() -> rx.Component:
         rx.button(
             rx.icon("refresh-cw"),
             rx.text("Reload", size=default_button_text_size),
-            on_click=State.reload_sheet_data,
+            on_click=State.restart_reload_admin_dinner_data_loop,
             color_scheme="green",
             size=default_button_size,
             disabled=State.is_loading_admin_meal_table,
@@ -431,4 +431,15 @@ def show_signup(meal: Meal):
         key=meal.meal_id,
         bg=rx.cond(has_allergies, "#FC281D20", "transparent"),
         **{"data-testid": "meal-row"},
+    )
+
+
+def admin_last_update_message():
+    return rx.vstack(
+        rx.text(
+            f"Last update: {State.last_reload_time_formatted}",
+            weight="bold",
+            size="6",
+        ),
+        rx.text(f"Longer than a minute? Press Reload to load new signups."),
     )

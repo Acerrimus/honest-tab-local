@@ -63,6 +63,7 @@ class State(rx.State):
     is_reload_admin_dinner_data_running: bool = False
     current_user_orders: list[Order] = []
     are_payments_enabled: bool = True
+    last_reload_time: datetime = get_madrid_datetime_now()
 
     # --- Test Environment State ---
     stripe_test_state: Literal["success"] | None = None
@@ -453,6 +454,15 @@ class State(rx.State):
             self.dinner_count_volunteers_meat + self.dinner_count_guests_meat
         )
 
+    @rx.var
+    def last_reload_time_formatted(self) -> str:
+        return self.last_reload_time.strftime("%H:%M:%S %d/%m/%Y")
+
+    @rx.event
+    def restart_reload_admin_dinner_data_loop(self):
+        self.is_reload_admin_dinner_data_running = False
+        return State.reload_admin_dinner_data
+
     @rx.event(background=True)
     async def reload_admin_dinner_data(self):
         if self.is_reload_admin_dinner_data_running:
@@ -461,6 +471,7 @@ class State(rx.State):
             self.is_reload_admin_dinner_data_running = True
         while self.router.page.path.startswith("/admin"):
             async with self:
+                self.last_reload_time = get_madrid_datetime_now()
                 self.update_meal_totals()
                 self.users = self.get_users_with_active_tabs()
                 self.todays_breakfast_meals = self.get_todays_breakfast_meals()
