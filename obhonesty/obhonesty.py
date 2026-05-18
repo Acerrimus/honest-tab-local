@@ -583,7 +583,9 @@ def update_meals_table():
                 .all()
             )
             volunteers: list[User] = session.exec(
-                select(User).where(User.volunteer == True)
+                select(User).where(
+                    User.volunteer == True, User.is_current_guest == True
+                )
             ).scalars()
             # add volunteer meals to tonight's dinner list if they have not already been added
             for volunteer in volunteers:
