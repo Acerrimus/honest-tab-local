@@ -582,11 +582,15 @@ def update_meals_table():
                 .scalars()
                 .all()
             )
-            volunteers: list[User] = session.exec(
-                select(User).where(
-                    User.volunteer == True, User.is_current_guest == True
+            volunteers: list[User] = (
+                session.exec(
+                    select(User).where(
+                        User.volunteer == True, User.is_current_guest == True
+                    )
                 )
-            ).scalars()
+                .scalars()
+                .all()
+            )
             # add volunteer meals to tonight's dinner list if they have not already been added
             for volunteer in volunteers:
                 volunteer_receiver_name = generate_receiver_from_names(
@@ -608,6 +612,17 @@ def update_meals_table():
                         served=False,
                     )
                 )
+            volunteers_as_receivers = set(
+                generate_receiver_from_names(volunteer.first_name, volunteer.last_name)
+                for volunteer in volunteers
+            )
+            # remove dinner meals for volunteers who have recently left
+            for dinner_meal in session.execute(
+                Meal.select_todays_dinner_meals().where(Meal.volunteer == True)
+            ).scalars():
+                if dinner_meal.receiver in volunteers_as_receivers:
+                    continue
+                session.delete(dinner_meal)
             # add new orders to today's meals if not already added
             signups_in_todays_orders: list[Order] = session.execute(
                 select(Order).where(
