@@ -344,9 +344,9 @@ def add_google_sheet_data_to_session(session, google_sheet_data, model, id_colum
                 raise Exception(f"id column '{id_column_name}' is blank")
             session.add(model.model_validate(record))
         except Exception as e:
-            id = record[id_column_name] if len(record[id_column_name]) else "N/A"
+            id = record[id_column_name] if record[id_column_name] != "" else "N/A"
             print(
-                f"Unable to add {model.__name__} {id} on row {index + 2}: {e}",
+                f"Unable to add {model.__name__} {id} on row {index + 2}: {e}\nRecord: {record}",
                 flush=True,
             )
 
